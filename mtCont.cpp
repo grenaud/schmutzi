@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "utils.h"
+#include "miscfunc.h"
 
 
 using namespace BamTools;
@@ -44,6 +45,10 @@ double likeMismatchProb[64];
 double likeMatchProbMQ[64][64];
 double likeMismatchProbMQ[64][64];
 
+probSubstition illuminaErrorsProb;
+vector<probSubstition> sub5p;
+vector<probSubstition> sub3p;
+probSubstition defaultSubMatch;
 
 double probMapping[64];
 double probMismapping[64];
@@ -95,11 +100,6 @@ inline string arrayToStringInt(const T toPrint[] ,const int size,const string se
 
 
 
-typedef struct { 
-    char base;
-    int  qual;
-    int  mapq;       	 
-} singleRead;
 
 typedef struct { 
     vector<singleRead> readsVec;
@@ -110,16 +110,6 @@ typedef struct {
 } positionInformation;
 
 
-typedef struct { 
-    double f[4];
- } alleleFrequency;
-
-
-typedef struct { 
-    double perror[4];
-    double phred[4];
-    char consensus;
- } PHREDgeno;
 
 
 
@@ -217,6 +207,19 @@ class MyPileupVisitor : public PileupVisitor {
 		sr.base=b;
 		sr.qual=int(q);
 		sr.mapq=int(m);
+
+		sr.dist5p=-1;
+		sr.dist3p=-1;
+		sr.isReversed= pileupData.PileupAlignments[i].Alignment.IsReverseStrand();
+		
+		if( sr.isReversed  ){
+		    sr.dist5p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
+		    sr.dist3p = pileupData.PileupAlignments[i].PositionInAlignment;
+		}else{
+		    sr.dist5p = pileupData.PileupAlignments[i].PositionInAlignment;
+		    sr.dist3p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
+		}
+
 		m_infoPPos->at(posVector).cov++;		    
 
 		//Add mapq
@@ -327,6 +330,9 @@ int main (int argc, char *argv[]) {
     }
 
     //    return 1;
+    string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
+    string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
 
     const string usage=string("\t"+string(argv[0])+
 			      " [options]  [consensus file] [reference fasta file] [bam file] "+"\n\n"+
@@ -336,12 +342,14 @@ int main (int argc, char *argv[]) {
 			      // "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
 			      // "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
 			      // "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
-			      
+			      "\t\t"+"-deam5p [.prof file]" +"\t\t"+"5p deamination frequency (default: "+deam5pfreq+")"+"\n"+
+			      "\t\t"+"-deam3p [.prof file]" +"\t\t"+"3p deamination frequency (default: "+deam3pfreq+")"+"\n"+
 			      // // "\t\t"+"-deam5" +"\t\t"+"5p deamination frequency"+"\n"+
 			      // // "\t\t"+"-deam3" +"\t\t"+"3p deamination frequency"+"\n"+
 			      "\n\tComputation options:\n"+	
-			       "\t\t"+"-nomq" +"\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
-			     "\t\t"+"-cont [file1,file2,...]" +"\t\t"+"Contamination allele frequency (default : "+fileFreq+")"+"\n"+ 
+			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
+			      "\t\t"+"-nomq" +"\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
+			      "\t\t"+"-cont [file1,file2,...]" +"\t\t"+"Contamination allele frequency (default : "+fileFreq+")"+"\n"+ 
 			      // "\n\tReference options:\n"+	
 			      // "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
 			      // "\t\t"+"  " +"\t\t\t\t"+"the reference as been wrapped around"+"\n"+
@@ -364,7 +372,24 @@ int main (int argc, char *argv[]) {
     string consensusFile    = string(argv[argc-3]);//fasta file
 
     for(int i=1;i<(argc-3);i++){ //all but the last 3 args
-	
+	if(string(argv[i]) == "-err"  ){
+	    errFile=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-deam5p"  ){
+	    deam5pfreq=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-deam3p"  ){
+	    deam3pfreq=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
 	if(strcmp(argv[i],"-cont") == 0 ){
 	    fileFreq=string(argv[i+1]);
 	    i++;
@@ -439,6 +464,70 @@ int main (int argc, char *argv[]) {
 
 
 
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //
+    // BEGIN READING ERROR PROFILE
+    //
+    ////////////////////////////////////////////////////////////////////////
+
+    readIlluminaError(errFile,illuminaErrorsProb);
+
+    // for(int nuc1=0;nuc1<4;nuc1++){
+    // 	for(int nuc2=0;nuc2<4;nuc2++){
+	    
+    // 	    cout<<illuminaErrorsProb.s[nuc2+nuc1*4]<<"\t";
+    // 	}
+    // 	cout<<endl;
+    // }
+    // return 1;
+    
+    ////////////////////////////////////////////////////////////////////////
+    //
+    // END  READING ERROR PROFILE
+    //
+    ////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+    //
+    // BEGIN DEAMINATION PROFILE
+    //
+    ////////////////////////////////////////////////////////////////////////
+    readNucSubstitionFreq(deam5pfreq,sub5p);
+    readNucSubstitionFreq(deam3pfreq,sub3p);
+   
+
+    int defaultSubMatchIndex=0;
+
+    for(int nuc1=0;nuc1<4;nuc1++){
+    	for(int nuc2=0;nuc2<4;nuc2++){	    
+    	    if(nuc1==nuc2)
+		defaultSubMatch.s[ defaultSubMatchIndex++ ] = 1.0;
+	    else
+		defaultSubMatch.s[ defaultSubMatchIndex++ ] = 0.0;
+    	}
+    	
+    }
+
+
+    
+    ////////////////////////////////////////////////////////////////////////
+    //
+    // END  DEAMINATION PROFILE
+    //
+    ////////////////////////////////////////////////////////////////////////
 
 
 
@@ -789,11 +878,41 @@ int main (int argc, char *argv[]) {
 		    double mappedProb  =0.0; //initialized
 		    double misappedProb=0.25;
 	   
-		    int baseIndex = base2int(infoPPos[i].readsVec[k].base)-1;
+		    int baseIndex = baseResolved2int(infoPPos[i].readsVec[k].base);
 		    int qual      = infoPPos[i].readsVec[k].qual;
+		    int dist5p    = infoPPos[i].readsVec[k].dist5p;
+		    int dist3p    = infoPPos[i].readsVec[k].dist3p;
+		    int mapq      = infoPPos[i].readsVec[k].mapq;
+
+		    probSubstition * probSubMatchToUseCons = &defaultSubMatch ;
+		    probSubstition * probSubMatchToUseCont = &defaultSubMatch ; //leave it that way, we only allow deamination for the endogenous only
+		    
+
+		    //consider deamination to be possible for the endogenous only
+		    if(dist5p <= (int(sub5p.size()) -1)){
+			probSubMatchToUseCons = &sub5p[ dist5p ];			
+		    }
+		    
+		    if(dist3p <= (int(sub3p.size()) -1)){
+			probSubMatchToUseCons = &sub3p[ dist3p ];
+		    }
+		    
+		    //we have substitution probabilities for both... take the closest
+		    if(dist5p <= (sub5p.size() -1) &&
+		       dist3p <= (sub3p.size() -1) ){
+			
+			if(dist5p < dist3p){
+			    probSubMatchToUseCons = &sub5p[ dist5p ];
+			}else{
+			    probSubMatchToUseCons = &sub3p[ dist3p ];
+			}
+			
+		    }
+
 #ifdef DEBUG2
 		    bool potentialCont=false;
 #endif
+
 		    //iterate over each possible consensus and contaminant base
 		    for(int nuc1=0;nuc1<4;nuc1++){ //     b = consensus
 			for(int nuc2=0;nuc2<4;nuc2++){//  c = contaminant
@@ -801,29 +920,41 @@ int main (int argc, char *argv[]) {
 			    if(nuc1 == nuc2)
 				continue;
 
-			    double probNonCont;		     
-			    if(baseIndex == nuc1){ //matches the consensus
-				probNonCont  = likeMatchProb[qual];
-			    }else{
-				probNonCont  = likeMismatchProb[qual];
-			    }
+			   
+			    //                  model*4  + obs
+			    int dinucIndexCons = nuc1*4+baseIndex;
 
-			    double probCont;
-			    if(baseIndex == nuc2){ //matches the contaminant
-				probCont  = likeMatchProb[qual];
-			    }else{
-				probCont  = likeMismatchProb[qual];
-			    }
+			    // if(baseIndex == nuc1){ //matches the consensus
+			    // 	probCons  = likeMatchProb[qual];
+			    // }else{
+			    // 	probCons  = likeMismatchProb[qual];
+			    // }
+
+			    //                        (1-e)           *  p(sub|1-e)                                + (e) *  p(sub|1-e)
+			    double probCons=likeMatchProb[qual]  * (probSubMatchToUseCons->s[dinucIndexCons] )  + (1.0 - likeMatchProb[qual])*(illuminaErrorsProb.s[dinucIndexCons]);
+
+
+			    //                  model*4  + obs
+			    int dinucIndexCont = nuc2*4+baseIndex;
+
+			    // double probCont;
+			    // if(baseIndex == nuc2){ //matches the contaminant
+			    // 	probCont  = likeMatchProb[qual];
+			    // }else{
+			    // 	probCont  = likeMismatchProb[qual];
+			    // }
+			    //                        (1-e)           *  p(sub|1-e)                             + (e) *  p(sub|1-e)
+			    double probCont=likeMatchProb[qual]  * (probSubMatchToUseCont->s[dinucIndexCont] )  + (1.0 - likeMatchProb[qual])*(illuminaErrorsProb.s[dinucIndexCont]);
 
 		     
 			    double probForDinuc =  priorDiNuc[nuc1][nuc2]*
-				( ( (1.0-contaminationRate) * probNonCont) +
+				( ( (1.0-contaminationRate) * probCons) +
 				  ( (contaminationRate)     * probCont   ) ) ;
 		     
 			    mappedProb+=probForDinuc;
 
 #ifdef DEBUG2
-			    cout<<"b="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tp(b,c)="<<priorDiNuc[nuc1][nuc2]<<"\tp(noncont)="<<probNonCont<<"\tp(cont)="<<probCont<<"\tp(read)="<<probForDinuc<<"\tbase="<<dnaAlphabet[baseIndex]<<"\tqual="<<qual<<"\tp(map)="<<mappedProb<<endl;
+			    cout<<"b="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tp(b,c)="<<priorDiNuc[nuc1][nuc2]<<"\tp(noncont)="<<probCons<<"\tp(cont)="<<probCont<<"\tp(read)="<<probForDinuc<<"\tbase="<<dnaAlphabet[baseIndex]<<"\tqual="<<qual<<"\tp(map)="<<mappedProb<<endl;
 
 			    if(priorDiNuc[nuc1][nuc2] >0.9){
 				potentialCont=true;
@@ -835,7 +966,7 @@ int main (int argc, char *argv[]) {
 		    }//end for each di-nucleotide
 
 
-		    double pread = (probMapping[infoPPos[i].readsVec[k].mapq]*(mappedProb) + probMismapping[infoPPos[i].readsVec[k].mapq]*(misappedProb) );
+		    double pread = (probMapping[mapq]*(mappedProb) + probMismapping[mapq]*(misappedProb) );
 #ifdef DEBUG2     
 		    if(potentialCont){
 			cout<<"potential "<<endl;

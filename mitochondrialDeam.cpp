@@ -1,5 +1,5 @@
 /*
- * pileup
+ * mitonchondrialDeam
  * Date: Mar-26-2014 
  * Author : Gabriel Renaud gabriel.reno [at sign here ] gmail.com
  *
@@ -236,7 +236,6 @@ class MyPileupVisitor : public PileupVisitor {
 		    // for(int jas=0;jas<16;jas++){
 		    // 	cout<<jas<<"\t"<<probSubMatchToUse->s[jas]<<endl;
 		    // }
-
 		    // cout<<"sub\t"<<dist5p<<"\t"<<dist3p<<"\t"<<int(sub5p.size())<< "\t"<<int(sub3p.size()) <<endl;
 
 		    if(dist5p <= (int(sub5p.size()) -1)){

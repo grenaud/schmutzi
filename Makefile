@@ -16,10 +16,10 @@ miscfunc.o:	libgab/utils.o miscfunc.cpp
 	${CXX} ${CXXFLAGS} miscfunc.cpp
 
 
-mtCont.o:	libgab/utils.o mtCont.cpp
+mtCont.o:	libgab/utils.o mtCont.cpp 
 	${CXX} ${CXXFLAGS} mtCont.cpp
 
-mtCont:	libgab/utils.o mtCont.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+mtCont:	libgab/utils.o miscfunc.o mtCont.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
