@@ -1,0 +1,14 @@
+
+../damage2profile -length 5 -double /mnt/454/Loschbour/merged_by_lib_with2ndSet/damage/initialchr21substitutions-5.txt  > doubleStrand.5p.prof
+../damage2profile -length 5 -double /mnt/454/Loschbour/merged_by_lib_with2ndSet/damage/initialchr21substitutions-3.txt  > doubleStrand.3p.prof
+
+
+../damage2profile -length 2 -single /mnt/454/Loschbour/merged_by_lib_with2ndSet/damage/secondchr21substitutions-5.txt  > singleStrand.5p.prof
+../damage2profile -length 2 -single /mnt/454/Loschbour/merged_by_lib_with2ndSet/damage/secondchr21substitutions-3.txt  > singleStrand.3p.prof
+
+
+
+
+
+
+
