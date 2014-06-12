@@ -68,7 +68,20 @@ typedef struct {
     bool isReversed;
 } singleRead;
 
+
+typedef struct { 
+    vector<singleRead> readsVec;
+    double mapqAvg;
+    int cov;
+    char refBase;
+    int posAlign;
+} positionInformation;
+
+
+
 void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec);
 void readIlluminaError(const string errFile,probSubstition & illuminaErrorsProb);
+void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome);
+void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2allelefreq);
 
 #endif

@@ -168,3 +168,78 @@ void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec
 
 
 }
+
+
+void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome){
+    string line;
+    igzstream consensusFD;
+    consensusFD.open(consensusFile.c_str());
+    if (consensusFD.good()){
+	getline (consensusFD,line);
+
+	while ( getline (consensusFD,line)){
+
+	    vector<string> fields = allTokens(line,'\t');
+	    PHREDgeno toadd;
+	    // cerr<<line<<endl;
+
+
+	    if(fields.size() != 11){
+		cerr << "line "<<line<<"  in file  "<<consensusFile<<" does not have 11 fields"<<endl;
+		exit(1);
+	    }
+	    
+	    toadd.consensus = fields[2][0];
+	    for(int nuc=0;nuc<4;nuc++){
+		
+		toadd.phred[nuc]  = destringify<double>(fields[nuc+7]);		
+		toadd.perror[nuc] = pow(10.0,toadd.phred[nuc]/(-10.0));
+		
+	    }
+
+	    pos2phredgeno[     destringify<int>( fields[0])   ] = toadd;
+	    sizeGenome =  max( destringify<int>( fields[0]), sizeGenome);
+	}
+	consensusFD.close();
+
+    }else{
+	cerr << "Cannot open consensus file  "<<consensusFile<<""<<endl;
+	exit(1);
+    }
+
+
+}
+
+void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2allelefreq){
+    // map<int, alleleFrequency> pos2allelefreq;
+
+    string line;
+    igzstream freqAlleleFile;
+    freqAlleleFile.open(freqFile.c_str());
+    if (freqAlleleFile.good()){
+
+	while ( getline (freqAlleleFile,line)){
+
+	    vector<string> fields = allTokens(line,'\t');
+	    alleleFrequency freqToadd;
+	    
+	    if(fields.size() != 5){
+		cerr << "line "<<line<<"  in file  "<<freqFile<<" does not have 5 fields"<<endl;
+		exit(1);
+	    }
+	    
+	    for(int nuc=0;nuc<4;nuc++){
+		freqToadd.f[nuc]=destringify<double>(fields[nuc+1]);
+	    }
+
+	    pos2allelefreq[ destringify<int>( fields[0])  ] = freqToadd;
+	    	    
+	}
+	freqAlleleFile.close();
+
+    }else{
+	cerr << "Cannot open allele frequency file  "<<freqFile<<""<<endl;
+	exit(1);
+    }
+
+}

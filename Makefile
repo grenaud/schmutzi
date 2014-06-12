@@ -4,9 +4,9 @@ BAMTOOLS= bamtools/
 LIBGAB   = libgab/
 
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
-LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lm -lz
+LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
 
-all: libgab/utils.o mitochondrialDeam  mtCont damage2profile
+all: libgab/utils.o mitochondrialDeam  mtCont mtContTHREADS damage2profile
 
 
 libgab/utils.o:
@@ -20,6 +20,13 @@ mtCont.o:	libgab/utils.o mtCont.cpp
 	${CXX} ${CXXFLAGS} mtCont.cpp
 
 mtCont:	libgab/utils.o miscfunc.o mtCont.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+
+mtContTHREADS.o:	libgab/utils.o mtContTHREADS.cpp 
+	${CXX} ${CXXFLAGS} mtContTHREADS.cpp
+
+mtContTHREADS:	libgab/utils.o miscfunc.o mtContTHREADS.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
@@ -38,5 +45,5 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o
+	rm -f mtCont.o mtCont mtContTHREADS.o mtContTHREADS mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o
 
