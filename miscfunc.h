@@ -55,6 +55,7 @@ typedef struct {
 typedef struct { 
     double perror[4];
     double phred[4];
+    char ref;
     char consensus;
  } PHREDgeno;
 
@@ -77,6 +78,16 @@ typedef struct {
     int posAlign;
 } positionInformation;
 
+
+typedef struct { 
+    double likeBaseNoindel[4];
+    int  covPerBase[4];
+    double mapqAvg;
+    
+    int numDel;
+    vector<string> insertionRight;
+    int cov;
+} singlePosInfo;
 
 
 void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec);

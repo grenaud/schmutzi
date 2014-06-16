@@ -189,12 +189,18 @@ void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredg
 		exit(1);
 	    }
 	    
+
+	    if(fields[0][fields[0].size()-1] == 'i') //skip insertion
+		continue;
+
+	    if(fields[2] == "D") //skip deletions
+		continue;
+	    
+
 	    toadd.consensus = fields[2][0];
-	    for(int nuc=0;nuc<4;nuc++){
-		
+	    for(int nuc=0;nuc<4;nuc++){		
 		toadd.phred[nuc]  = destringify<double>(fields[nuc+7]);		
-		toadd.perror[nuc] = pow(10.0,toadd.phred[nuc]/(-10.0));
-		
+		toadd.perror[nuc] = pow(10.0,toadd.phred[nuc]/(-10.0));		
 	    }
 
 	    pos2phredgeno[     destringify<int>( fields[0])   ] = toadd;
@@ -227,7 +233,8 @@ void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2all
 		cerr << "line "<<line<<"  in file  "<<freqFile<<" does not have 5 fields"<<endl;
 		exit(1);
 	    }
-	    
+	   
+
 	    for(int nuc=0;nuc<4;nuc++){
 		freqToadd.f[nuc]=destringify<double>(fields[nuc+1]);
 	    }

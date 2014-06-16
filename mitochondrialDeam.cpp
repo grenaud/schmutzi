@@ -34,15 +34,15 @@ using namespace std;
 // #define DEBUG2
 
 
-typedef struct { 
-    double likeBaseNoindel[4];
-    int  covPerBase[4];
-    double mapqAvg;
+// typedef struct { 
+//     double likeBaseNoindel[4];
+//     int  covPerBase[4];
+//     double mapqAvg;
     
-    int numDel;
-    vector<string> insertionRight;
-    int cov;
-} positionInformation;
+//     int numDel;
+//     vector<string> insertionRight;
+//     int cov;
+// } positionInformation;
 
 
 char offsetQual=33;
@@ -112,7 +112,7 @@ inline string arrayToStringInt(const T toPrint[] ,const int size,const string se
 class MyPileupVisitor : public PileupVisitor {
   
     public:
-    MyPileupVisitor(const RefVector& references, Fasta * fastaReference,vector<positionInformation> * infoPPos,int sizeGenome,bool ignoreMQ)
+    MyPileupVisitor(const RefVector& references, Fasta * fastaReference,vector<singlePosInfo> * infoPPos,int sizeGenome,bool ignoreMQ)
             : PileupVisitor()
 	    , m_references(references)
 	    , m_fastaReference(fastaReference)
@@ -345,7 +345,7 @@ class MyPileupVisitor : public PileupVisitor {
     private:
     RefVector m_references;
     Fasta * m_fastaReference;
-    vector<positionInformation> * m_infoPPos;
+    vector<singlePosInfo> * m_infoPPos;
     int sizeGenome;
     bool ignoreMQ;
     //        ostream*  m_out;
@@ -716,7 +716,7 @@ int main (int argc, char *argv[]) {
 
 
      
-    vector<positionInformation> infoPPos;
+    vector<singlePosInfo> infoPPos;
 
     if(isDos(fastaFile) || isMac(fastaFile) ){
 	cerr << "File  "<<fastaFile<<" must be unix formatted, exiting"<<endl;
@@ -759,9 +759,9 @@ int main (int argc, char *argv[]) {
     if(sizeGenome == 0){
 	sizeGenome=genomeRef.size();//use the one from the fasta
     }
-
+    cerr<<"Reading genome file ..."<<endl;
      for(int i=0;i<sizeGenome;i++){
-	 positionInformation toadd;
+	 singlePosInfo toadd;
 	 toadd.numDel         = 0;
 
 	 toadd.cov            = 0;
@@ -774,7 +774,7 @@ int main (int argc, char *argv[]) {
 
 	 infoPPos.push_back(toadd);
      }
-
+    cerr<<"... done"<<endl;
 
      // double ** likelihoodPBasePPos = new double * [genome.size()];
      // for(unsigned int i = 0; i< genome.size(); i++) {
@@ -852,9 +852,14 @@ int main (int argc, char *argv[]) {
 
     BamAlignment al;
     unsigned int numReads=0;
+    cerr<<"Reading BAM file ..."<<endl;
+
     while ( reader.GetNextAlignment(al) ) {
 	//cerr<<al.Name<<endl;
 	numReads++;
+	if(numReads !=0 && (numReads%100000)==0){
+	    cerr<<"Read "<<thousandSeparator(numReads)<<" reads"<<endl;
+	}
 
 	if(al.IsMapped() && !al.IsFailedQC()){
 	    // cerr<<al.Name<<endl;
@@ -862,8 +867,8 @@ int main (int argc, char *argv[]) {
 	}
 	
     }
-    //    cerr<<"done"<<endl;
-
+    cerr<<"...  done"<<endl;
+    
     
 
     
