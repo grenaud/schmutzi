@@ -44,6 +44,10 @@ typedef struct {
     double s[16];
 } probSubstition;
 
+typedef struct { 
+    double p[4][4];
+} diNucleotideProb;
+
 
 //frequency of A,C,G,T
 typedef struct { 
@@ -69,6 +73,14 @@ typedef struct {
     bool isReversed;
 } singleRead;
 
+//To store contamination likelihood
+typedef struct { 
+    string filename;    
+    double contaminationRate;
+    double logLike;
+    //    double logLike;
+} contaminationEstimate;
+
 
 typedef struct { 
     vector<singleRead> readsVec;
@@ -76,6 +88,7 @@ typedef struct {
     int cov;
     char refBase;
     int posAlign;
+    bool skipPosition;
 } positionInformation;
 
 

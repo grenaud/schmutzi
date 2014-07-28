@@ -147,7 +147,7 @@ void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec
 		for(int nuc2=0;nuc2<4;nuc2++){
 		    if(nuc1==nuc2){ // prob of error is 0 if both nucleotides are identical
 			indexInArrayMatch                       = indexFirstArray;
-			toaddSub.s[indexFirstArray++] = 1.0;		    
+			toaddSub.s[indexFirstArray++]           = 1.0;		    
 		    }else{ //           rely on the substitution frequency
 			sumMismatchProb                         += tempFreq.s[indexSecondArray];
 			toaddSub.s[indexFirstArray++]            = tempFreq.s[indexSecondArray++];
@@ -156,7 +156,15 @@ void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec
 
 		toaddSub.s[indexInArrayMatch] = 1.0 - sumMismatchProb;
 	    }
+
+	    // for(int nuc1=0;nuc1<4;nuc1++){
+	    // 	for(int nuc2=0;nuc2<4;nuc2++){
+	    // 	    cout<<(nuc1*4+nuc2)<<"\t"<<toaddSub.s[nuc1*4+nuc2]<<endl;
+	    // 	}	       
+	    // }
 	    
+	    // exit(1);
+
 	    subVec.push_back( toaddSub );
 	}	             	              
 	subFP.close();
@@ -205,6 +213,8 @@ void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredg
 
 	    pos2phredgeno[     destringify<int>( fields[0])   ] = toadd;
 	    sizeGenome =  max( destringify<int>( fields[0]), sizeGenome);
+	    // cout<<destringify<int>( fields[0])<<endl;
+	    
 	}
 	consensusFD.close();
 
