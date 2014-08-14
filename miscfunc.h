@@ -94,6 +94,8 @@ typedef struct {
 
 typedef struct { 
     double likeBaseNoindel[4];
+    double likeBaseNoindelCont[4][4];
+
     int  covPerBase[4];
     double mapqAvg;
     

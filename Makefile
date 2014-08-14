@@ -6,7 +6,7 @@ LIBGAB   = libgab/
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
 
-all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection  mtCont damage2profile
+all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile
 
 
 libgab/utils.o:
@@ -36,6 +36,13 @@ mitochondrialDeamCorrection:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitoc
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
+mitochondrialDeamCorrectionSingle.o:	libgab/utils.o  mitochondrialDeamCorrectionSingle.cpp
+	${CXX} ${CXXFLAGS} mitochondrialDeamCorrectionSingle.cpp
+
+mitochondrialDeamCorrectionSingle:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitochondrialDeamCorrectionSingle.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+
 
 damage2profile.o:	libgab/utils.o damage2profile.cpp
 	${CXX} ${CXXFLAGS} damage2profile.cpp
@@ -46,5 +53,5 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont mitochondrialDeamCorrection mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o
+	rm -f mtCont.o mtCont mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o
 
