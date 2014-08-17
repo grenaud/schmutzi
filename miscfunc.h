@@ -59,6 +59,9 @@ typedef struct {
 typedef struct { 
     double perror[4];
     double phred[4];
+    double perrorC[4];
+    double phredC[4];
+
     char ref;
     char consensus;
  } PHREDgeno;

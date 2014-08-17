@@ -10,7 +10,10 @@
 
 //TODO
 //- call the contamination
-//- call the indels according to contamination rate
+//- call the indels according to contamination rate for both the contaminant and 
+// #define DEBUG1
+// #define DEBUG2
+#define DEBUG3
 
 
 // #include <boost/math/special_functions/beta.hpp>
@@ -67,9 +70,6 @@ long double logcomppdf(long double mu,long double sigma,long double x){
 }
 
 
-// #define DEBUG1
-// #define DEBUG2
-// #define DEBUG3
 
 
 // typedef struct { 
@@ -215,6 +215,110 @@ inline bool skipAlign(const string & reconstructedReference,const BamAlignment  
 }
 
 
+//This method calls the best nucleotide and 
+//
+inline void callBestNucleotideGivenLikelihood( int    & bestNuc,
+					       double & sumLogLikeAll, // sum of all the logs
+					       double & sumLogLikeOnlyBest, // sum of the logs for the best
+					       double & sumLogLikeAllButBest, // sum of the logs for all but the best
+					       double sumLogForNucs[],
+					       const double likeBaseNoindel [],
+					       const vector<singlePosInfo> & infoPPos,
+					       const int i
+					       ){
+    sumLogLikeAll          = 0.0; // sum of all the logs
+    sumLogLikeOnlyBest     = 0.0; // sum of the logs for the best
+    sumLogLikeAllButBest   = 0.0; // sum of the logs for all but the best
+    bool sumLogLikeAllB           = true;
+    bool sumLogLikeOnlyBestB      = true;
+    bool sumLogLikeAllButBestB    = true;
+    bool  sumLogForNucsB[4]; //sumLogForNucs has to be initialized
+    for(int nuc=0;nuc<4;nuc++){
+	sumLogForNucsB[nuc]=true;
+    }
+    
+    double bestLike=-INFINITY;
+    //int    bestNuc=-1;
+    for(unsigned int nuc=0;nuc<4;nuc++){
+	//cout<<infoPPos[i].likeBaseNoindel[nuc]<<"\t";
+	if(likeBaseNoindel[nuc] > bestLike){
+	    bestLike=likeBaseNoindel[nuc];
+	    bestNuc=nuc;
+	}
+    }
+
+    vector<int> bestNucs;
+
+    for(unsigned int nuc=0;nuc<4;nuc++){
+	if(likeBaseNoindel[nuc] == bestLike){
+	    bestNucs.push_back(nuc);
+	}
+    }
+	 
+    if(bestNucs.size() > 1){ // multiple equally likely nuc, use coverage to call best one
+	// cerr<<"size "<<bestNucs.size()<<endl;
+	// return 1;
+	int bestCov=-1;
+	int bestCovN=bestNucs[0];
+	     
+	for(unsigned int bc=0;bc<bestNucs.size();bc++){
+	    if(infoPPos[i].covPerBase[ bestNucs[bc] ] > bestCov){
+		bestCov  =infoPPos[i].covPerBase[ bestNucs[bc] ];
+		bestCovN =                        bestNucs[bc];		     
+	    }
+	}
+	     
+	bestNuc = bestCovN;
+    }
+    //end
+	 
+
+
+
+    //computing the probability of error
+    for(int nuc=0;nuc<4;nuc++){
+	// cout<<(i+1)<<"\tnuc\t"<<dnaAlphabet[nuc]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<infoPPos[i].likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<pow(10.0,infoPPos[i].likeBaseNoindel[nuc])<<endl;
+	     
+	for(int nuc2=0;nuc2<4;nuc2++){
+	    if(nuc!=nuc2){
+		if(sumLogForNucsB[nuc]){
+		    sumLogForNucs[nuc]         = likeBaseNoindel[nuc2]; 
+		    sumLogForNucsB[nuc]        = false; //has been initialized
+		}else{
+		    sumLogForNucs[nuc]         = oplus(sumLogForNucs[nuc], likeBaseNoindel[nuc2]); //oplus(x,y)= log10( pow(10,x)+pow(10,y) )
+		}
+	    }
+	}
+
+	if(sumLogLikeAllB){
+	    sumLogLikeAll              =  likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
+	    sumLogLikeAllB             =  false;
+	}else{
+	    sumLogLikeAll              =  oplus(sumLogLikeAll,        likeBaseNoindel[nuc]);  //oplus(x,y)= log10( pow(10,x)+pow(10,y) )
+	}
+
+	if(nuc==bestNuc){
+
+	    if(sumLogLikeOnlyBestB){
+		sumLogLikeOnlyBest     = likeBaseNoindel[nuc];
+		sumLogLikeOnlyBestB    = false;
+	    }else{
+		sumLogLikeOnlyBest     = oplus(sumLogLikeOnlyBest,likeBaseNoindel[nuc]);
+	    }
+
+	}else{
+	    //sumLogLikeAllButBest   = oplus(sumLogLikeAllButBest, likeBaseNoindel[nuc]);
+	    if(sumLogLikeAllButBestB){
+		sumLogLikeAllButBest   = likeBaseNoindel[nuc];
+		sumLogLikeAllButBestB  = false;		     
+	    }else{
+		sumLogLikeAllButBest   = oplus(sumLogLikeAllButBest, likeBaseNoindel[nuc]);
+	    }
+	}		 	    
+    }//end for nuc
+
+}
+
 // typedef struct { 
 //     char ref;
 //     char alt;
@@ -234,6 +338,9 @@ inline bool skipAlign(const string & reconstructedReference,const BamAlignment  
 //  } positionInfo;
 
 
+
+
+
 void  printLogAndGenome(const int sizeGenome,
 			const vector<singlePosInfo> & infoPPos,
 			const string outSeq,
@@ -241,10 +348,21 @@ void  printLogAndGenome(const int sizeGenome,
 			const string genomeRef,
 			const int minQual,
 			const string nameMT,
-			const bool singleCont){
-    
+			const bool singleCont,
+			const string outSeqC,
+			const string outLogC,
+			const bool   outSeqCflag,
+			const bool   outLogCflag,
+			const string nameMTC){
+    // cerr<<outSeq<<"\t"<<outLog<<"\t#"<<outSeqC<<"#\t"<<outLogC<<"#\t"<<outSeqCflag<<"#\t"<<outLogCflag<<"#\t"<<endl;
+    // exit(1);
     ofstream outSeqFP ;
     ofstream outLogFP;
+
+    ofstream outSeqFPC;
+    ofstream outLogFPC;
+
+
     outSeqFP.open(outSeq.c_str());
 
     if (!outSeqFP.is_open()){
@@ -260,13 +378,43 @@ void  printLogAndGenome(const int sizeGenome,
     }
 
 
+    if(outSeqCflag){
+	outSeqFPC.open(outSeqC.c_str());
+	
+	if (!outSeqFPC.is_open()){
+	    cerr << "Unable to write to seq file "<<outSeqC<<endl;
+	    exit(1);
+	}
+    }
+
+    if(outLogCflag){
+	outLogFPC.open(outLogC.c_str());
+
+	if (!outLogFPC.is_open()){
+	    cerr << "Unable to write to qual file "<<outLogC<<endl;
+	    exit(1);
+	}
+
+    }
+
     string genomeToPrint="";
+    string genomeToPrintC="";
+
     stringstream logToPrint;
+    stringstream logToPrintC;
 
 
     logToPrint<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt\n";
+    if(outLogCflag){
+	logToPrintC<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt\n";
+    }
+
     //genomeRef
     for(int i=0;i<sizeGenome;i++){
+
+
+
+
 
 	 //if half of the reads support an deletion in reads (ins in reference) 
 	 //move to next position since deletion
@@ -284,25 +432,36 @@ void  printLogAndGenome(const int sizeGenome,
 
 	     continue;
 
+	     //TODO add contamination detection
 	     
 	 }
 
 
-	 
+	 //no coverage
 	 if(infoPPos[i].cov == 0){
 	     genomeToPrint+="N";
 	     logToPrint<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
+	     if(outLogCflag){
+		 logToPrintC<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
+	     
+	     }
 	     continue;
 	 }
 	     
 
-	 
+	 int    bestNuc=-1;
+	 int    bestNucC=-1;
+
 	 double sumLogLikeAll          = 0.0; // sum of all the logs
 	 double sumLogLikeOnlyBest     = 0.0; // sum of the logs for the best
 	 double sumLogLikeAllButBest   = 0.0; // sum of the logs for all but the best
-	 bool sumLogLikeAllB           = true;
-	 bool sumLogLikeOnlyBestB      = true;
-	 bool sumLogLikeAllButBestB    = true;
+	 double sumLogLikeAllC          = 0.0; // sum of all the logs
+	 double sumLogLikeOnlyBestC     = 0.0; // sum of the logs for the best
+	 double sumLogLikeAllButBestC   = 0.0; // sum of the logs for all but the best
+
+	 // bool sumLogLikeAllB           = true;
+	 // bool sumLogLikeOnlyBestB      = true;
+	 // bool sumLogLikeAllButBestB    = true;
 	 
 	 // int nuc=0;
 	 // sumLogLikeAll              =  infoPPos[i].likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
@@ -312,38 +471,57 @@ void  printLogAndGenome(const int sizeGenome,
 	 //     sumLogLikeAllButBest   =  infoPPos[i].likeBaseNoindel[nuc];
 
 	 double sumLogForNucs[4]; //sum of the logs for all but the nucleotide itself
-	 bool  sumLogForNucsB[4]; //sumLogForNucs has to be initialized
-	 for(int nuc=0;nuc<4;nuc++){
-	     sumLogForNucsB[nuc]=true;
-	 }
+	 double sumLogForNucsC[4]; //sum of the logs for all but the nucleotide itself
 
 
 
 
 	 double likeBaseNoindel[4];
+	 double likeBaseNoindelC[4];
 
 
 	 // cout<<endl;
 
 	 if(singleCont){//if single contaminant need to marginalized over each contaminant
-
-
+	     
+	     //Calling the endogenous base
 	     for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
 
 		 unsigned int nucc=0;
 		 //A
 		 likeBaseNoindel[nuce]      = infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10);//prior on c 
 
-		 // cout<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<endl;
-
-		 for(nucc=1;nucc<4;nucc++){ //iterate over each possible contaminant base C,G,T
+		 if(i==146)
+		     cout<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<< likeBaseNoindel[nuce]<<endl;
+		 
+		 for(nucc=0;nucc<4;nucc++){ //marginalize over each possible contaminant base A,C,G,T
 		     
+
+
 		     likeBaseNoindel[nuce]  = oplus( likeBaseNoindel[nuce],
-						    infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) ); 
-		     // cout<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<endl;
+						     infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );  //oplus(x,y)= log10( pow(10,x)+pow(10,y) )
+		     if(i==146)
+			 cout<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<< likeBaseNoindel[nuce]<<endl;
 		 }       	    
 	     }	     
 
+	     //Calling the contaminant base
+	     for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
+
+		 unsigned int nuce=0;
+		 //A
+		 likeBaseNoindelC[nucc]      = infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10);//prior on e
+
+		 
+		 for(nuce=1;nuce<4;nuce++){ //iterate over each possible endogenous base C,G,T
+		     
+		     likeBaseNoindelC[nucc]  = oplus( likeBaseNoindelC[nucc],
+						      infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) ); 
+		 }       	    
+	     }	     
+
+
+	     
 	     
 
 	 }else{
@@ -355,86 +533,37 @@ void  printLogAndGenome(const int sizeGenome,
 	 }
 
 
-	 //Begin determining best nucleotide
-	 
-	 //cout<<i<<"\t"<<infoPPos[i].cov<<"\t"<<vectorToString(infoPPos[i].insertionRight)<<"\t"<<infoPPos[i].numDel<<"\t";
-	 double bestLike=-INFINITY;
-	 int    bestNuc=-1;
-	 for(unsigned int nuc=0;nuc<4;nuc++){
-	     //cout<<infoPPos[i].likeBaseNoindel[nuc]<<"\t";
-	     if(likeBaseNoindel[nuc] > bestLike){
-		 bestLike=likeBaseNoindel[nuc];
-		 bestNuc=nuc;
+	 //Begin determining best endogenous nucleotide
+
+	 callBestNucleotideGivenLikelihood( bestNuc,
+					    sumLogLikeAll,          // sum of all the logs
+					    sumLogLikeOnlyBest,     // sum of the logs for the best
+					    sumLogLikeAllButBest,   // sum of the logs for all but the best
+					    sumLogForNucs,
+					    likeBaseNoindel,
+					    infoPPos,
+					    i );
+	 if(singleCont){//if single contaminant, call the contaminant
+
+	     callBestNucleotideGivenLikelihood( bestNucC,
+						sumLogLikeAllC,        // sum of all the logs
+						sumLogLikeOnlyBestC,   // sum of the logs for the best
+						sumLogLikeAllButBestC, // sum of the logs for all but the best
+						sumLogForNucsC,
+						likeBaseNoindelC,
+						infoPPos,
+						i );
+
+	     if(i==146){
+		 for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+		     cout<<dnaAlphabet[nuc]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
+		     //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
+		 }
+		 
+
 	     }
+
 	 }
-
-	 vector<int> bestNucs;
-
-	 for(unsigned int nuc=0;nuc<4;nuc++){
-	     if(likeBaseNoindel[nuc] == bestLike){
-		 bestNucs.push_back(nuc);
-	     }
-	 }
-	 
-	 if(bestNucs.size() > 1){ // multiple equally likely nuc, use coverage to call best one
-	     // cerr<<"size "<<bestNucs.size()<<endl;
-	     // return 1;
-	     int bestCov=-1;
-	     int bestCovN=bestNucs[0];
-	     
-	     for(unsigned int bc=0;bc<bestNucs.size();bc++){
-		 if(infoPPos[i].covPerBase[ bestNucs[bc] ] > bestCov){
-		     bestCov  =infoPPos[i].covPerBase[ bestNucs[bc] ];
-		     bestCovN =                        bestNucs[bc];		     
-		 }
-	     }
-	     
-	     bestNuc = bestCovN;
-	 }
-	 //end
-	 
-
-	 for(int nuc=0;nuc<4;nuc++){
-	     // cout<<(i+1)<<"\tnuc\t"<<dnaAlphabet[nuc]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<infoPPos[i].likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<pow(10.0,infoPPos[i].likeBaseNoindel[nuc])<<endl;
-	     
-	     for(int nuc2=0;nuc2<4;nuc2++){
-		 if(nuc!=nuc2){
-		     if(sumLogForNucsB[nuc]){
-			 sumLogForNucs[nuc]         = likeBaseNoindel[nuc2]; 
-			 sumLogForNucsB[nuc]        = false; //has been initialized
-		     }else{
-			 sumLogForNucs[nuc]         = oplus(sumLogForNucs[nuc], likeBaseNoindel[nuc2]); //oplus(x,y)= log10( pow(10,x)+pow(10,y) )
-		     }
-		 }
-	     }
-
-	     if(sumLogLikeAllB){
-		 sumLogLikeAll              =  likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
-		 sumLogLikeAllB             =  false;
-	     }else{
-		 sumLogLikeAll              =  oplus(sumLogLikeAll,        likeBaseNoindel[nuc]);  //oplus(x,y)= log10( pow(10,x)+pow(10,y) )
-	     }
-
-	     if(nuc==bestNuc){
-
-		 if(sumLogLikeOnlyBestB){
-		     sumLogLikeOnlyBest     = likeBaseNoindel[nuc];
-		     sumLogLikeOnlyBestB    = false;
-		 }else{
-		     sumLogLikeOnlyBest     = oplus(sumLogLikeOnlyBest,likeBaseNoindel[nuc]);
-		 }
-
-	     }else{
-		 //sumLogLikeAllButBest   = oplus(sumLogLikeAllButBest, likeBaseNoindel[nuc]);
-		 if(sumLogLikeAllButBestB){
-		     sumLogLikeAllButBest   = likeBaseNoindel[nuc];
-		     sumLogLikeAllButBestB  = false;		     
-		 }else{
-		     sumLogLikeAllButBest   = oplus(sumLogLikeAllButBest, likeBaseNoindel[nuc]);
-		 }
-	     }		 	    
-	 }//end for nuc
-	 	 
 
 	 if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
 	     genomeToPrint+=dnaAlphabet[bestNuc];
@@ -442,9 +571,23 @@ void  printLogAndGenome(const int sizeGenome,
 	     genomeToPrint+="N";
 	 }
 
+	 if(singleCont){//if single contaminant, call the contaminant
+
+	     if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
+		 genomeToPrintC+=dnaAlphabet[bestNucC];
+	     }else{
+		 genomeToPrintC+="N";
+	     }
+
+	 }
 	 
 	 
 	 logToPrint<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
+
+	 if(singleCont){//if single contaminant, call the contaminant
+	     logToPrintC<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
+	 }
+
 
 	 PHREDgeno toadd;
 
@@ -455,6 +598,14 @@ void  printLogAndGenome(const int sizeGenome,
 	 }
 	 logToPrint<<endl;
 
+	 if(singleCont){//if single contaminant, call the contaminant
+	     for(int nuc=0;nuc<4;nuc++){
+		 logToPrintC<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		 toadd.phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		 toadd.perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
+	     }
+	     logToPrintC<<endl;
+	 }
 	 toadd.ref       = genomeRef[i];
 	 toadd.consensus = dnaAlphabet[bestNuc];
 
@@ -462,6 +613,8 @@ void  printLogAndGenome(const int sizeGenome,
 	 // cout<<(i+1)<<"\t"<<toadd.ref<<"\t"<<toadd.consensus<<endl;
 
 
+
+	 //Insertions in the sample
 	 if(infoPPos[i].insertionRight.size() != 0){
 
 	     map<string,int> insert2count;
@@ -485,6 +638,8 @@ void  printLogAndGenome(const int sizeGenome,
 
 
 	     //if half of the reads support an insertions in reads (deletions in reference) 
+	     //TODO add contamination and endogenous split
+	     //add probability of correctness "Evaluation of genomic high-throughput sequencing data generated on Illumina HiSeq and Genome Analyzer systems" Minoche
 	     if( (double(mostCommonInsCount)/double(infoPPos[i].cov)) >= 0.5){
 		 //outSeqFP<<mostCommonIns;
 		 //return 1;
@@ -513,12 +668,33 @@ void  printLogAndGenome(const int sizeGenome,
 	 if(i!=0 && (i%80 == 0))
 	     genomeToPrintCopy+="\n";
      }
-     outSeqFP<<nameMT+"\n"+genomeToPrintCopy+"\n";
-     
 
+     string genomeToPrintCopyC="";
+     for(unsigned int i=1;i<(genomeToPrintC.size()+1);i++){
+	 genomeToPrintCopyC+=genomeToPrintC[i-1];
+	 if(i!=0 && (i%80 == 0))
+	     genomeToPrintCopyC+="\n";
+     }
+
+
+
+     outSeqFP<<nameMT+"\n"+genomeToPrintCopy+"\n";
      outSeqFP.close() ;
+
+     if(outSeqCflag)
+     if(singleCont){//if single contaminant need to marginalized over each contaminant
+	 outSeqFPC<<nameMTC+"\n"+genomeToPrintCopyC+"\n";
+	 outSeqFPC.close() ;
+     }
+
      outLogFP<<logToPrint.str()<<endl;
      outLogFP.close();
+
+     if(outLogCflag)
+     if(singleCont){//if single contaminant need to marginalized over each contaminant
+	 outLogFPC<<logToPrintC.str()<<endl;
+	 outLogFPC.close();
+     }
 }
 
 
@@ -778,9 +954,11 @@ class MyPileupVisitor : public PileupVisitor {
 			    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc] += log(probFinal)/log(10);
 
 #ifdef DEBUG3		    
-			    if(posVector== 100){
-				cout<<"b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) <<endl;
-				cout<<"p(match)= "<<likeMatchProb[int(q)]  <<"\t"
+			    if(posVector== 146){
+				cout<<posAlign<<"\t"<<"b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
+				    <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
+				    <<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc])<<"\t"
+				    <<"p(match)= "<<likeMatchProb[int(q)]  <<"\t"
 				    <<"p(sub|matche)= "<< (probSubMatchToUseEndo->s[dinucIndexe] ) <<"\t"
 				    <<"p(sub|matchc)= "<< (probSubMatchToUseCont->s[dinucIndexc] ) <<"\t"
 				    <<"p(match)*p(sub|matche) "<< (likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndexe] )) <<"\t"
@@ -789,19 +967,21 @@ class MyPileupVisitor : public PileupVisitor {
 				    <<"p(sub|mismatche)= "<<(illuminaErrorsProb.s[dinucIndexe])<<"\t"
 				    <<"p(sub|mismatchc)= "<<(illuminaErrorsProb.s[dinucIndexc])<<"\t"
 				    <<"p(mismatch)*p(sub|mismatche) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexe]) )<<"\t"
-				    <<"p(mismatch)*p(sub|mismatchc) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexc]) )
-				    <<endl;
-				cout<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<endl;
-				
-				cout<<posAlign<<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc])<<endl;
-				cout<<"-----------------"<<endl;
+				    <<"p(mismatch)*p(sub|mismatchc) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexc]) )<<endl;
+				//cout<<"-----------------"<<endl;
 			    }
 #endif
 
 
-			}
+			}//end for each contaminant
 
-		    }
+		    }//end for each endo
+
+#ifdef DEBUG3
+	if(posVector== 146){
+	    cout<<"-----------------"<<endl;
+	}	    
+#endif
 
 		}else{		    
 
@@ -856,8 +1036,7 @@ class MyPileupVisitor : public PileupVisitor {
 			    <<"p(mismatch)="<<(1.0 - likeMatchProb[int(q)]) <<"\t"
 			    <<"p(sub|mismatch)="<<(illuminaErrorsProb.s[dinucIndex])<<"\t"
 			    <<"p(mismatch)*p(sub|mismatch)"<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndex]) )
-			    <<endl;
-			cout<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<endl;
+			    <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<endl;
 #endif
 
 
@@ -1119,6 +1298,14 @@ int main (int argc, char *argv[]) {
     string outLog  = "/dev/stderr";
     string nameMT  = "MT";
 
+    string outSeqC  = "";
+    string outLogC  = "";
+    bool   outSeqCflag  = false;
+    bool   outLogCflag  = false;
+
+
+    string nameMTC  = "MTc";
+
   
     int minQual=0;
     bool ignoreMQ=false;
@@ -1172,7 +1359,15 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-deam3p [.prof file]" +"\t\t"+"3p deamination frequency (default: "+deam3pfreq+")"+"\n"+
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
 			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
+
 			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n"+
+
+			      "\t\tIf the -single option is used, the following are available:\n"+
+			      "\t\t\t"+"-seqc  [fasta file]" +"\t\t"+"Output contaminant as fasta file (default: none)"+"\n"+
+			      "\t\t\t"+"-logc  [log file]" +"\t\t"+"Output contaminant as log  (default: none)"+"\n"+
+			      "\t\t\t"+"-namec [name]" +"\t\t\t"  +"Name of contaminant sequence (default "+nameMTC+") "+"\n"+
+
+
 
 
 			      "\n\tLength options:\n"+				      
@@ -1300,14 +1495,35 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-qual") == 0 ){
-	    minQual=destringify<int>(argv[i+1]);
+	if(strcmp(argv[i],"-name") == 0 ){
+	    nameMT=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-name") == 0 ){
-	    nameMT=string(argv[i+1]);
+
+	if(strcmp(argv[i],"-seqc") == 0 ){
+	    outSeqC=string(argv[i+1]);
+	    outSeqCflag = true;
+	    i++;
+	    continue;
+	}
+
+	if(strcmp(argv[i],"-logc") == 0 ){
+	    outLogC=string(argv[i+1]);
+	    outLogCflag = true;
+	    i++;
+	    continue;
+	}
+
+	if(strcmp(argv[i],"-namec") == 0 ){
+	    nameMTC=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(strcmp(argv[i],"-qual") == 0 ){
+	    minQual=destringify<int>(argv[i+1]);
 	    i++;
 	    continue;
 	}
@@ -1550,7 +1766,20 @@ int main (int argc, char *argv[]) {
 
 
     //printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
-    printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog, genomeRef,minQual,nameMT,singleCont);
+    printLogAndGenome(sizeGenome, 
+		      infoPPos,
+		      outSeq,
+		      outLog, 
+		      genomeRef,
+		      minQual,
+		      nameMT,
+		      singleCont,
+		      outSeqC,
+		      outLogC,
+		      outSeqCflag,
+		      outLogCflag,
+ 
+		      nameMTC);
 
     // delete coverageCounter;
 
@@ -1823,7 +2052,12 @@ int main (int argc, char *argv[]) {
 
 
 	//printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
-	printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog, genomeRef,minQual,nameMT,singleCont);
+	printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog, genomeRef,minQual,nameMT,singleCont,		      outSeqC,
+		      outLogC,
+		      outSeqCflag,
+		      outLogCflag,
+ 
+		      nameMTC);
 
     }
 
