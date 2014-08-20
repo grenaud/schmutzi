@@ -51,16 +51,16 @@ typedef struct {
 
 //frequency of A,C,G,T
 typedef struct { 
-    double f[4];
+    long double f[4];
  } alleleFrequency;
 
 
 //To store consensus information
 typedef struct { 
-    double perror[4];
-    double phred[4];
-    double perrorC[4];
-    double phredC[4];
+    long double perror[4];
+    long double phred[4];
+    long double perrorC[4];
+    long double phredC[4];
 
     char ref;
     char consensus;
@@ -79,15 +79,15 @@ typedef struct {
 //To store contamination likelihood
 typedef struct { 
     string filename;    
-    double contaminationRate;
-    double logLike;
-    //    double logLike;
+    long double contaminationRate;
+    long double logLike;
+    //    long double logLike;
 } contaminationEstimate;
 
 
 typedef struct { 
     vector<singleRead> readsVec;
-    double mapqAvg;
+    long double mapqAvg;
     int cov;
     char refBase;
     int posAlign;
@@ -96,11 +96,11 @@ typedef struct {
 
 
 typedef struct { 
-    double likeBaseNoindel[4];
-    double likeBaseNoindelCont[4][4];
+    long double likeBaseNoindel[4];
+    long double likeBaseNoindelCont[4][4];
 
     int  covPerBase[4];
-    double mapqAvg;
+    long double mapqAvg;
     
     int numDel;
     vector<string> insertionRight;
@@ -112,5 +112,21 @@ void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec
 void readIlluminaError(const string errFile,probSubstition & illuminaErrorsProb);
 void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome);
 void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2allelefreq);
+
+
+
+// Returns log10( pow(10,x)+pow(10,y) ), but does so without causing
+// overflow or loss of precision.
+template <typename T>
+inline T oplusInit(T x,T y ){
+    if( x == 0 ){ //no initialized, a log = 0 should not exist
+	return y;
+    }
+
+    return x > y 
+        ? x + log1p( pow( 10, y-x ) ) / log(10)
+        : y + log1p( pow( 10, x-y ) ) / log(10) ;
+}
+
 
 #endif
