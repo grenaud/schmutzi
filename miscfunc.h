@@ -63,7 +63,7 @@ typedef struct {
     long double phredC[4];
 
     char ref;
-    char consensus;
+    char consensus; //for the endogenous
  } PHREDgeno;
 
 //To store a single read
@@ -103,7 +103,19 @@ typedef struct {
     long double mapqAvg;
     
     int numDel;
+    long double llikDeletion;
+    long double llikNoDeletion;
+
+    long double llikDeletionBoth;
+    long double llikDeletionCont;
+    long double llikDeletionEndo;
+    long double llikDeletionNone;
+
+
     vector<string> insertionRight;
+    map<string,long double> insertion2loglike;
+    map<string,long double> insertion2loglikeCont;
+
     int cov;
 } singlePosInfo;
 

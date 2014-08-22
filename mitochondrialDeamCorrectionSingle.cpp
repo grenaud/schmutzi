@@ -9,14 +9,27 @@
 
 
 //TODO
-//- call the contamination
-//- call the indels according to contamination rate for both the contaminant and 
+//- call the indels according to contamination rate for both the contaminant and endo
+
 // #define DEBUG1
 // #define DEBUG2
 // #define DEBUG3
 
 
 // #include <boost/math/special_functions/beta.hpp>
+
+// CODE ORGANIZATION
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
 
 #include <api/BamConstants.h>
 #include <api/BamMultiReader.h>
@@ -40,8 +53,10 @@
 using namespace BamTools;
 using namespace std;
 
-#define MAXCOV 5000
-#define INDELPROB 1.0e-5
+#define MAXCOV    5000
+#define INDELERRORPROB 1.0e-5 // http://genomebiology.com/2011/12/11/R112
+#define LOGRATIOFORINDEL 50  //beyond that difference in log, a indel will be called
+#define MIN(a,b) (((a)<(b))?(a):(b))
 
 const long double PI  = atanl(1.0L)*4;   
 
@@ -113,7 +128,6 @@ map<int, PHREDgeno> pos2phredgeno;
 map<string, long double > read2endoProb; //map seq id to probability that the read is endogenous using a deamination model
 long double read2endoProbInit=false;
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
 
 
 template <typename T>
@@ -219,7 +233,7 @@ inline bool skipAlign(const string & reconstructedReference,const BamAlignment  
 
 //This method calls the best nucleotide and 
 //
-inline void callBestNucleotideGivenLikelihood( int    & bestNuc,
+inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 					       long double & sumLogLikeAll,        // sum of all the logs
 					       long double & sumLogLikeOnlyBest,   // sum of the logs for the best
 					       long double & sumLogLikeAllButBest, // sum of the logs for all but the best
@@ -351,8 +365,440 @@ inline void callBestNucleotideGivenLikelihood( int    & bestNuc,
 
 
 
+void deletionInSample(const int i,
+		      const string & genomeRef,
+		      const vector<singlePosInfo> & infoPPos,
+		      const bool singleCont,
+		      stringstream * logToPrint,
+		      stringstream * logToPrintC,
+		      bool & skipEndo,
+		      bool & skipCont){
+    
+    if(  infoPPos[i].numDel >= 0){
+
+	// cout<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(long double)(infoPPos[i].numDel)/(long double)(infoPPos[i].cov)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+	// cout<<infoPPos[i].llikDeletion<<endl;
+	// cout<<infoPPos[i].llikNoDeletion<<endl;
+
+	// // cout<<infoPPos[i].llikDeletionCont<<endl;
+	// // cout<<infoPPos[i].llikNoDeletionCont<<endl;
+	// cout<<"llik\t"<<infoPPos[i].llikDeletionBoth<<"\t"<<infoPPos[i].llikDeletionEndo<<"\t"<<infoPPos[i].llikDeletionCont<<"\t"<<infoPPos[i].llikDeletionNone<<endl;
+	    
+
+	if(singleCont){
+	    long double logLikeDel[] = { infoPPos[i].llikDeletionBoth,infoPPos[i].llikDeletionEndo,infoPPos[i].llikDeletionCont,infoPPos[i].llikDeletionNone };
+	    
+	    pair<long double,long double> maxAndSecondMax = firstAndSecondHighestArray( logLikeDel,4 );
+
+	    long double sumLogLikeAll=0.0;
+	    for(int n=0;n<4;n++){
+		sumLogLikeAll =  oplusInit(sumLogLikeAll,logLikeDel[n]);
+	    }
+
+	    // cout<<maxAndSecondMax.first<<"\t"<<maxAndSecondMax.second<<endl;
+
+	    // if(i==513){
+	    // 	cout<<"POSllik\t"<<infoPPos[i].llikDeletionBoth<<"\t"<<infoPPos[i].llikDeletionEndo<<"\t"<<infoPPos[i].llikDeletionCont<<"\t"<<infoPPos[i].llikDeletionNone<<endl;
+	    // }
+
+	    //both the contaminant and endegenous have a deletion wrt the reference, no need to call any base
+	    if( (infoPPos[i].llikDeletionBoth == maxAndSecondMax.first) &&
+		((infoPPos[i].llikDeletionBoth - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
+	
+		// cout<<"both"<<endl;
+		long double sumLogLikeCase=0.0;
+		for(int n=0;n<4;n++){
+		    if(n!=0)
+			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
+		}
+
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		
+		PHREDgeno toadd;
+		
+		toadd.ref       = genomeRef[i];
+		toadd.consensus = 'D';
+		
+		pos2phredgeno[   (i+1)   ] = toadd;
+		
+		//continue;
+		skipEndo=true;
+		skipCont=true;
+	    }
+	    
+
+	    //deletion only in the endogenous, need to call the base for the contaminant
+	    if( (infoPPos[i].llikDeletionEndo == maxAndSecondMax.first) &&
+		((infoPPos[i].llikDeletionEndo - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
+
+		// cout<<"endo"<<endl;
+
+		long double sumLogLikeCase=0.0;
+		for(int n=0;n<4;n++){
+		    if(n!=1)
+			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
+		}
+
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		//(*logToPrintD)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		
+		PHREDgeno toadd;
+		
+		toadd.ref       = genomeRef[i];
+		toadd.consensus = 'D';
+		
+		pos2phredgeno[   (i+1)   ] = toadd;
+		
+		//continue;
+		skipEndo=true;
+		skipCont=false;
+	    }
 
 
+
+	    //deletion only in the contaminant, need to call the base for the endogenous
+	    if( (infoPPos[i].llikDeletionCont == maxAndSecondMax.first) &&
+		((infoPPos[i].llikDeletionCont - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
+		// cout<<"cont"<<endl;
+
+		long double sumLogLikeCase=0.0;
+		for(int n=0;n<4;n++){
+		    if(n!=2)
+			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
+		}
+
+		//(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		
+		// PHREDgeno toadd;
+		
+		// toadd.ref       = genomeRef[i];
+		// toadd.consensus = 'D';
+		
+		// pos2phredgeno[   (i+1)   ] = toadd;
+
+		//continue;
+		skipEndo=false;
+		skipCont=true;
+	    }
+
+
+
+
+
+	}else{
+	
+	    // double llikDel  =0;
+	    // double llikNoDel=0;
+		
+	    if( infoPPos[i].llikDeletion - infoPPos[i].llikNoDeletion > LOGRATIOFORINDEL){
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<-10.0*( (infoPPos[i].llikNoDeletion - oplus(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+		PHREDgeno toadd;
+		
+		toadd.ref       = genomeRef[i];
+		toadd.consensus = 'D';
+		
+		pos2phredgeno[   (i+1)   ] = toadd;
+		
+		//continue;
+		skipEndo=true;
+		skipCont=true;
+
+	    }
+	}
+	//TODO add contamination detection
+	     
+    }
+
+}
+
+
+void noCoverage(const int i,
+		const string & genomeRef,
+		const vector<singlePosInfo> & infoPPos,
+		const bool outLogCflag,
+		string & genomeToPrint,
+		string & genomeToPrintC,
+		stringstream * logToPrint,
+		stringstream * logToPrintC,
+		bool & skipEndo,
+		bool & skipCont){
+
+
+    if(infoPPos[i].cov == 0){
+	genomeToPrint+="N";
+	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
+	if(outLogCflag){
+	    genomeToPrintC+="N";
+	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;	    
+	}
+	
+	skipEndo=true;
+	skipCont=true;	
+    }
+
+}
+
+
+void callSingleNucleotide(const int i,
+			  const string & genomeRef,
+			  const vector<singlePosInfo> & infoPPos,
+			  const bool singleCont,
+			  const int minQual,			  
+			  string & genomeToPrint,
+			  string & genomeToPrintC,
+			  stringstream * logToPrint,
+			  stringstream * logToPrintC,
+			  bool & skipEndo,
+			  bool & skipCont){
+    
+    int    bestNuc=-1;
+    int    bestNucC=-1;
+
+    long double sumLogLikeAll           = 0.0; // sum of all the logs
+    long double sumLogLikeOnlyBest      = 0.0; // sum of the logs for the best
+    long double sumLogLikeAllButBest    = 0.0; // sum of the logs for all but the best
+    long double sumLogLikeAllC          = 0.0; // sum of all the logs
+    long double sumLogLikeOnlyBestC     = 0.0; // sum of the logs for the best
+    long double sumLogLikeAllButBestC   = 0.0; // sum of the logs for all but the best
+
+    // bool sumLogLikeAllB           = true;
+    // bool sumLogLikeOnlyBestB      = true;
+    // bool sumLogLikeAllButBestB    = true;
+	 
+    // int nuc=0;
+    // sumLogLikeAll              =  infoPPos[i].likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
+    // if(nuc==bestNuc)
+    //     sumLogLikeOnlyBest     =  infoPPos[i].likeBaseNoindel[nuc];
+    // else
+    //     sumLogLikeAllButBest   =  infoPPos[i].likeBaseNoindel[nuc];
+
+    long double sumLogForNucs[4];  //sum of the logs for all but the nucleotide itself
+    long double sumLogForNucsC[4]; //sum of the logs for all but the nucleotide itself
+
+    long double likeBaseNoindel[4];  //log likelihood for each possible endogenous base
+    long double likeBaseNoindelC[4]; //log likelihood for each possible endogenous base
+
+
+    for(unsigned int nuc=0;nuc<4;nuc++){ 
+	sumLogForNucs[nuc]     = 0.0;
+	sumLogForNucsC[nuc]  = 0.0;
+		  
+	likeBaseNoindel[nuc]  = 0.0;
+	likeBaseNoindelC[nuc] = 0.0;
+    }
+
+
+
+    if(singleCont){//if single contaminant need to marginalized over each contaminant
+	     
+	//Calling the endogenous base
+	for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
+
+		 
+	    likeBaseNoindel[nuce]      = 0.0;
+
+		 
+	    for(unsigned int  nucc=0;nucc<4;nucc++){ //marginalize over each possible contaminant base A,C,G,T
+		     		     
+		//likeBaseNoindel[nuce]  +=  pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
+		likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce],
+						    infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
+		// if(i==146)
+		// 	 cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
+	    }
+	    // if(i==146)
+	    //     cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<likeBaseNoindel[nuce]<<endl;
+
+	    //likeBaseNoindel[nuce] = log(likeBaseNoindel[nuce])/log(10);
+	}
+
+	//Calling the contaminant base
+	for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
+		 
+	    likeBaseNoindelC[nucc]      = 0.0;
+
+	    for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base C,G,T
+		     
+		//likeBaseNoindelC[nucc]  += pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
+		likeBaseNoindelC[nucc]  = oplusInit(likeBaseNoindelC[nucc], infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
+		     
+		// if(i==146)
+		// 	 cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindelC[nucc]<<endl;
+	    }
+	    // if(i==146)
+	    //     cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nucc]<<"\t"<<likeBaseNoindelC[nucc]<<endl;
+	    //likeBaseNoindelC[nucc] = log ( likeBaseNoindelC[nucc] )/log(10);
+	}	     
+
+
+	     
+	     
+
+    }else{
+
+	for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+	    likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
+	}
+
+    }
+
+
+    //Begin determining best endogenous nucleotide
+
+    callBestNucleotideGivenLikelihood( bestNuc,
+				       sumLogLikeAll,          // sum of all the logs
+				       sumLogLikeOnlyBest,     // sum of the logs for the best
+				       sumLogLikeAllButBest,   // sum of the logs for all but the best
+				       sumLogForNucs,
+				       likeBaseNoindel,
+				       infoPPos,
+				       i );
+
+    // if(i==146){
+    //     for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+    // 	 cout<<"E\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
+    // 	 //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
+    //     }		
+    // }
+
+    if(singleCont){//if single contaminant, call the contaminant
+
+	callBestNucleotideGivenLikelihood( bestNucC,
+					   sumLogLikeAllC,        // sum of all the logs
+					   sumLogLikeOnlyBestC,   // sum of the logs for the best
+					   sumLogLikeAllButBestC, // sum of the logs for all but the best
+					   sumLogForNucsC,
+					   likeBaseNoindelC,
+					   infoPPos,
+					   i );
+
+	// if(i==146){
+	// 	 for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+	// 	     cout<<"C\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNucC]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
+	// 	     //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[PHREDgeno];
+	// 	 }		
+	// }
+
+    }
+
+    // if(i==513){
+    // 	cout<<"REF1 "<<pos2phredgeno[   (i+1)   ].ref<<"\t"<<pos2phredgeno[   (i+1)   ].consensus<<endl;
+    // }
+
+
+
+    
+    if(!skipEndo  && !skipCont){  //need to define both
+
+	PHREDgeno toadd;
+
+	if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
+	    genomeToPrint+=dnaAlphabet[bestNuc];
+	}else{
+	    genomeToPrint+="N";
+	}
+
+	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
+
+
+	for(int nuc=0;nuc<4;nuc++){
+	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
+	}
+	(*logToPrint)<<endl;
+	toadd.ref       = genomeRef[i];
+	toadd.consensus = dnaAlphabet[bestNuc];
+
+
+
+	if(singleCont){//if single contaminant, call the contaminant
+		
+	    if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
+		genomeToPrintC+=dnaAlphabet[bestNucC];
+	    }else{
+		genomeToPrintC+="N";
+	    }
+
+	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
+	 
+	    for(int nuc=0;nuc<4;nuc++){
+		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		toadd.phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		toadd.perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
+	    }
+	    (*logToPrintC)<<endl;
+	}
+	
+	pos2phredgeno[   (i+1)   ] = toadd;
+
+    }
+
+    
+    if(skipEndo  && !skipCont){  //need not to define contamination
+
+	if(singleCont){//if single contaminant, call the contaminant
+		
+	    if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
+		genomeToPrintC+=dnaAlphabet[bestNucC];
+	    }else{
+		genomeToPrintC+="N";
+	    }
+
+	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
+	 
+	    for(int nuc=0;nuc<4;nuc++){
+		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		pos2phredgeno[   (i+1)   ].phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		pos2phredgeno[   (i+1)   ].perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
+	    }
+	    (*logToPrintC)<<endl;
+	}
+
+    }
+
+    
+    if(!skipEndo  && skipCont){  //need not to define endogenous
+	
+	PHREDgeno toadd;
+
+	if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
+	    genomeToPrint+=dnaAlphabet[bestNuc];
+	}else{
+	    genomeToPrint+="N";
+	}
+
+	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
+
+
+	for(int nuc=0;nuc<4;nuc++){
+	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
+	}
+	(*logToPrint)<<endl;
+	toadd.ref       = genomeRef[i];
+	toadd.consensus = dnaAlphabet[bestNuc];
+
+	pos2phredgeno[   (i+1)   ] = toadd;
+
+    }
+
+
+
+    // if(i==513){
+    // 	cout<<"REF2 "<<pos2phredgeno[   (i+1)   ].ref<<"\t"<<pos2phredgeno[   (i+1)   ].consensus<<endl;
+    // }
+
+
+
+    // cout<<(i+1)<<"\t"<<toadd.ref<<"\t"<<toadd.consensus<<endl;
+
+}
+				
 void  printLogAndGenome(const int sizeGenome,
 			const vector<singlePosInfo> & infoPPos,
 			const string outSeq,
@@ -423,224 +869,83 @@ void  printLogAndGenome(const int sizeGenome,
 
     //genomeRef
     for(int i=0;i<sizeGenome;i++){
+	bool skipEndo=false;
+	bool skipCont=false;
+
+	//There are 4 possibilities:
+	//1) There is a deletion in the sample (or insertion in the reference)
+	//2) There is no coverage
+	//3) There are no bases
+	//4) There is a insertion in the sample (or deletion in the reference)
+
+	
 
 
+	 /////////////////////////////////////////
+	 //                                     //
+	 //        Deletion in the sample       //
+	 //                                     //
+	 /////////////////////////////////////////
+	deletionInSample(i,
+			 genomeRef,
+			 infoPPos,
+			 singleCont,
+			 &logToPrint,
+			 &logToPrintC,
+			 skipEndo,
+			 skipCont);
+	    
+	if(skipCont && skipEndo)
+	    continue;
 
+	/////////////////////////////////////////
+	//                                     //
+	//            No coverage              //
+	//                                     //
+	/////////////////////////////////////////
 
-
-	 //if half of the reads support an deletion in reads (ins in reference) 
-	 //move to next position since deletion
-	if( ( (long double)(infoPPos[i].numDel)/(long double)(infoPPos[i].cov)) >= 0.5){
-	     //min quality ? based on what ?
-
-	    logToPrint<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<-10.0*(log(1.0-((long double)(infoPPos[i].numDel)/(long double)(infoPPos[i].cov)))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-	     PHREDgeno toadd;
-
-	     toadd.ref       = genomeRef[i];
-	     toadd.consensus = 'D';
-	     
-	     pos2phredgeno[   (i+1)   ] = toadd;
-
-	     continue;
-
-	     //TODO add contamination detection
-	     
-	 }
-
-
-	 //no coverage
-	 if(infoPPos[i].cov == 0){
-	     genomeToPrint+="N";
-	     logToPrint<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
-	     if(outLogCflag){
-		 logToPrintC<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
-	     
-	     }
-	     continue;
-	 }
-	     
-
-	 int    bestNuc=-1;
-	 int    bestNucC=-1;
-
-	 long double sumLogLikeAll           = 0.0; // sum of all the logs
-	 long double sumLogLikeOnlyBest      = 0.0; // sum of the logs for the best
-	 long double sumLogLikeAllButBest    = 0.0; // sum of the logs for all but the best
-	 long double sumLogLikeAllC          = 0.0; // sum of all the logs
-	 long double sumLogLikeOnlyBestC     = 0.0; // sum of the logs for the best
-	 long double sumLogLikeAllButBestC   = 0.0; // sum of the logs for all but the best
-
-	 // bool sumLogLikeAllB           = true;
-	 // bool sumLogLikeOnlyBestB      = true;
-	 // bool sumLogLikeAllButBestB    = true;
-	 
-	 // int nuc=0;
-	 // sumLogLikeAll              =  infoPPos[i].likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
-	 // if(nuc==bestNuc)
-	 //     sumLogLikeOnlyBest     =  infoPPos[i].likeBaseNoindel[nuc];
-	 // else
-	 //     sumLogLikeAllButBest   =  infoPPos[i].likeBaseNoindel[nuc];
-
-	 long double sumLogForNucs[4];  //sum of the logs for all but the nucleotide itself
-	 long double sumLogForNucsC[4]; //sum of the logs for all but the nucleotide itself
-
-	 long double likeBaseNoindel[4];  //log likelihood for each possible endogenous base
-	 long double likeBaseNoindelC[4]; //log likelihood for each possible endogenous base
-
-
-	 for(unsigned int nuc=0;nuc<4;nuc++){ 
-	      sumLogForNucs[nuc]     = 0.0;
-	      sumLogForNucsC[nuc]  = 0.0;
-		  
-	      likeBaseNoindel[nuc]  = 0.0;
-	      likeBaseNoindelC[nuc] = 0.0;
-	 }
-
-
-
-	 if(singleCont){//if single contaminant need to marginalized over each contaminant
-	     
-	     //Calling the endogenous base
-	     for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
-
-		 
-		 likeBaseNoindel[nuce]      = 0.0;
-
-		 
-		 for(unsigned int  nucc=0;nucc<4;nucc++){ //marginalize over each possible contaminant base A,C,G,T
-		     		     
-		     //likeBaseNoindel[nuce]  +=  pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
-		     likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce],
-							 infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		     // if(i==146)
-		     // 	 cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
-		 }
-		 // if(i==146)
-		 //     cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<likeBaseNoindel[nuce]<<endl;
-
-		 //likeBaseNoindel[nuce] = log(likeBaseNoindel[nuce])/log(10);
-	     }
-
-	     //Calling the contaminant base
-	     for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
-		 
-		 likeBaseNoindelC[nucc]      = 0.0;
-
-		 for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base C,G,T
-		     
-		     //likeBaseNoindelC[nucc]  += pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
-		     likeBaseNoindelC[nucc]  = oplusInit(likeBaseNoindelC[nucc], infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		     
-		     // if(i==146)
-		     // 	 cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindelC[nucc]<<endl;
-		 }
-		 // if(i==146)
-		 //     cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nucc]<<"\t"<<likeBaseNoindelC[nucc]<<endl;
-		 //likeBaseNoindelC[nucc] = log ( likeBaseNoindelC[nucc] )/log(10);
-	     }	     
-
-
-	     
+	noCoverage(i,
+		   genomeRef,
+		   infoPPos,
+		   outLogCflag,	
+		   genomeToPrint,
+		   genomeToPrintC,
+		   &logToPrint,
+		   &logToPrintC,
+		   skipEndo,
+		   skipCont);
+	if(skipCont && skipEndo)
+	    continue;
 	     
 
-	 }else{
+	 /////////////////////////////////////////
+	 //                                     //
+	 //      Calling single nucleotides     //
+	 //                                     //
+	 /////////////////////////////////////////
 
-	     for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-		 likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
-	     }
-
-	 }
-
-
-	 //Begin determining best endogenous nucleotide
-
-	 callBestNucleotideGivenLikelihood( bestNuc,
-					    sumLogLikeAll,          // sum of all the logs
-					    sumLogLikeOnlyBest,     // sum of the logs for the best
-					    sumLogLikeAllButBest,   // sum of the logs for all but the best
-					    sumLogForNucs,
-					    likeBaseNoindel,
-					    infoPPos,
-					    i );
-
-	 // if(i==146){
-	 //     for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-	 // 	 cout<<"E\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
-	 // 	 //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
-	 //     }		
-	 // }
-
-	 if(singleCont){//if single contaminant, call the contaminant
-
-	     callBestNucleotideGivenLikelihood( bestNucC,
-						sumLogLikeAllC,        // sum of all the logs
-						sumLogLikeOnlyBestC,   // sum of the logs for the best
-						sumLogLikeAllButBestC, // sum of the logs for all but the best
-						sumLogForNucsC,
-						likeBaseNoindelC,
-						infoPPos,
-						i );
-
-	     // if(i==146){
-	     // 	 for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-	     // 	     cout<<"C\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNucC]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
-	     // 	     //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
-	     // 	 }		
-	     // }
-
-	 }
-
-	 if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
-	     genomeToPrint+=dnaAlphabet[bestNuc];
-	 }else{
-	     genomeToPrint+="N";
-	 }
-
-	 if(singleCont){//if single contaminant, call the contaminant
-
-	     if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
-		 genomeToPrintC+=dnaAlphabet[bestNucC];
-	     }else{
-		 genomeToPrintC+="N";
-	     }
-
-	 }
-	 
-	 
-	 logToPrint<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
-
-	 if(singleCont){//if single contaminant, call the contaminant
-	     logToPrintC<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
-	 }
-
-
-	 PHREDgeno toadd;
-
-	 for(int nuc=0;nuc<4;nuc++){
-	     logToPrint<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	     toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	     toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
-	 }
-	 logToPrint<<endl;
-
-	 if(singleCont){//if single contaminant, call the contaminant
-	     for(int nuc=0;nuc<4;nuc++){
-		 logToPrintC<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		 toadd.phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		 toadd.perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
-	     }
-	     logToPrintC<<endl;
-	 }
-	 toadd.ref       = genomeRef[i];
-	 toadd.consensus = dnaAlphabet[bestNuc];
-
-	 pos2phredgeno[   (i+1)   ] = toadd;
-	 // cout<<(i+1)<<"\t"<<toadd.ref<<"\t"<<toadd.consensus<<endl;
+	callSingleNucleotide(i,
+			     genomeRef,
+			     infoPPos,
+			     singleCont,
+			     minQual,
+			     genomeToPrint,
+			     genomeToPrintC,
+			     &logToPrint,
+			     &logToPrintC,
+			     skipEndo,
+			     skipCont);
 
 
 
-	 //Insertions in the sample
+
+
+	 /////////////////////////////////////////
+	 //                                     //
+	 //      Insertions in the sample       //
+	 //                                     //
+	 /////////////////////////////////////////
+
 	 if(infoPPos[i].insertionRight.size() != 0){
 
 	     map<string,int> insert2count;
@@ -684,7 +989,8 @@ void  printLogAndGenome(const int sizeGenome,
 		 
 	     }
 
-	 }
+	 }//end insertions in the sample
+
     }//end for each position in the genome
 
 
@@ -804,29 +1110,144 @@ class MyPileupVisitor : public PileupVisitor {
 	    m_infoPPos->at(posVector).mapqAvg = m_infoPPos->at(posVector).mapqAvg/(long double)(m_infoPPos->at(posVector).cov);
 	    m_infoPPos->at(posVector).mapqAvg = -10.0*( log( m_infoPPos->at(posVector).mapqAvg )/log(10.0) );
 
+
+
+
+
+
+
+
 	    //insertion in the reads/deletion in the reference
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
+	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
+		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+		long double probEndogenous=1.0-contaminationPrior;
+		if(read2endoProbInit){ //include probability of endogenous		    
+		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+											    "#"+ 
+											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+		    
+		    
+		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
+		    }else{
+			probEndogenous = itRead2endoProb->second;
+		    }
+		}
+
+
+
 		if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
 		    pileupData.PileupAlignments[i].IsNextInsertion &&
-		    (pileupData.PileupAlignments[i].InsertionLength>0)){
+		    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
 		    string insert="";
 		    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
 			insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
 		    }
 		    //cout<<"ins "<<insert<<endl;
 		    m_infoPPos->at(posVector).insertionRight.push_back(insert);
+
+		    if(singleCont){
+			m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		    }else{
+			m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		    }
+
+		}else{
+		    //push none
+		    if(singleCont){
+			m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		    }else{
+			m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		    }
 		}
 	    }
 
 
+
+
+
 	    //deletion in the reads/insertion in the reference
 	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
+		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+		long double probEndogenous=1.0-contaminationPrior;
+		string rg;
+		pileupData.PileupAlignments[i].Alignment.GetTag("RG",rg);//REMOVE ME
+		if(read2endoProbInit){ //include probability of endogenous
+		    
+		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+											    "#"+ 
+											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+		    
+		    
+		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
+		    }else{
+			probEndogenous = itRead2endoProb->second;
+		    }
+		}
+
+		// if(posVector>=513 && posVector<=516){
+		//     cout<<"pos ="<<posVector<<"\t"<<rg<<endl;
+		// }
+		
 		if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
 		    pileupData.PileupAlignments[i].IsNextInsertion &&
-		    (pileupData.PileupAlignments[i].InsertionLength == 0)){
+		    (pileupData.PileupAlignments[i].InsertionLength == 0)){ //has deletion
 		    //continue;
 		    //cout<<"del"<<endl;
+		    
+		    // if(posVector>=513 && posVector<=516){
+		    // 	cout<<"pos ="<<posVector<<"\tdel\t"<<rg<<endl;
+		    // }
+
 		    m_infoPPos->at(posVector).numDel++;
+
+		    if(singleCont){
+			// m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+			// m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+			// m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right	
+			// m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong	
+
+			//there is a deletion in both, got it right 2x
+			m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+			//only in endo, right in endo, wrong in cont
+			m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+			//only in cont, wrong in endo, right in cont
+			m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+			//none have it, wrong in both
+			m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+
+		    }else{
+			m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+			m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+		    }
+		}else{ //does not have deletion
+
+		    // if(posVector>=513 && posVector<=516){
+		    // 	cout<<"pos ="<<posVector<<"\tnodel\t"<<rg<<endl;
+		    // }
+
+		    if(singleCont){
+			//there is a deletion in both, got it wrong 2x
+			m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+			//only in endo, wrong in endo, right in cont
+			m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+			//only in cont, right in endo, wrong in cont
+			m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+			//none have it, right in both
+			m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+
+			// m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
+			// m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
+			// m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
+			// m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
+
+		    }else{
+			m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+			m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+		    }
 		}
 	    }
 	    
@@ -908,12 +1329,12 @@ class MyPileupVisitor : public PileupVisitor {
 		if(read2endoProbInit){ //include probability of endogenous
 
 		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
-										       "#"+ 
-										       stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
-
+											    "#"+ 
+											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+		    
 
 		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
-			probEndogenous = 1.0-contaminationPrior;                         // assume that a read is equally to belong to either the endo or the contaminant
+			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
 		    }else{
 			probEndogenous = itRead2endoProb->second;
 		    }
@@ -1168,10 +1589,20 @@ void iterateOverReads(const string fastaFile,
     cerr<<"Reading genome file ..."<<endl;
      for(int i=0;i<sizeGenome;i++){
 	 singlePosInfo toadd;
-	 toadd.numDel         = 0;
+	 toadd.numDel              = 0;
 
-	 toadd.cov            = 0;
-	 toadd.mapqAvg        = 0.0;
+	 toadd.cov                 = 0;
+	 toadd.mapqAvg             = 0.0;
+
+	 toadd.llikDeletion        = 0.0;
+	 toadd.llikNoDeletion      = 0.0;
+	 // toadd.llikDeletionCont    = 0.0;
+	 // toadd.llikNoDeletionCont  = 0.0;
+
+	 toadd.llikDeletionBoth=0;
+	 toadd.llikDeletionCont=0;
+	 toadd.llikDeletionEndo=0;
+	 toadd.llikDeletionNone=0;
 
 	 for(unsigned int nuc=0;nuc<4;nuc++){
 	     toadd.likeBaseNoindel[nuc] = 0;
@@ -1250,6 +1681,244 @@ void iterateOverReads(const string fastaFile,
 
 
 
+}
+
+
+void computePriorOnReads(const string bamfiletopen,
+			 const bool deamread,
+			 const bool useLengthPrior,
+			 const long double contaminationPrior
+			 ){
+
+    //iterate over the reads once again and compute prob of deam
+	
+    cerr<<"Reading BAM to set priors for each read ..."<<endl;
+    BamReader reader;
+    BamAlignment al;
+    if ( !reader.Open(bamfiletopen) ) {
+	cerr << "Could not open input BAM files " <<bamfiletopen<< endl;
+	exit(1);
+    }
+    unsigned int skipped      =0;
+
+    while ( reader.GetNextAlignment(al) ) { //for each read
+	//cout<<al.Name<<endl;
+	//those reads are ignored later anyway..
+	if(!al.IsMapped()){   continue; }
+	if( al.IsFailedQC()){ continue; }
+
+	pair< string,vector<int> > reconstructedReference = reconstructRefWithPos(&al);
+	    
+	if( skipAlign(reconstructedReference.first,&al,&skipped) ){ 
+	    // cout<<al.QueryBases<<endl<<reconstructedReference.first<<endl<<endl;
+	    continue; 
+	}
+
+	if(al.QueryBases.size() != reconstructedReference.first.size()){
+	    cerr<<"Query bases line is not the same size as the reconstructed reference for read "<<al.Name<<endl;
+	    // return 1;
+	    exit(1);
+	}
+
+	if(al.QueryBases.size() != reconstructedReference.second.size()){
+	    cerr<<"Query bases line is not the same size as the reconstructed positions on the reference for read "<<al.Name<<endl;
+	    exit(1);
+	    // return 1;
+	}
+
+	// for(unsigned int i=0;i<reconstructedReference.first.size();i++){
+	// 	cout<<reconstructedReference.first[i]<<"\t"<<reconstructedReference.second[i]<<endl;
+	// }
+
+
+	long double deamLogLike=0.0;
+	long double nullLogLike=0.0;
+	if(deamread){
+	    for(unsigned int i=0;i<al.QueryBases.size();i++){//for each base
+		
+		char refeBase =toupper(reconstructedReference.first[i]);
+		char readBase =toupper(         al.QueryBases[i]);
+		char q        = al.Qualities[i]-offsetQual;
+
+
+		int pos       = reconstructedReference.second[i]+1;
+		// cout<<i<<"\t"<<reconstructedReference.second[i]<<endl;
+		transformRef(&refeBase,&readBase);
+
+		if(refeBase == 'I'   ){
+		    continue;
+		}
+
+		if(refeBase == 'N' ){
+		    continue;
+		}
+
+		if(readBase == 'N' ){
+		    continue;
+		}
+
+		if(pos2phredgeno[ pos ].consensus == 'D'){//skip deletions
+		    continue;
+		}
+
+
+
+		    
+		if(pos2phredgeno[ pos ].ref != refeBase){
+		    cerr<<"Query reference base is not the same for read "<<al.Name<<" pos "<<pos<<endl;
+
+		    cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
+		    for(unsigned int j=0;j<al.QueryBases.size();j++){
+			cout<<j<<"\t"<<reconstructedReference.first[j]<<"\t"<<reconstructedReference.second[j]<<endl;
+		    }
+
+		    //return 1;
+		    exit(1);
+		}
+		
+		//deam model
+		
+
+		
+		int dist5p=-1;
+		int dist3p=-1;
+
+		if( al.IsReverseStrand() ){
+		    dist5p = int(al.QueryBases.size()) - int(i)-1;
+		    dist3p = int(i);
+		}else{
+		    dist5p = int(i);
+		    dist3p = int(al.QueryBases.size()) - int(i)-1;
+		}
+		    		    
+		probSubstition * probSubMatchDeam = &defaultSubMatch ;
+		probSubstition * probSubMatchNull = &defaultSubMatch ;
+
+		if(dist5p <= (int(sub5p.size()) -1)){
+		    probSubMatchDeam = &sub5p[ dist5p ];			
+		}
+		    
+		if(dist3p <= (int(sub3p.size()) -1)){
+		    probSubMatchDeam = &sub3p[ dist3p ];
+		}
+		    
+		//we have substitution probabilities for both... take the closest
+		if(dist5p <= (sub5p.size() -1) &&
+		   dist3p <= (sub3p.size() -1) ){
+			
+		    if(dist5p < dist3p){
+			probSubMatchDeam = &sub5p[ dist5p ];			
+		    }else{
+			probSubMatchDeam = &sub3p[ dist3p ];
+		    }
+			
+		}
+
+
+		// cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<"\t"<<dist5p<<"\t"<<dist3p<<endl;
+		
+		// b   is the observed
+		// nuc is the model
+		
+		int obsReadInt;
+		if( al.IsReverseStrand() ){
+		    obsReadInt = baseResolved2int(complement(readBase));
+		}else{
+		    obsReadInt = baseResolved2int(readBase);
+		}
+
+		long double probBaseDeam = 0.0;
+		long double probBaseNull = 0.0;
+
+		for(unsigned int nuc=0;nuc<4;nuc++){
+
+
+		    int dinucIndex;
+		    if( al.IsReverseStrand() ){
+			dinucIndex= (3-nuc)*4+obsReadInt;
+		    }else{
+			dinucIndex=     nuc*4+obsReadInt;
+		    }
+		    probBaseDeam +=
+			(1-pos2phredgeno[ pos ].perror[nuc])
+			*
+			//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
+			(likeMatchProb[int(q)]  * (probSubMatchDeam->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]));
+
+
+		    probBaseNull +=
+			(1-pos2phredgeno[ pos ].perror[nuc])
+			*
+			//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
+			(likeMatchProb[int(q)]  * (probSubMatchNull->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex])); 
+
+			
+
+
+		}//end for each possible base
+
+		deamLogLike+=log(probBaseDeam);
+		nullLogLike+=log(probBaseNull);
+
+	
+		//m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
+		// double probFinal;
+		
+		// if(ignoreMQ){ //ignore MQ
+		//     probFinal = (               probBase                          );
+		// }else{
+		//     probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+		// }
+		    
+
+		//null model
+
+	    }//end for all bases
+	}else{//if we use deamination priors
+	    deamLogLike=0.5;
+	    nullLogLike=0.5;
+	}
+	    
+
+
+
+	long double probDeamUnscaled = 
+	    exp(deamLogLike)
+	    /
+	    (    exp(deamLogLike) + exp(nullLogLike) );
+	    
+	//probLengthEndo[max(al.QueryBases.size(),1000)];
+	long double probEndoProd;
+	long double probContProd;
+	long double probLengthEndoForRead;
+	    
+	if(useLengthPrior){
+	    probLengthEndoForRead = probLengthEndo[min(int(al.QueryBases.size()),999)];
+	}else{
+	    probLengthEndoForRead = 0.5;
+	}
+
+	//if(useLengthPrior){
+	probEndoProd   =      probDeamUnscaled  *      probLengthEndoForRead;
+	probContProd   = (1.0-probDeamUnscaled) * (1.0-probLengthEndoForRead);
+	// }else{
+	// 	probEndoProd   = 0.5;
+	// 	probContProd   = 0.5;
+
+	// }
+	long double probEndo         = 
+	    (1-contaminationPrior)*probEndoProd
+	    /
+	    (  ((1-contaminationPrior)*probEndoProd) + contaminationPrior*probContProd );
+
+	//long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
+	//cout<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
+
+
+
+	read2endoProb[ al.Name+"#"+ stringify(al.AlignmentFlag) ] = probEndo;
+
+    } //for each read
 }
 
 
@@ -1365,8 +2034,14 @@ int main (int argc, char *argv[]) {
     vector<substitutionRates>    deam5Psub;
     vector<substitutionRates>    deam3Psub;
     bool deamread=false;
+    bool useLengthPrior  = false;
     long double contaminationPrior=0.5;
     bool singleCont=false;
+    bool specifiedContPrior=false;
+    bool specifiedLoce   = false;
+    bool specifiedLocc   = false;
+    bool specifiedScalee = false;
+    bool specifiedScalec = false;
 
 
     const string usage=string("\nThis program takes an aligned BAM file for a mitonchondria and calls a\nconsensus for the endogenous material\n\n\t"+
@@ -1423,12 +2098,6 @@ int main (int argc, char *argv[]) {
 
     string bamfiletopen = string(argv[argc-1]);//bam file
     string fastaFile    = string(argv[argc-2]);//fasta file
-    bool specifiedContPrior=false;
-    bool specifiedLoce   = false;
-    bool specifiedLocc   = false;
-    bool specifiedScalee = false;
-    bool specifiedScalec = false;
-    bool useLengthPrior  = false;
 
     for(int i=1;i<(argc-2);i++){ //all but the last 3 args
 
@@ -1823,232 +2492,13 @@ int main (int argc, char *argv[]) {
 
 
     if(deamread || useLengthPrior){
-	//iterate over the reads once again and compute prob of deam
 	
-	cerr<<"Reading BAM to set priors for each read ..."<<endl;
-	BamReader reader;
-	BamAlignment al;
-	if ( !reader.Open(bamfiletopen) ) {
-	    cerr << "Could not open input BAM files " <<bamfiletopen<< endl;
-	    return 1;
-	}
-	unsigned int skipped      =0;
 
-	while ( reader.GetNextAlignment(al) ) { //for each read
-	    //cout<<al.Name<<endl;
-	    //those reads are ignored later anyway..
-	    if(!al.IsMapped()){   continue; }
-	    if( al.IsFailedQC()){ continue; }
+	computePriorOnReads(bamfiletopen,
+			    deamread,
+			    useLengthPrior,
+			    contaminationPrior);
 
-	    pair< string,vector<int> > reconstructedReference = reconstructRefWithPos(&al);
-	    
-	    if( skipAlign(reconstructedReference.first,&al,&skipped) ){ 
-		// cout<<al.QueryBases<<endl<<reconstructedReference.first<<endl<<endl;
-		continue; 
-	    }
-
-	    if(al.QueryBases.size() != reconstructedReference.first.size()){
-		cerr<<"Query bases line is not the same size as the reconstructed reference for read "<<al.Name<<endl;
-		return 1;
-	    }
-
-	    if(al.QueryBases.size() != reconstructedReference.second.size()){
-		cerr<<"Query bases line is not the same size as the reconstructed positions on the reference for read "<<al.Name<<endl;
-		return 1;
-	    }
-
-	    // for(unsigned int i=0;i<reconstructedReference.first.size();i++){
-	    // 	cout<<reconstructedReference.first[i]<<"\t"<<reconstructedReference.second[i]<<endl;
-	    // }
-
-
-	    long double deamLogLike=0.0;
-	    long double nullLogLike=0.0;
-	    if(deamread){
-		for(unsigned int i=0;i<al.QueryBases.size();i++){//for each base
-		
-		    char refeBase =toupper(reconstructedReference.first[i]);
-		    char readBase =toupper(         al.QueryBases[i]);
-		    char q        = al.Qualities[i]-offsetQual;
-
-
-		    int pos       = reconstructedReference.second[i]+1;
-		    // cout<<i<<"\t"<<reconstructedReference.second[i]<<endl;
-		    transformRef(&refeBase,&readBase);
-
-		    if(refeBase == 'I'   ){
-			continue;
-		    }
-
-		    if(refeBase == 'N' ){
-			continue;
-		    }
-
-		    if(readBase == 'N' ){
-			continue;
-		    }
-
-		    if(pos2phredgeno[ pos ].consensus == 'D'){//skip deletions
-			continue;
-		    }
-
-
-
-		    
-		    if(pos2phredgeno[ pos ].ref != refeBase){
-			cerr<<"Query reference base is not the same for read "<<al.Name<<endl;
-
-			cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
-			for(unsigned int j=0;j<al.QueryBases.size();j++){
-			    cout<<j<<"\t"<<reconstructedReference.first[j]<<"\t"<<reconstructedReference.second[j]<<endl;
-			}
-
-			return 1;
-		    }
-		
-		    //deam model
-		
-
-		
-		    int dist5p=-1;
-		    int dist3p=-1;
-
-		    if( al.IsReverseStrand() ){
-			dist5p = int(al.QueryBases.size()) - int(i)-1;
-			dist3p = int(i);
-		    }else{
-			dist5p = int(i);
-			dist3p = int(al.QueryBases.size()) - int(i)-1;
-		    }
-		    		    
-		    probSubstition * probSubMatchDeam = &defaultSubMatch ;
-		    probSubstition * probSubMatchNull = &defaultSubMatch ;
-
-		    if(dist5p <= (int(sub5p.size()) -1)){
-			probSubMatchDeam = &sub5p[ dist5p ];			
-		    }
-		    
-		    if(dist3p <= (int(sub3p.size()) -1)){
-			probSubMatchDeam = &sub3p[ dist3p ];
-		    }
-		    
-		    //we have substitution probabilities for both... take the closest
-		    if(dist5p <= (sub5p.size() -1) &&
-		       dist3p <= (sub3p.size() -1) ){
-			
-			if(dist5p < dist3p){
-			    probSubMatchDeam = &sub5p[ dist5p ];			
-			}else{
-			    probSubMatchDeam = &sub3p[ dist3p ];
-			}
-			
-		    }
-
-
-		    // cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<"\t"<<dist5p<<"\t"<<dist3p<<endl;
-		
-		    // b   is the observed
-		    // nuc is the model
-		
-		    int obsReadInt;
-		    if( al.IsReverseStrand() ){
-			obsReadInt = baseResolved2int(complement(readBase));
-		    }else{
-			obsReadInt = baseResolved2int(readBase);
-		    }
-
-		    long double probBaseDeam = 0.0;
-		    long double probBaseNull = 0.0;
-
-		    for(unsigned int nuc=0;nuc<4;nuc++){
-
-
-			int dinucIndex;
-			if( al.IsReverseStrand() ){
-			    dinucIndex= (3-nuc)*4+obsReadInt;
-			}else{
-			    dinucIndex=     nuc*4+obsReadInt;
-			}
-			probBaseDeam +=
-			    (1-pos2phredgeno[ pos ].perror[nuc])
-			    *
-			    //      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
-			    (likeMatchProb[int(q)]  * (probSubMatchDeam->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]));
-
-
-			probBaseNull +=
-			    (1-pos2phredgeno[ pos ].perror[nuc])
-			    *
-			    //      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
-			    (likeMatchProb[int(q)]  * (probSubMatchNull->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex])); 
-
-			
-
-
-		    }//end for each possible base
-
-		    deamLogLike+=log(probBaseDeam);
-		    nullLogLike+=log(probBaseNull);
-
-	
-		    //m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
-		    // double probFinal;
-		
-		    // if(ignoreMQ){ //ignore MQ
-		    //     probFinal = (               probBase                          );
-		    // }else{
-		    //     probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
-		    // }
-		    
-
-		    //null model
-
-		}//end for all bases
-	    }else{//if we use deamination priors
-		deamLogLike=0.5;
-		nullLogLike=0.5;
-	    }
-	    
-
-
-
-	    long double probDeamUnscaled = 
-                                exp(deamLogLike)
-		                    /
-		(    exp(deamLogLike) + exp(nullLogLike) );
-	    
-	    //probLengthEndo[max(al.QueryBases.size(),1000)];
-	    long double probEndoProd;
-	    long double probContProd;
-	    long double probLengthEndoForRead;
-	    
-	    if(useLengthPrior){
-		probLengthEndoForRead = probLengthEndo[min(int(al.QueryBases.size()),999)];
-	    }else{
-		probLengthEndoForRead = 0.5;
-	    }
-
-	    //if(useLengthPrior){
-	    probEndoProd   =      probDeamUnscaled  *      probLengthEndoForRead;
-	    probContProd   = (1.0-probDeamUnscaled) * (1.0-probLengthEndoForRead);
-	    // }else{
-	    // 	probEndoProd   = 0.5;
-	    // 	probContProd   = 0.5;
-
-	    // }
-	    long double probEndo         = 
-                         		(1-contaminationPrior)*probEndoProd
-		                                          /
-		(  ((1-contaminationPrior)*probEndoProd) + contaminationPrior*probContProd );
-
-	    //long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
-	    //cout<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
-
-
-
-	     read2endoProb[ al.Name+"#"+ stringify(al.AlignmentFlag) ] = probEndo;
-
-	} //for each read
 	cerr<<"...  done"<<endl;
 	read2endoProbInit=true;
 	
