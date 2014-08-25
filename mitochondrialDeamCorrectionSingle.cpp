@@ -9,7 +9,8 @@
 
 
 //TODO
-//- call the indels according to contamination rate for both the contaminant and endo
+//- print to log/genomes if booleans set
+//documentation
 
 // #define DEBUG1
 // #define DEBUG2
@@ -366,7 +367,7 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 
 void insertionInSample(const int i,
 		       const string & genomeRef,
-		       const vector<singlePosInfo> & infoPPos,
+		       const vector<singlePosInfo> & infoPPos, 
 		       const bool singleCont,
 		       string & genomeToPrint,
 		       string & genomeToPrintC,
@@ -378,27 +379,125 @@ void insertionInSample(const int i,
 
 
 	if(singleCont){
-	    //to code
-	    
-	}else{
-	    //for each potential insert
-	    string       bestInsert="";
-	    long double  bestInsertLogLike;
-	    bool initializeB=false;
-	    long double  sumLogLike=0.0;
+	    //calling the endogenous
+	    string       bestInsertEndo       ="";
+	    long double  bestInsertLogLikeEndo;
+	    bool         initializeBEndo      =false;
+	    long double  sumLogLikeEndo       =0.0;
 
-	    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-		it1 != m_infoPPos->at(posVector).allInserts.end(); 
+	    //iterate for each endogenous insert
+	    for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
+ 		it1 != infoPPos[i].allInserts.end(); 
+ 		++it1) {
+
+		 long double sumLogLikeForThisIns=0.0;
+
+		 //marginalize over each possible contaminant
+		 for(set<string>::const_iterator it2 = infoPPos[i].allInserts.begin(); 
+		     it2 != infoPPos[i].allInserts.end(); 
+		     ++it2) {
+		     pair<string,string> keytouse (*it1,*it2);
+		     // infoPPos[i].insertion2loglikeEndoCont[ keytouse ] = 0.0;
+		     sumLogLikeForThisIns =  oplusInit(sumLogLikeForThisIns,
+						       infoPPos[i].insertion2loglikeEndoCont.at( keytouse ));
+		 }
+		 
+		 if(!initializeBEndo){
+		     bestInsertEndo            = *it1;
+		     bestInsertLogLikeEndo     = sumLogLikeForThisIns;
+		     initializeBEndo           = true;
+		 }else{
+		     if(bestInsertLogLikeEndo < sumLogLikeForThisIns){
+			 bestInsertEndo        = *it1;
+			 bestInsertLogLikeEndo = sumLogLikeForThisIns;
+		     }
+		 }
+		 sumLogLikeEndo = oplusInit(sumLogLikeEndo,sumLogLikeForThisIns);
+	     }//end for each endogenous insert
+	     
+	     string       bestInsertCont       ="";
+	     long double  bestInsertLogLikeCont;
+	     bool         initializeBCont      =false;
+	     long double  sumLogLikeCont       =0.0;
+
+	     //iterate for each contaminant insert
+	     for(set<string>::const_iterator it2 = infoPPos[i].allInserts.begin(); 
+		 it2 != infoPPos[i].allInserts.end(); 
+		 ++it2) {
+
+		 long double sumLogLikeForThisIns=0.0;
+
+		 //marginalize over each possible endegenous		
+		 for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
+		     it1 != infoPPos[i].allInserts.end(); 
+		     ++it1) {
+		     pair<string,string> keytouse (*it1,*it2);
+		     // infoPPos[i].insertion2loglikeEndoCont[ keytouse ] = 0.0;
+		     sumLogLikeForThisIns =  oplusInit(sumLogLikeForThisIns,
+						       infoPPos[i].insertion2loglikeEndoCont.at( keytouse ));
+		 }
+		 
+		 if(!initializeBCont){
+		     bestInsertCont            = *it2;
+		     bestInsertLogLikeCont     = sumLogLikeForThisIns;
+		     initializeBCont           = true;
+		 }else{
+		     if(bestInsertLogLikeCont < sumLogLikeForThisIns){
+			 bestInsertCont        = *it2;
+			 bestInsertLogLikeCont = sumLogLikeForThisIns;
+		     }
+		 }
+		 sumLogLikeCont = oplusInit(sumLogLikeCont,sumLogLikeForThisIns);
+	     }//end for each endogenous insert
+	     
+
+	     if(bestInsertEndo != ""){ //more likely there is an insert in the endogenous
+		long double  sumLogLikeButTheBestEndo=log( pow(10.0,sumLogLikeEndo) - pow(10.0,bestInsertLogLikeEndo) )/log(10);
+		
+		for(unsigned int k=0;k<(bestInsertEndo.size());k++){
+		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertEndo[k]<<"\t"<<-10.0*( sumLogLikeButTheBestEndo - sumLogLikeEndo)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertEndo)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		}
+
+		genomeToPrint+=bestInsertEndo;
+	    }
+
+
+	     if(bestInsertCont != ""){ //more likely there is an insert in the endogenous
+		long double  sumLogLikeButTheBestCont=log( pow(10.0,sumLogLikeCont) - pow(10.0,bestInsertLogLikeCont) )/log(10);
+
+		for(unsigned int k=0;k<(bestInsertCont.size());k++){
+		    (*logToPrintC)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertCont[k]<<"\t"<<-10.0*( sumLogLikeButTheBestCont - sumLogLikeCont)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertCont)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		}
+
+		genomeToPrintC+=bestInsertCont;
+	    }
+
+
+
+
+
+	    
+	}else{ //cannot assume we have a single contaminant
+	    //for each potential insert
+	    string       bestInsert       ="";
+	    long double  bestInsertLogLike;
+	    bool         initializeB      =false;
+	    long double  sumLogLike       =0.0;
+
+	    for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
+		it1 != infoPPos[i].allInserts.end(); 
 		++it1) {
-		if(initializeB){
-		    bestInsertLogLike     = infoPPos[i].insertion2loglike[*it1];
+		if(!initializeB){
+		    bestInsertLogLike     = infoPPos[i].insertion2loglike.at(*it1);
 		    bestInsert            = *it1;		    
+		    initializeB = true;
 		}else{
-		    if( bestInsertLogLike < infoPPos[i].insertion2loglike[*it1] ){
+		    if( bestInsertLogLike < infoPPos[i].insertion2loglike.at(*it1) ){
+			bestInsertLogLike = infoPPos[i].insertion2loglike.at(*it1);
 			bestInsert        = *it1;		    
 		    }
 		}
-		sumLogLike = oplusInit(sumLogLikem,infoPPos[i].insertion2loglike[*it1]);
+		sumLogLike = oplusInit(sumLogLike,infoPPos[i].insertion2loglike.at(*it1));
 	    }
 	    
 
@@ -407,7 +506,7 @@ void insertionInSample(const int i,
 		long double  sumLogLikeButTheBest=log( pow(10.0,sumLogLike) - pow(10.0,bestInsertLogLike) )/log(10);
 
 		for(unsigned int k=0;k<(bestInsert.size());k++){
-		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<-10.0*( sumLogLikeButTheBest - sumLogLike)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count[bestInsert]<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<-10.0*( sumLogLikeButTheBest - sumLogLike)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsert)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 
 		}
 	    }
@@ -420,16 +519,6 @@ void insertionInSample(const int i,
 	
     }
 
- // for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
- // 		it1 != m_infoPPos->at(posVector).allInserts.end(); 
- // 		++it1) {
- // 		for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
- // 		    it2 != m_infoPPos->at(posVector).allInserts.end(); 
- // 		    ++it2) {
- // 		    pair<string,string> keytouse (*it1,*it2);
- // 		    m_infoPPos->at(posVector).insertion2loglikeEndoCont[ keytouse ] = 0.0;
- // 		}
- // 	    }
 
 
     //old way
@@ -1063,7 +1152,6 @@ void  printLogAndGenome(const int sizeGenome,
 	 //      Insertions in the sample       //
 	 //                                     //
 	 /////////////////////////////////////////
-
 
 	insertionInSample(i,
 			  genomeRef,
