@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <vector>
+#include <set>
 #include <string>
 #include <gzstream.h>
 
@@ -111,10 +112,14 @@ typedef struct {
     long double llikDeletionEndo;
     long double llikDeletionNone;
 
+    set<string> allInserts;
 
     vector<string> insertionRight;
+    map< pair<string,string> , long double> insertion2loglikeEndoCont; //key is (endo ins,cont ins) to log likelihood
+
+    map<string,int> insertion2count;
     map<string,long double> insertion2loglike;
-    map<string,long double> insertion2loglikeCont;
+    //map<string,long double> insertion2loglikeCont;
 
     int cov;
 } singlePosInfo;

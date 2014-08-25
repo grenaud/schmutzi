@@ -364,6 +364,124 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 //  } positionInfo;
 
 
+void insertionInSample(const int i,
+		       const string & genomeRef,
+		       const vector<singlePosInfo> & infoPPos,
+		       const bool singleCont,
+		       string & genomeToPrint,
+		       string & genomeToPrintC,
+		       stringstream * logToPrint,
+		       stringstream * logToPrintC){
+
+
+    if(infoPPos[i].allInserts.size() != 0){  // there are potential insertions
+
+
+	if(singleCont){
+	    //to code
+	    
+	}else{
+	    //for each potential insert
+	    string       bestInsert="";
+	    long double  bestInsertLogLike;
+	    bool initializeB=false;
+	    long double  sumLogLike=0.0;
+
+	    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+		it1 != m_infoPPos->at(posVector).allInserts.end(); 
+		++it1) {
+		if(initializeB){
+		    bestInsertLogLike     = infoPPos[i].insertion2loglike[*it1];
+		    bestInsert            = *it1;		    
+		}else{
+		    if( bestInsertLogLike < infoPPos[i].insertion2loglike[*it1] ){
+			bestInsert        = *it1;		    
+		    }
+		}
+		sumLogLike = oplusInit(sumLogLikem,infoPPos[i].insertion2loglike[*it1]);
+	    }
+	    
+
+	    
+	    if(bestInsert != ""){ //more likely there is an insert
+		long double  sumLogLikeButTheBest=log( pow(10.0,sumLogLike) - pow(10.0,bestInsertLogLike) )/log(10);
+
+		for(unsigned int k=0;k<(bestInsert.size());k++){
+		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<-10.0*( sumLogLikeButTheBest - sumLogLike)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count[bestInsert]<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+		}
+	    }
+	    
+	}
+
+	
+	
+
+	
+    }
+
+ // for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+ // 		it1 != m_infoPPos->at(posVector).allInserts.end(); 
+ // 		++it1) {
+ // 		for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+ // 		    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+ // 		    ++it2) {
+ // 		    pair<string,string> keytouse (*it1,*it2);
+ // 		    m_infoPPos->at(posVector).insertion2loglikeEndoCont[ keytouse ] = 0.0;
+ // 		}
+ // 	    }
+
+
+    //old way
+    // if(infoPPos[i].insertionRight.size() != 0){
+
+    // 	map<string,int> insert2count;
+    // 	for(unsigned int k=0;k<infoPPos[i].insertionRight.size();k++){		 
+    // 	    insert2count[ infoPPos[i].insertionRight[k] ]++;
+    // 	}
+	     
+	     
+    // 	int     mostCommonInsCount=-1;
+    // 	string  mostCommonIns="";
+
+
+    // 	for (map<string,int>::iterator itdel=insert2count.begin(); 
+    // 	     itdel!=insert2count.end(); ++itdel){
+    // 	    //cout<<itdel->first<<"\t"<<itdel->second<<endl;
+    // 	    if( itdel->second > mostCommonInsCount){
+    // 		mostCommonInsCount = itdel->second;
+    // 		mostCommonIns      = itdel->first;
+    // 	    }		     
+    // 	}
+
+
+    // 	//if half of the reads support an insertions in reads (deletions in reference) 
+    // 	//TODO add contamination and endogenous split
+    // 	//add probability of correctness "Evaluation of genomic high-throughput sequencing data generated on Illumina HiSeq and Genome Analyzer systems" Minoche
+    // 	if( ((long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov)) >= 0.5){
+    // 	    //outSeqFP<<mostCommonIns;
+    // 	    //return 1;
+    // 	    //if( (-10.0*(log(1.0-double(mostCommonInsCount)/double(infoPPos[i].cov))/log(10.0)))>=minQual){
+    // 	    //min quality ? based on what ?
+    // 	    genomeToPrint+=mostCommonIns;
+    // 	    //}else{
+    // 	    //do not add insert
+    // 	    //}
+
+    // 	    //logToPrint<<string('!',mostCommonIns.size());
+    // 	    for(unsigned int k=0;k<(mostCommonIns.size());k++){
+    // 		(*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<mostCommonIns[k]<<"\t"<<-10.0*(log(1.0-(long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<mostCommonInsCount<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+    // 	    }
+		 
+    // 	}
+
+    // }//end insertions in the sample
+
+    
+
+}
+
 
 void deletionInSample(const int i,
 		      const string & genomeRef,
@@ -946,50 +1064,16 @@ void  printLogAndGenome(const int sizeGenome,
 	 //                                     //
 	 /////////////////////////////////////////
 
-	 if(infoPPos[i].insertionRight.size() != 0){
 
-	     map<string,int> insert2count;
-	     for(unsigned int k=0;k<infoPPos[i].insertionRight.size();k++){		 
-		 insert2count[ infoPPos[i].insertionRight[k] ]++;
-	     }
-	     
-	     
-	     int     mostCommonInsCount=-1;
-	     string  mostCommonIns="";
+	insertionInSample(i,
+			  genomeRef,
+			  infoPPos,
+			  singleCont,
+			  genomeToPrint,
+			  genomeToPrintC,
+			  &logToPrint,
+			  &logToPrintC);
 
-
-	     for (map<string,int>::iterator itdel=insert2count.begin(); 
-		  itdel!=insert2count.end(); ++itdel){
-		 //cout<<itdel->first<<"\t"<<itdel->second<<endl;
-		 if( itdel->second > mostCommonInsCount){
-		     mostCommonInsCount = itdel->second;
-		     mostCommonIns      = itdel->first;
-		 }		     
-	     }
-
-
-	     //if half of the reads support an insertions in reads (deletions in reference) 
-	     //TODO add contamination and endogenous split
-	     //add probability of correctness "Evaluation of genomic high-throughput sequencing data generated on Illumina HiSeq and Genome Analyzer systems" Minoche
-	     if( ((long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov)) >= 0.5){
-		 //outSeqFP<<mostCommonIns;
-		 //return 1;
-		 //if( (-10.0*(log(1.0-double(mostCommonInsCount)/double(infoPPos[i].cov))/log(10.0)))>=minQual){
-		 //min quality ? based on what ?
-		 genomeToPrint+=mostCommonIns;
-		 //}else{
-		 //do not add insert
-		 //}
-
-		 //logToPrint<<string('!',mostCommonIns.size());
-		 for(unsigned int k=0;k<(mostCommonIns.size());k++){
-		     logToPrint<<(i+1)<<"i\t"<<"-"<<"\t"<<mostCommonIns[k]<<"\t"<<-10.0*(log(1.0-(long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<mostCommonInsCount<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-		 }
-		 
-	     }
-
-	 }//end insertions in the sample
 
     }//end for each position in the genome
 
@@ -1113,11 +1197,54 @@ class MyPileupVisitor : public PileupVisitor {
 
 
 
+	    //There are 3 possibilities:
+	    //1) There is a insertion in the sample (or deletion in the reference)
+	    //2) There is a deletion in the sample (or insertion in the reference)
+	    //3) There is potentially a variation of a single nucleotide
+	    	    
 
 
-
-
+	    /////////////////////////////////////////////////////
 	    //insertion in the reads/deletion in the reference
+	    ///////////////////////////////////////////////////
+	    //detecting to find all possible insertions
+	    // set<string> allInsert;
+	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
+
+		if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
+		    pileupData.PileupAlignments[i].IsNextInsertion &&
+		    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
+		    string insert="";
+		    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
+			insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
+		    }
+		    m_infoPPos->at(posVector).allInserts.insert(insert);
+		    
+		    m_infoPPos->at(posVector).insertionRight.push_back(insert);
+		    m_infoPPos->at(posVector).insertion2count[insert]++;
+		} //else{
+		// string insert="";
+		// m_infoPPos->at(posVector).allInserts.insert(insert);
+		    //}
+	    }
+	    //entering an "null" model of not having an insertion
+	    m_infoPPos->at(posVector).allInserts.insert("");
+	    
+	    //init likelihood for all possible pairs of inserts
+	    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+		it1 != m_infoPPos->at(posVector).allInserts.end(); 
+		++it1) {
+		for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+		    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+		    ++it2) {
+		    pair<string,string> keytouse (*it1,*it2);
+		    m_infoPPos->at(posVector).insertion2loglikeEndoCont[ keytouse ] = 0.0;
+		}
+	    }
+
+
+
+	    //re-iterate over each read
 	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
 		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
 		long double probEndogenous=1.0-contaminationPrior;
@@ -1135,40 +1262,164 @@ class MyPileupVisitor : public PileupVisitor {
 		}
 
 
-
+		
 		if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
 		    pileupData.PileupAlignments[i].IsNextInsertion &&
 		    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
+		    
 		    string insert="";
 		    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
 			insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
 		    }
 		    //cout<<"ins "<<insert<<endl;
-		    m_infoPPos->at(posVector).insertionRight.push_back(insert);
-
+		    
+		    
 		    if(singleCont){
-			m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		    }else{
-			m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			// m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			// m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			//both endo and cont have the insert, both right
+			if(1){
+			    pair<string,string> keytouse (insert,insert);
+			    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+			}
+			//only endo has the insert, endo has it right, cont has is wrong
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert){
+				pair<string,string> keytouse (insert,*it);
+				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+			    }
+			    
+			}
+			
+			//only cont has the insert, endo has it wrong, cont has is cont
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert){
+				pair<string,string> keytouse (*it   ,insert);
+				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+			    }
+			    
+			}
+			
+			//none have the insert, both have it wrong
+			for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it1 != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it1) {
+			    if( *it1 != insert){
+				for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+				    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+				    ++it2) {
+				    if( *it2 != insert){
+					pair<string,string> keytouse (*it1  ,*it2);
+					m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+					    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+				    }
+				}
+			    }
+			}
+			
+			
+		    }else{ //not single cont
+			//got it right for the insert
+			m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+			//The remaining insertions have it wrong
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert)
+				m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			}
 		    }
-
-		}else{
+		    
+		}else{ //does not have insert but bases
+		    string insert="";
 		    //push none
 		    if(singleCont){
-			m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		    }else{
-			m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			// m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			// m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			//both endo and cont have the insert, both right
+			if(1){
+			    pair<string,string> keytouse (insert,insert);
+			    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+			}
+			//only endo has the insert, endo has it right, cont has is wrong
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert){
+				pair<string,string> keytouse (insert,*it);
+				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+			    }
+
+			}
+			
+			//only cont has the insert, endo has it wrong, cont has is cont
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert){
+				pair<string,string> keytouse (*it   ,insert);
+				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+				    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+			    }
+			    
+			}
+			
+			//none have the insert, both have it wrong
+			for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it1 != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it1) {
+			    if( *it1 != insert){
+				for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+				    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+				    ++it2) {
+				    if( *it2 != insert){
+					pair<string,string> keytouse (*it1  ,*it2);
+					m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+					    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+				    }
+				}
+			    }
+			}
+			
+			
+		    }else{ //not single cont
+			//got it right for the insert
+			m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+			//The remaining insertions have it wrong
+			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it) {
+			    if( *it != insert)
+				m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+			}
 		    }
-		}
-	    }
+		    
+		}//end, no insert
+	    }//end for each read
+	
 
 
 
 
 
+	    // for(map<int,int>::iterator it = test2test.begin(); 
+	    // 	it != test2test.end(); 
+	    // 	++it) {
+
+	    // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+
+	    /////////////////////////////////////////////////////
 	    //deletion in the reads/insertion in the reference
+	    /////////////////////////////////////////////////////
 	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
 		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
 		long double probEndogenous=1.0-contaminationPrior;
@@ -1212,9 +1463,9 @@ class MyPileupVisitor : public PileupVisitor {
 
 			//there is a deletion in both, got it right 2x
 			m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
-			//only in endo, right in endo, wrong in cont
+			//only in endo, right if endo, wrong if cont
 			m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
-			//only in cont, wrong in endo, right in cont
+			//only in cont, wrong if endo, right if cont
 			m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
 			//none have it, wrong in both
 			m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
@@ -1253,6 +1504,12 @@ class MyPileupVisitor : public PileupVisitor {
 	    
 
 
+
+
+
+	    /////////////////////////////////////////////////////
+	    //       Variations of a single nucleotide         //
+	    /////////////////////////////////////////////////////
 	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		 //for each alignment
 		unsigned int numReads=0;
 		    
@@ -1430,7 +1687,7 @@ class MyPileupVisitor : public PileupVisitor {
 	}	    
 #endif
 
-		}else{		    
+		}else{ //if we cannot assume that there is a single contaminant
 
 
 		    for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
