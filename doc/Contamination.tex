@@ -1,0 +1,310 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[dvips]{graphicx,epsfig}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage[boxed]{algorithm2e}
+\usepackage{color}
+ 
+%\usepackage{graphicx}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+
+
+%\newcommand{\argmax}{\arg\!\max}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+\makeatletter
+\renewcommand{\env@cases}[1][@{}l@{\quad}l@{}]{%
+  \let\@ifnextchar\new@ifnextchar
+  \left\lbrace
+    \def\arraystretch{1.2}%
+    \array{#1}%
+}
+\makeatother
+
+\newcommand\hcancel[2][black]{\setbox0=\hbox{$#2$}%
+\rlap{\raisebox{.45\ht0}{\textcolor{#1}{\rule{\wd0}{1pt}}}}#2} 
+
+\begin{document}
+
+%\section{Mitonchondrial}
+
+%Let $r$ be a read of length $l$ with sequenced bases = $r_1 r_2 ... r_l$ with error probabilities  $\epsilon_1 \epsilon_1 ... \epsilon_l$.  Let the read $r$ have the probability of mismapping $m$. 
+
+\title{Contamination estimate for ancient homonin samples}
+\date{\today}
+\author{Gabriel Renaud}
+
+
+\maketitle
+
+\section{Introduction}
+
+Upon extracting ancient DNA (aDNA) from homonin samples, the DNA from one of the individuals that handled the material from which aDNA was extracted from. During sequencing of the aDNA libraries, this contaminant DNA intermixes with the endogenous DNA, gets sequenced and mapped thus contributing to genotype likelihoods or mitochondrial consensus calling. Althought methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results.
+
+
+%High contamination  
+
+We describe a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach.  
+
+For the mitochondrial case, we estimate what is the most likely endogenous base without using any phylogenetic information as to avoid biases. If differences between deamination rates and molecules between the endogenous sample and contaminant are present, they can be used as a prior on each read to increase robustness to higher levels of contamination. This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. For the case of having multiple contaminant sources, we also allow allele frequency profiles to be used. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input. 
+
+
+\section{Methods}
+
+
+\subsection{Mitochondrial contamination}
+
+The mitochondrial contamination estimate relies on two main modules that:
+
+\begin{itemize}
+\item Calls the endogenous base
+\item Estimates contamination based on that endogenous base
+\end{itemize}
+
+
+
+
+
+\subsubsection{Calling the endogenous base}
+
+\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads ovelapping a position.  Let the potential endogenous base $b\in\{A,C,G,T\}$. Given that all the reads are independent observations, we can compute the posterior probability as such:
+
+\begin{eqnarray}
+  p(b|R)   & = & p(R|b) \cdot p(b)  \\
+           & = & p(R|b) \cdot \frac {1} {4} \\
+           & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
+\end{eqnarray} 
+
+
+
+\noindent  Finally we retain the most likely $\hat{b}$ the most likely base such that 
+
+\begin{equation}
+\hat{b} = \argmax_{b \in \{A,C,G,T\} }   p(b|R)
+\end{equation} 
+
+
+\noindent  The probability of error on $\hat{b}$ is given by:
+
+\begin{equation}
+p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} } p(b|R) } { \sum\limits_{ b \in \{A,C,G,T\}  } p(b|R) }
+\label{errormt}
+\end{equation}
+ 
+
+%\subsubsection{For a given read}
+\noindent For a given base $r$ from read $R_j$  ($R_j = \{ r_1, ..., r_l \}$), we consider a position base $r_{i}$ :
+\begin{equation}
+  p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
+\end{equation} 
+
+
+\noindent No information is available for mismapped read:
+\begin{equation}
+  p_{mismapped}(r_i|b)   =  p(b) =     \frac{ 1} {4} 
+\end{equation} 
+
+
+%\noindent Let the base $b\in\{A,C,G,T\}$, the probability of observing the base $r_i$ from read $r$, given that it was properly aligned and given that $b$ is the correct base, is computed by:
+
+\noindent If we do not consider a read to be endogenous or not
+\begin{equation}
+  p_{mapped}(r_i|b)   =  (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   
+%\end{cases}
+\end{equation} 
+
+\noindent If we do weight reads according to their probability of being endogenous, $p_{mapped}(r_i|b)$ is given by:
+\begin{equation}
+P_{endo}(R_j) \cdot (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
+%\end{cases}
+\end{equation} 
+
+
+
+\subsubsection{Endogenous consensus}
+
+We take into consideration two factors, length of the molecules and deamination patterns.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/plot.eps}
+\caption{text}
+\end{figure}
+
+\noindent {\bf Length}
+
+\begin{equation}
+P(i) = \frac {1} {i \sqrt{2\pi} \sigma} e^{ - \frac{(ln(i) - \mu)^2 }  {2 \sigma^2} } 
+\end{equation}
+
+\noindent {\bf Deamination}
+
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{lr}
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-5.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-3.eps} \\
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-5.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-3.eps} \\
+\end{tabular}
+\caption{text}
+\end{figure}
+
+
+\noindent  Normal (null) case:
+\begin{equation}
+  p_{correct_{null}}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1  &  \text{if }  b = r_i    \\
+    0 &  \text{if }  b \ne r_i    \\
+  \end{cases}
+\end{equation} 
+
+\noindent  Deaminated case (position on the read dependent):
+\begin{equation}
+  p_{correct_{deam}}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1-\sum\limits_{b' \in \{ A,C,G,T \} \setminus b}   P_{deam}(r_i \to b')  &  \text{if }  b = r_i    \\
+    P_{deam}(r_i \to b) &  \text{if }  b \ne r_i    \\
+  \end{cases}
+\end{equation} 
+
+%\begin{equation}
+%P_{correct}(  b \to r_i )  = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+%\end{equation}
+
+\begin{equation}
+  P_{error}(  b \to r_i )  = \frac { \# b \to r_i } { \sum\limits_{p \in \{ A,C,G,T \} \setminus b } \# b \to p }
+\end{equation}
+
+%\begin{equation}
+%  p_{mapped}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+%    1-\epsilon_i  &  \text{if }  b = r_i    \\
+%    \frac{ \epsilon_1} {3} &  \text{if }  b \ne r_i    \\
+%  \end{cases}
+%\end{equation} 
+
+
+
+%\noindent However, if the read was mismapped we revert to our prior:
+%
+%
+%\noindent Finally, we can combine both:
+%
+%\begin{equation}
+%  p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
+%\end{equation} 
+%
+%
+%\noindent To compute the likelihood of the base $b$, 
+%\begin{equation}
+%p(b|r) = \frac {p(r|b) \cdot p(b)} {p(r)}
+%\end{equation} 
+%
+%Assuming a uniform prior  $p(b) = \frac{ 1} {4}$ and that $p(r)$ can be obtained using a marginalization over each base $b\in\{A,C,G,T\}$, the likelihood of the base $b$ given $r$ is proportional to probability of generating $r$ given $b$ :
+%
+%\begin{equation}
+%p(b|r) \propto p(r|b)
+%\end{equation} 
+%
+%Given multiple reads such that $r \in R$, we assume that each read is an independent observation:
+%
+%\begin{equation}
+%p(b|R) = \prod_{r \in R} p(b|r)
+%\end{equation} 
+
+{\bf Combining both with a deamination prior}
+
+%\subsubsection{Endogenous consensus}
+
+\begin{equation}
+P_{endo}(R_j) = \frac { \prod\limits_{r_i \in R_j} p_{correct_{deam}}(r_i|b) } { \prod\limits_{r_i \in R_j} p_{correct_{deam}}(r_i|b) + \prod\limits_{r_i \in R_j} p_{correct_{null}}(r_i|b) }
+\end{equation}
+
+
+
+\subsection{Indels}
+
+
+Majority vote is used.
+
+
+%\begin{equation}
+%  = (1-\epsilon_i) \frac{ \epsilon_1} {3}
+%\end{equation}
+
+
+\section{Mitonchodrial contamination}
+
+Let $b$ be the base from the endogenous sample and $c$ be the base from the contaminant. Let the contamination rate be $c_r$, defined as the probability of a base from the contaminant at any given position. Therefore, the probability that the allele is endogenous, is $1-c_r$.
+
+\begin{equation}
+p(r_i|b,c)  = (1-m) \cdot p_{mapped}(r_i|b,c) + m \cdot p_{mismapped}(r_i|b,c)  %\sum_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(R|b,c) p(b,c)
+\end{equation}
+
+
+\begin{equation}
+p_{mapped}(r_i|b,c) = \sum\limits_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(r_i|b,c) p(b,c)
+\end{equation}
+
+\begin{equation}
+p(b,c) = p(b) \cdot p(c)
+\end{equation}
+
+%From \ref{errormt}, 
+\noindent We get:
+
+\begin{equation}
+p(b)  = 1 - p(\neg b|R)
+\end{equation}
+
+\noindent  We get $p(c)$ using the allele frequency in human populations.
+
+\begin{equation}
+p(r_i|b,c)  =  p(r_i|b) \cdot p_{non\ cont}(r_i|b)  +  p(r_i|c) \cdot p_{cont}(r_i|c) 
+\end{equation}
+
+
+\begin{equation}
+p(r_i|b,c)  =  [1-c_r]  p_{non\ cont}(r_i|b) +  [c_r] p_{cont}(r_i|c) 
+\end{equation}
+
+\noindent Endogenous:
+\begin{equation}
+p_{non\ cont}(r_i|b) = (1-\epsilon_i ) \cdot  P_{correct_{deam}}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   
+\end{equation}
+
+\noindent Contaminant:
+\begin{equation}
+p_{cont}(r_i|c) = (1-\epsilon_i ) \cdot  P_{correct_{null}}( c \to r_i) +  (\epsilon_i) \cdot P_{error}(  c \to r_i )   
+\end{equation}
+
+
+
+
+
+
+\clearpage
+
+
+
+\subsection{Nuclear Contamination}
+\section{Results}
+
+\subsection{Mitochondrial}
+
+
+\subsubsection{Calling the endogenous base}
+\subsubsection{Contamination}
+
+
+
+\bibliography{document}{}
+\bibliographystyle{plain}
+
+\end{document}
+%yyy

@@ -1,0 +1,439 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[dvips]{graphicx,epsfig}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage[boxed]{algorithm2e}
+\usepackage{color}
+ 
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{defn}[thm]{Definition}
+
+
+%\newcommand{\argmax}{\arg\!\max}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+\makeatletter
+\renewcommand{\env@cases}[1][@{}l@{\quad}l@{}]{%
+  \let\@ifnextchar\new@ifnextchar
+  \left\lbrace
+    \def\arraystretch{1.2}%
+    \array{#1}%
+}
+\makeatother
+
+\newcommand\hcancel[2][black]{\setbox0=\hbox{$#2$}%
+\rlap{\raisebox{.45\ht0}{\textcolor{#1}{\rule{\wd0}{1pt}}}}#2} 
+
+\begin{document}
+
+%\section{Mitonchondrial}
+
+%Let $r$ be a read of length $l$ with sequenced bases = $r_1 r_2 ... r_l$ with error probabilities  $\epsilon_1 \epsilon_1 ... \epsilon_l$.  Let the read $r$ have the probability of mismapping $m$. 
+
+\section{Modules}
+
+\begin{itemize} 
+\item Haploid case (MT)
+\begin{itemize} 
+\item Endogenous base for the haploid case 
+\item Given endogenous base, plot posterior of the contamination ($c$)
+\item Simulations on MT
+\end{itemize}
+\item Diploid case (nuc)
+\begin{itemize} 
+\item Homozygous model (prob=$1-h$)
+\item Heterozygous model  (prob= $h$)
+\item Plot joint posterior of $h$ and $c$
+\end{itemize}
+\end{itemize}
+
+\section{Haploid}
+
+
+\subsection{Endogenous consensus}
+\subsubsection{For all reads}
+
+\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads ovelapping a position.  Let the potential endogenous base $b\in\{A,C,G,T\}$. Given that all the reads are independent observations, we can compute the posterior probability as such:
+
+\begin{eqnarray}
+  p(b|R)   & = & p(R|b) \cdot p(b)  \\
+           & = & p(R|b) \cdot \frac {1} {4} \\
+           & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
+\end{eqnarray} 
+
+
+
+\noindent  Finally we retain the most likely $\hat{b}$ the most likely base such that 
+
+\begin{equation}
+\hat{b} = \argmax_{b \in \{A,C,G,T\} }   p(b|R)
+\end{equation} 
+
+
+\noindent  The probability of error on $\hat{b}$ is given by:
+
+\begin{equation}
+p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} } p(b|R) } { \sum\limits_{ b \in \{A,C,G,T\}  } p(b|R) }
+\label{errormt}
+\end{equation}
+ 
+
+
+\subsubsection{For a given read}
+\noindent For a given base $r$ from read $R_j$  ($R_j = \{ r_1, ..., r_l \}$), we consider a position base $r_{i}$ :
+\begin{equation}
+  p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
+\end{equation} 
+
+
+\noindent No information is available for mismapped read:
+\begin{equation}
+  p_{mismapped}(r_i|b)   =  p(b) =     \frac{ 1} {4} 
+\end{equation} 
+
+
+%\noindent Let the base $b\in\{A,C,G,T\}$, the probability of observing the base $r_i$ from read $r$, given that it was properly aligned and given that $b$ is the correct base, is computed by:
+
+\noindent If we do not consider a read to be endogenous or not
+\begin{equation}
+  p_{mapped}(r_i|b)   =  (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   
+%\end{cases}
+\end{equation} 
+
+\noindent If we do weight reads according to their probability of being endogenous:
+\begin{equation}
+  p_{mapped}(r_i|b)   = P_{endo}(R_j) \cdot (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
+%\end{cases}
+\end{equation} 
+
+
+\noindent  Normal (null) case:
+\begin{equation}
+  p_{correct_{null}}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1  &  \text{if }  b = r_i    \\
+    0 &  \text{if }  b \ne r_i    \\
+  \end{cases}
+\end{equation} 
+
+\noindent  Deaminated case (position on the read dependent):
+\begin{equation}
+  p_{correct_{deam}}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1-\sum\limits_{b' \in \{ A,C,G,T \} \setminus b}   P_{deam}(r_i \to b')  &  \text{if }  b = r_i    \\
+    P_{deam}(r_i \to b) &  \text{if }  b \ne r_i    \\
+  \end{cases}
+\end{equation} 
+
+%\begin{equation}
+%P_{correct}(  b \to r_i )  = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+%\end{equation}
+
+\begin{equation}
+  P_{error}(  b \to r_i )  = \frac { \# b \to r_i } { \sum\limits_{p \in \{ A,C,G,T \} \setminus b } \# b \to p }
+\end{equation}
+
+%\begin{equation}
+%  p_{mapped}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+%    1-\epsilon_i  &  \text{if }  b = r_i    \\
+%    \frac{ \epsilon_1} {3} &  \text{if }  b \ne r_i    \\
+%  \end{cases}
+%\end{equation} 
+
+
+
+%\noindent However, if the read was mismapped we revert to our prior:
+%
+%
+%\noindent Finally, we can combine both:
+%
+%\begin{equation}
+%  p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
+%\end{equation} 
+%
+%
+%\noindent To compute the likelihood of the base $b$, 
+%\begin{equation}
+%p(b|r) = \frac {p(r|b) \cdot p(b)} {p(r)}
+%\end{equation} 
+%
+%Assuming a uniform prior  $p(b) = \frac{ 1} {4}$ and that $p(r)$ can be obtained using a marginalization over each base $b\in\{A,C,G,T\}$, the likelihood of the base $b$ given $r$ is proportional to probability of generating $r$ given $b$ :
+%
+%\begin{equation}
+%p(b|r) \propto p(r|b)
+%\end{equation} 
+%
+%Given multiple reads such that $r \in R$, we assume that each read is an independent observation:
+%
+%\begin{equation}
+%p(b|R) = \prod_{r \in R} p(b|r)
+%\end{equation} 
+
+\subsubsection{Endogenous consensus}
+
+\begin{equation}
+P_{endo}(R_j) = \frac { \prod\limits_{r_i \in R_j} p_{correct_{deam}}(r_i|b) } { \prod\limits_{r_i \in R_j} p_{correct_{deam}}(r_i|b) + \prod\limits_{r_i \in R_j} p_{correct_{null}}(r_i|b) }
+\end{equation}
+
+
+
+\subsection{Indels}
+
+
+ majority vote 
+
+
+%\begin{equation}
+%  = (1-\epsilon_i) \frac{ \epsilon_1} {3}
+%\end{equation}
+
+
+\section{Mitonchodrial contamination}
+
+Let $b$ be the base from the endogenous sample and $c$ be the base from the contaminant. Let the contamination rate be $c_r$, defined as the probability of a base from the contaminant at any given position. Therefore, the probability that the allele is endogenous, is $1-c_r$.
+
+\begin{equation}
+p(r_i|b,c)  = (1-m) \cdot p_{mapped}(r_i|b,c) + m \cdot p_{mismapped}(r_i|b,c)  %\sum_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(R|b,c) p(b,c)
+\end{equation}
+
+
+\begin{equation}
+p_{mapped}(r_i|b,c) = \sum\limits_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(r_i|b,c) p(b,c)
+\end{equation}
+
+\begin{equation}
+p(b,c) = p(b) \cdot p(c)
+\end{equation}
+
+%From \ref{errormt}, 
+\noindent We get:
+
+\begin{equation}
+p(b)  = 1 - p(\neg b|R)
+\end{equation}
+
+\noindent  We get $p(c)$ using the allele frequency in human populations.
+
+\begin{equation}
+p(r_i|b,c)  =  p(r_i|b) \cdot p_{non\ cont}(r_i|b)  +  p(r_i|c) \cdot p_{cont}(r_i|c) 
+\end{equation}
+
+
+\begin{equation}
+p(r_i|b,c)  =  [1-c_r]  p_{non\ cont}(r_i|b) +  [c_r] p_{cont}(r_i|c) 
+\end{equation}
+
+\noindent Endogenous:
+\begin{equation}
+p_{non\ cont}(r_i|b) = (1-\epsilon_i ) \cdot  P_{correct_{deam}}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   
+\end{equation}
+
+\noindent Contaminant:
+\begin{equation}
+p_{cont}(r_i|c) = (1-\epsilon_i ) \cdot  P_{correct_{null}}( c \to r_i) +  (\epsilon_i) \cdot P_{error}(  c \to r_i )   
+\end{equation}
+
+
+
+
+
+
+\clearpage
+\section{Deamination}
+
+
+%\begin{equation}
+%p(R|b,c)  = (1-m) \cdot p_{mapped}(r_i|b,c) + m \cdot p_{mismapped}(r_i|b,c)  %\sum_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(R|b,c) p(b,c)
+%\end{equation}
+
+\begin{equation}
+%p(R|b,c)  = (1-m) \cdot p_{mapped}(r_i|b,c) + m \cdot p_{mismapped}(r_i|b,c)  %\sum_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(R|b,c) p(b,c)
+\delta + \sigma \cdot (1- \rho ) \cdot \rho
+\end{equation}
+
+
+
+\section{Nuclear Contamination}
+
+\begin{figure}
+  % 
+  %   \includegraphics[height=8cm]{../merging_crop}
+  % \end{center}
+  %\begin{tabular}{c}
+  \begin{center}
+    \includegraphics{figures1_cropped_now}  
+  \end{center}
+   % \end{tabular}
+  \caption{}\label{fig1}
+\end{figure}
+
+
+
+We now have a model $\mathcal{M}={c,h}$ where  $c$ the contamination rate and $h$ the heterozygosity rate. 
+
+We seek:
+\begin{equation}
+p(\mathcal{M} | \mathcal{D}   ) \propto  p(\mathcal{D}  | \mathcal{M} ) \cdot p(\mathcal{M} )
+\end{equation}
+
+
+
+\begin{equation}
+p(\mathcal{M} | \mathcal{D}   ) \propto  p(\mathcal{D}  | haploid with c ) \cdot (1-h) + p(\mathcal{D}  | heterozygous ) \cdot (h)
+\end{equation}
+
+
+
+
+\subsection{Heterozygosity}
+
+Let $\mathcal{D}$ be the observed data and $\mathcal{G}$ the genotype. 
+
+\subsection{$n=1$}
+
+\begin{eqnarray*}
+p(\mathcal{D} = \langle b \rangle | \mathcal{G} = \langle b,b' \rangle) & = & p( b | r_1 = b   )   \cdot p( r_1 =  b) \\
+                                                                        &   & p( b | r_1 = b'   )   \cdot p( r_1 =  b')  \\
+\end{eqnarray*}
+
+\begin{eqnarray*}
+p(\mathcal{D} = \langle b \rangle | \mathcal{G} = \langle b,b' \rangle) &  = & ( 1-\epsilon_1)   \cdot \frac {1} {2} \\
+                                                                        &    & \hcancel{  (\frac{ \epsilon_1} {3} ) \cdot \frac {1} {2}} \\
+\end{eqnarray*}
+
+\subsection{$n=2$}
+\begin{eqnarray*}
+p(\mathcal{D} = \langle bb' \rangle| \mathcal{G} = \langle b,b' \rangle) & = &  p( bb' | r_1 = b  \land r_2 = b  )   \cdot p( r_1 =  b \land r_2 =  b)  + \\
+                             &   &  p( bb' | r_1 = b  \land r_2 = b' )   \cdot p( r_1 =  b \land r_2 =  b')  +     \\
+                             &   &  p( bb' | r_1 = b' \land r_2 = b  )   \cdot p( r_1 =  b' \land r_2 =  b)  +     \\
+                             &   &  p( bb' | r_1 = b' \land r_2 = b' )   \cdot p( r_1 =  b' \land r_2 =  b')       \\                             
+\end{eqnarray*}
+
+
+\begin{eqnarray*}
+p(\mathcal{D} = \langle bb' \rangle| \mathcal{G} = \langle b,b' \rangle) & = & \hcancel{ ( 1-\epsilon_1) (\frac{ \epsilon_2} {3})     \cdot \frac {1} {4} }\\            
+                                                                         &   &  ( 1-\epsilon_1)( 1-\epsilon_2)    \cdot  \frac {1} {4} \\            
+                                                                         &   &  ( 1-\epsilon_1)( 1-\epsilon_2)   \cdot  \frac {1} {4} \\            
+                                                                         &   & \hcancel{ (\frac{ \epsilon_1} {3}) ( 1-\epsilon_2)       \cdot  \frac {1} {4}} \\            
+\end{eqnarray*}
+
+\subsection{$n=3$}
+
+\begin{eqnarray*}
+p(\mathcal{D} = \langle bbb' \rangle| \mathcal{G} = \langle b,b' \rangle) & = &  \hcancel{p( bbb' | r_1 = b  \land r_2 = b \land r_3 = b ) \cdot p( r_1 = b  \land r_2 = b \land r_3 = b  ) } \\
+                                                                          &   &  p( bbb' | r_1 = b  \land r_2 = b \land r_3 = b' ) \cdot p( r_1 = b  \land r_2 = b \land r_3 = b'  ) \\
+                                                                          &   &  p( bbb' | r_1 = b  \land r_2 = b' \land r_3 = b ) \cdot p( r_1 = b  \land r_2 = b' \land r_3 = b  ) \\
+                                                                          &   &  \hcancel{p( bbb' | r_1 = b  \land r_2 = b' \land r_3 = b' ) \cdot p( r_1 = b  \land r_2 = b' \land r_3 = b'  ) }\\
+%                                                                         
+                                                                          &   &  p( bbb' | r_1 = b'  \land r_2 = b \land r_3 = b ) \cdot p( r_1 = b'  \land r_2 = b \land r_3 = b  ) \\
+                                                                          &   &  \hcancel{p( bbb' | r_1 = b'  \land r_2 = b \land r_3 = b' ) \cdot p( r_1 = b'  \land r_2 = b \land r_3 = b'  )} \\
+                                                                          &   &  \hcancel{p( bbb' | r_1 = b'  \land r_2 = b' \land r_3 = b ) \cdot p( r_1 = b'  \land r_2 = b' \land r_3 = b  )} \\
+                                                                          &   &  \hcancel{p( bbb' | r_1 = b'  \land r_2 = b' \land r_3 = b' ) \cdot p( r_1 = b'  \land r_2 = b' \land r_3 = b'  ) } \\
+\end{eqnarray*}
+
+\subsection{$n=k$}
+\begin{equation}
+p(\mathcal{D} = \langle bxk , b'x(n-k) \rangle| \mathcal{G} = \langle b,b' \rangle) = {n \choose k} \cdot \frac {1} {2^n} \cdot \prod_{i=1}^n (1-\epsilon_{i})
+\end{equation}
+
+
+\subsection{Questions:}
+
+
+\begin{itemize}
+\item Divergence between sample and reference 
+\item Mapping quality as a prob ?
+\item Multithreading + Markov chain
+\end{itemize}
+
+
+%
+%
+%\begin{eqnarray*}
+%p(\mathcal{G} = \langle \rangle | \mathcal{G} = \langle b,b' \rangle) & = & \frac {1} {2} (p( first\ sampled\ b) )  + \frac {1} {2} (p( first\ sampled\ b)' ) \\
+%                           & = & \frac {1} {2} (1-\epsilon_1)            + \frac {1} {2} (\frac{ \epsilon_1} {3} ) \\
+%\end{eqnarray*}
+%
+%
+%\begin{eqnarray*}
+%p(bb| \langle b,b' \rangle) & = & \frac {1} {4} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)   + \\
+%                            &   & \frac {1} {4} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')  + \\
+%                            &   & \frac {1} {4} p( first\ sampled\ b')      \cdot p(second\ sampled\ b)   + \\
+%                            &   & \frac {1} {4} p( first\ sampled\ b')      \cdot p(second\ sampled\ b')    \\
+%%%%%
+%                            & = & \frac {1} {4} ( 1-\epsilon_1)            \cdot (1-\epsilon_2)  + \\
+%                            &   & \frac {1} {4} ( 1-\epsilon_1)            \cdot (\frac{\epsilon_2} {3})  + \\
+%                            &   & \frac {1} {4} ( \frac{\epsilon_1} {3})   \cdot (1-\epsilon_2)   + \\
+%                            &   & \frac {1} {4} ( \frac{\epsilon_1} {3})   \cdot (\frac{\epsilon_2} {3})  \\
+%\end{eqnarray*}
+%
+%\begin{eqnarray*}
+%p(bb'| \langle b,b' \rangle) & = & \frac {1} {4} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)  + \\
+%                             &   & \frac {1} {4} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')  + \\
+%                             &   & \frac {1} {4} p( first\ sampled\ b')      \cdot p(second\ sampled\ b)   + \\
+%                             &   & \frac {1} {4} p( first\ sampled\ b')      \cdot p(second\ sampled\ b') \\
+%%%%%
+%                            & = & \frac {1} {4} (   (1-\epsilon_1 ) \cdot (\frac{\epsilon_2} {3})    + (\frac{\epsilon_1} {3} ) \cdot (1-\epsilon_2) ) \\
+%                            &   & \frac {1} {4} ( 1-\epsilon_1)            \cdot (1-\epsilon_2)  + \\
+%                            &   & \frac {1} {4} ( 1-\epsilon_1)            \cdot (1-\epsilon_2)   + \\
+%                            &   & \frac {1} {4} (   (1-\epsilon_1 ) \cdot (\frac{\epsilon_2} {3})  + (\frac{\epsilon_1} {3} ) \cdot (1-\epsilon_2) ) \\
+%\end{eqnarray*}
+%or can be written as:
+%
+%\begin{eqnarray*}
+%p(bbb| \langle b,b' \rangle) & = & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)  + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%%%%
+%                             &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)  + \\
+%                             &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%\end{eqnarray*}
+%
+%
+%\begin{eqnarray*} 
+%p(bbb| \langle b,b' \rangle) & = & \frac {1} {8} (1-\epsilon_1 )       \cdot (1-\epsilon_2)     \cdot (1-\epsilon_3)   + \\
+%                             &   & \frac {1} {8} (1-\epsilon_1 )       \cdot (1-\epsilon_2)     \cdot (\frac{\epsilon_3} {3} )  + \\
+%                             &   & \frac {1} {8} (1-\epsilon_1 )       \cdot (\frac{\epsilon_2} {3})    \cdot (1-\epsilon_3)  + \\
+%                             &   & \frac {1} {8} (1-\epsilon_1 )       \cdot (\frac{\epsilon_2} {3})    \cdot (\frac{\epsilon_3} {3} )  + \\
+%%%%
+%                             &   & \frac {1} {8} ( \frac{\epsilon_1} {3})       \cdot (1-\epsilon_2)     \cdot (1-\epsilon_3)   + \\
+%                             &   & \frac {1} {8} ( \frac{\epsilon_1} {3})       \cdot (1-\epsilon_2)     \cdot (\frac{\epsilon_3} {3} )  + \\
+%                             &   & \frac {1} {8} ( \frac{\epsilon_1} {3})       \cdot (\frac{\epsilon_2} {3})   \cdot (1-\epsilon_3)  + \\
+%                             &   & \frac {1} {8} ( \frac{\epsilon_1} {3})       \cdot (\frac{\epsilon_2} {3})    \cdot (\frac{\epsilon_3} {3} ) + \\
+%\end{eqnarray*}
+%
+%\begin{eqnarray*}
+%p(bbb'| \langle b,b' \rangle) & = & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%%%%
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%\end{eqnarray*}
+%
+%
+%\begin{eqnarray*}
+%p(bbb'| \langle b,b' \rangle) & = & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b)       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%%%%
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b)     \cdot p(third\ sampled\ b')  + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b)   + \\
+%                              &   & \frac {1} {8} p( first\ sampled\ b')       \cdot p(second\ sampled\ b')    \cdot p(third\ sampled\ b')  + \\
+%\end{eqnarray*}
+%
+%
+%
+%
+%
+\end{document}
+%yyy
