@@ -9,8 +9,6 @@
 
 
 //TODO
-//- print to log/genomes if booleans set
-//documentation
 
 // #define DEBUG1
 // #define DEBUG2
@@ -265,6 +263,7 @@ inline bool hasBadCharacter(const string & reconstructedReference){
     return false;
 }
 
+// if we skip the alignment and cannot get a deamination for this read
 inline bool skipAlign(const string & reconstructedReference,const BamAlignment  * al,unsigned int * skipped){
     if(hasBadCharacter(reconstructedReference)){
 	(*skipped)++;
@@ -286,8 +285,20 @@ inline bool skipAlign(const string & reconstructedReference,const BamAlignment  
 }
 
 
-//This method calls the best nucleotide and 
-//
+
+
+//! A method that calls the best nucleotide given the likelihood for the 4 nucleotides
+/*!
+  This method is called by callSingleNucleotide and  will use the information stored in likeBaseNoindel to find the most likely nucleotide and compute the error in this assignment. It can be used for both the contaminant and endogenous.
+
+  \param bestNuc : The best nucleotide will be stored here
+  \param sumLogLikeAll : Sum of the log-likelihood for every base will be stored here
+  \param sumLogLikeOnlyBest : Log-likelihood for the best nucleotide will be stored here
+  \param sumLogLikeAllButBest : Sum of the log-likelihood for every base excluding the best will be stored here
+  \param sumLogForNucs[] : The log-likelihood of the sum of the remaining bases (ex: For A, only consider C,G,T) for all 4 bases the will be stored here
+  \param likeBaseNoindel: The pre-computed likelihood for all bases
+  \param infoPPos: The vector of structure populated by the bam reader, needed to get the coverage to break ties in likelihood, unlikely to be used
+*/
 inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 					       long double & sumLogLikeAll,        // sum of all the logs
 					       long double & sumLogLikeOnlyBest,   // sum of the logs for the best
@@ -419,6 +430,23 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 //  } positionInfo;
 
 
+//! A method that calls potential insertion in the sample/deletions in the reference
+/*!
+  This method is called by printLogAndGenome(). 
+  When we assume we have a single contaminant :
+     We use insertion2loglikeEndoCont to call both insertions in the contaminant and endogenous. We marginalize over each possible insertion (and no insertion) for the other and determine the most likely insert (or lack thereof) 
+  When we cannot assume we have a single contaminant:
+      Just use insertion2loglike to find the most likely insert (or lack thereof)
+
+  \param i : Position on the mitonchondria
+  \param genomeRef : The reference genome 
+  \param infoPPos: The vector of structure populated by the bam reader
+  \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param genomeToPrint: String on which the endogenous genome will be printed
+  \param genomeToPrintC: String on which the contaminant genome will be printed
+  \param logToPrint:  Pointer to the string stream for the endogenous log
+  \param logToPrintC: Pointer to the string stream for the contaminant log
+*/
 void insertionInSample(const int i,
 		       const string & genomeRef,
 		       const vector<singlePosInfo> & infoPPos, 
@@ -625,7 +653,23 @@ void insertionInSample(const int i,
 
 }
 
+//! A method that calls potential deletion in the sample/insertion in the reference
+/*!
+  This method is called by printLogAndGenome(). 
+  When we assume we have a single contaminant :
+     We use llikDeletionBoth, llikDeletionEndo, llikDeletionEndo, llikDeletionCont, llikDeletionNone from infoPPos to find the most likely state for both the endogenous and the contaminant.
+  When we cannot assume we have a single contaminant:
+     Use llikDeletion llikNoDeletion to find out wether a deletion is more likely than the
 
+  \param i : Position on the mitonchondria
+  \param genomeRef : The reference genome 
+  \param infoPPos: The vector of structure populated by the bam reader
+  \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param logToPrint:  Pointer to the string stream for the endogenous log
+  \param logToPrintC: Pointer to the string stream for the contaminant log
+  \param skipEndo:  Boolean set by the method for the endogenous sample, set to 1 if the sample has a deletion hence no need to call a base
+  \param skipCont:  Boolean set by the method for the contaminant, set to 1 if the contaminant has a deletion hence no need to call a base
+*/
 void deletionInSample(const int i,
 		      const string & genomeRef,
 		      const vector<singlePosInfo> & infoPPos,
@@ -776,6 +820,21 @@ void deletionInSample(const int i,
 }
 
 
+//! A method that prints the log for bases without any coverage
+/*!
+  This method is called by printLogAndGenome() and just prints a simple line saying there was no coverage.
+
+  \param i : Position on the mitonchondria
+  \param genomeRef : The reference genome 
+  \param infoPPos: The vector of structure populated by the bam reader
+  \param outLogCflag: Flag to say we print to the contaminant log as well.
+  \param genomeToPrint: String on which the endogenous genome will be printed
+  \param genomeToPrintC: String on which the contaminant genome will be printed
+  \param logToPrint:  Pointer to the string stream for the endogenous log
+  \param logToPrintC: Pointer to the string stream for the contaminant log
+  \param skipEndo:  Boolean if we skip the  endogenous sample, set to 1 if the endogenous sample has no coverage
+  \param skipCont:  Boolean set by the method for the contaminant, set to 1 if the contaminant has no coverage
+*/
 void noCoverage(const int i,
 		const string & genomeRef,
 		const vector<singlePosInfo> & infoPPos,
@@ -803,6 +862,28 @@ void noCoverage(const int i,
 }
 
 
+//! A method that computes the most likely single nucleotide
+/*!
+  This method is called by printLogAndGenome() and either computes:
+  When we assume we have a single contaminant :
+     use likeBaseNoindelCont to compute the most likely endogenous base and contaminant
+     we marginalize over each contaminant base to call the endogenous base and vice-versa
+  When we cannot assume we have a single contaminant:
+     use likeBaseNoindel for all four endogenous nucleotides
+  
+  It calls callBestNucleotideGivenLikelihood() for each possibility 
+  \param i : Position on the mitonchondria
+  \param genomeRef : The reference genome 
+  \param infoPPos: The vector of structure populated by the bam reader
+  \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param minQual: PHRED quality threshold, beyong this we print N instead of the base
+  \param genomeToPrint: String on which the endogenous genome will be printed
+  \param genomeToPrintC: String on which the contaminant genome will be printed
+  \param logToPrint:  Pointer to the string stream for the endogenous log
+  \param logToPrintC: Pointer to the string stream for the contaminant log
+  \param skipEndo:  If there was a deletion, we do not print to the endogenous sample
+  \param skipCont:  If there was a deletion, we do not print to the contaminant
+*/
 void callSingleNucleotide(const int i,
 			  const string & genomeRef,
 			  const vector<singlePosInfo> & infoPPos,
@@ -881,7 +962,7 @@ void callSingleNucleotide(const int i,
 		 
 	    likeBaseNoindelC[nucc]      = 0.0;
 
-	    for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base C,G,T
+	    for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base A,C,G,T
 		     
 		//likeBaseNoindelC[nucc]  += pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
 		likeBaseNoindelC[nucc]  = oplusInit(likeBaseNoindelC[nucc], infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
@@ -1059,7 +1140,26 @@ void callSingleNucleotide(const int i,
     // cout<<(i+1)<<"\t"<<toadd.ref<<"\t"<<toadd.consensus<<endl;
 
 }
-				
+
+
+//! A method that calls each subroutine for call the endogenous (and contaminant) after the BAM file was read
+/*!
+  This method is called by printLogAndGenome() and just prints a simple line saying there was no coverage.
+
+  \param sizeGenome: the actual (biological) size of the mitochondrial. The reference can be longer if the first base pairs were copied at the end
+  \param infoPPos: The vector of structure populated by the bam reader.
+  \param outSeq:  String containing the filename of the endogenous sequence
+  \param outLog:  String containing the filename of the endogenous log file
+  \param genomeRef : The reference genome 
+  \param minQual: PHRED quality threshold, beyong this we print N instead of the base for single nucleotides
+  \param nameMT: Name of the produced fasta record in the fasta file for the endogenous sample
+  \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param outSeqC:  String containing the filename of the contaminant sequence
+  \param outLogC:  String containing the filename of the contaminat log file
+  \param outSeqCflag: Boolean flag to say whether we print to the contaminant fasta sequence or not
+  \param outLogCflag: Boolean flag to say whether we print to the contaminant log file or not
+  \param nameMTC:  Name of the produced fasta record in the fasta file for the endogenous sample
+*/				
 void  printLogAndGenome(const int sizeGenome,
 			const vector<singlePosInfo> & infoPPos,
 			const string outSeq,
@@ -1266,690 +1366,730 @@ void  printLogAndGenome(const int sizeGenome,
 //vector<positionInfo> * positionsInfoFound;
 // map<string, map<unsigned int,contaminationInfo> > contFreq;
 
+//! Object to iterate over read at a single position
+/*!
+  This object is called by iterateOverReads() and the Visit() method is used for each position
+
+*/				
 class MyPileupVisitor : public PileupVisitor {
   
-    public:
-    MyPileupVisitor(const RefVector& references,
-		    Fasta * fastaReference,
-		    vector<singlePosInfo> * infoPPos,
-		    const int sizeGenome,
-		    const bool ignoreMQ,
-		    const long double contaminationPrior,
-		    const bool singleCont)
-            : PileupVisitor()
-	    , m_references(references)
-	    , m_fastaReference(fastaReference)
-	    , m_infoPPos(infoPPos)
-	    , sizeGenome(sizeGenome)
-	    , ignoreMQ(ignoreMQ)
-	    , contaminationPrior(contaminationPrior)
-	    , singleCont(singleCont)
-        { 
+public:
+  MyPileupVisitor(const RefVector& references,
+		  Fasta * fastaReference,
+		  vector<singlePosInfo> * infoPPos,
+		  const int sizeGenome,
+		  const bool ignoreMQ,
+		  const long double contaminationPrior,
+		  const bool singleCont)
+    : PileupVisitor()
+    , m_references(references)
+    , m_fastaReference(fastaReference)
+    , m_infoPPos(infoPPos)
+    , sizeGenome(sizeGenome)
+    , ignoreMQ(ignoreMQ)
+    , contaminationPrior(contaminationPrior)
+    , singleCont(singleCont)
+  { 
 
-	}
-        ~MyPileupVisitor(void) { }
+  }
+  ~MyPileupVisitor(void) { }
   
-    // PileupVisitor interface implementation
-    public:
-	// prints coverage results ( tab-delimited )
-        void Visit(const PileupPosition& pileupData) {
-	    //cout<<"visit"<<endl;
-	    char referenceBase = 'N';
+  // PileupVisitor interface implementation
+public:
+  // prints coverage results ( tab-delimited )
+
+  //! Method to visit each read for each position in the BAM alignment
+  /*!
+    This methods iterates over each read and considers 3 cases:
+    1) There is a insertion in the sample (or deletion in the reference)
+       Store all possible inserts in allInserts
+       When we assume that there is a single contaminant:
+         Compute the likelihood in insertion2loglikeEndoCont for each 4 possibilities:
+            1: Both the endogenous and contaminant have the insertion
+            2: The endogenous has the insertion but not the contaminant
+            3: The contaminant has the insertion but not the endogenous
+            4: None have it
+       When we cannot assume that there is a single contaminant:
+         Compute the likelihood of an insert versus not having it and store it in insertion2loglike
+
+    2) There is a deletion in the sample (or insertion in the reference)
+       When we assume that there is a single contaminant:
+          Compute the likelihood for each four possibilities:
+	    1: llikDeletionBoth When both the endogenous and the contaminant have the deletion
+            2: llikDeletionEndo When only the endogenous has the deletion
+            3: llikDeletionCont When only the contaminant has the deletion
+            4: llikDeletionNone When none have the deletion
+       When we cannot assume that there is a single contaminant:
+            Compute the likelihood that there is a deletion versus not having a deletion, store it in llikDeletion and llikNoDeletion.
+
+    3) There is potentially a variation of a single nucleotide
+       When we assume that there is a single contaminant:
+          Compute the likelihood for each 16 (4x4) possible nucleotide pairs and store in likeBaseNoindelCont as [nuc endogenous][nuc contaminant]
+       When we cannot assume that there is a single contaminant:
+          Compute the likelihood for each 4 possibilties and store it in likeBaseNoindel.
+       
+    
+  */				  
+  void Visit(const PileupPosition& pileupData) {
+    //cout<<"visit"<<endl;
+    char referenceBase = 'N';
 	    
-	    unsigned int posAlign = pileupData.Position+1;
-	    int posVector=int(pileupData.Position)%sizeGenome;
+    unsigned int posAlign = pileupData.Position+1;
+    int posVector=int(pileupData.Position)%sizeGenome;
 	    
 
-	    // if( (posAlign%100) == 0){
-	    // 	cerr<<"pos  = "<<posAlign<<endl;
-	    // }
-	    //cout<<endl<<"pos = "<<posAlign<<"\t"<<posVector;
+    // if( (posAlign%100) == 0){
+    // 	cerr<<"pos  = "<<posAlign<<endl;
+    // }
+    //cout<<endl<<"pos = "<<posAlign<<"\t"<<posVector;
 	    
 
-	    //for some reason, we have to do -1 on the .Position
-	    if ( !m_fastaReference->GetBase(pileupData.RefId, posAlign-1, referenceBase ) ) {
-		cerr << "bamtools convert ERROR: pileup conversion - could not read reference base from FASTA file at chr "<<pileupData.RefId<<" position "<<(posAlign-1) << endl;
-		exit(1);
-	    }
+    //for some reason, we have to do -1 on the .Position
+    if ( !m_fastaReference->GetBase(pileupData.RefId, posAlign-1, referenceBase ) ) {
+      cerr << "bamtools convert ERROR: pileup conversion - could not read reference base from FASTA file at chr "<<pileupData.RefId<<" position "<<(posAlign-1) << endl;
+      exit(1);
+    }
 
 
-	    //cout<<"\t"<<referenceBase<<"\t"<<endl;
+    //cout<<"\t"<<referenceBase<<"\t"<<endl;
 
 
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){
-		m_infoPPos->at(posVector).cov++;
+    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){
+      m_infoPPos->at(posVector).cov++;
 
-		//Add mapq
-		m_infoPPos->at(posVector).mapqAvg += pow(10.0, (long double)(pileupData.PileupAlignments[i].Alignment.MapQuality)/-10.0);
+      //Add mapq
+      m_infoPPos->at(posVector).mapqAvg += pow(10.0, (long double)(pileupData.PileupAlignments[i].Alignment.MapQuality)/-10.0);
 
-		// cout<<pileupData.PileupAlignments[i].Alignment.Name<<"\t"<<
-		//     pileupData.PileupAlignments[i].IsCurrentDeletion<<"\t"<<
-		//     pileupData.PileupAlignments[i].IsNextDeletion<<"\t"<<
-		//     pileupData.PileupAlignments[i].IsNextInsertion<<"\t"<<
-		//     pileupData.PileupAlignments[i].DeletionLength<<"\t"<<
-		//     pileupData.PileupAlignments[i].InsertionLength<<"\t"<<
-		//     pileupData.PileupAlignments[i].IsSegmentBegin<<"\t"<<
-		//     pileupData.PileupAlignments[i].IsSegmentEnd<<"\t"<<
-		//     endl;
-	    }
+      // cout<<pileupData.PileupAlignments[i].Alignment.Name<<"\t"<<
+      //     pileupData.PileupAlignments[i].IsCurrentDeletion<<"\t"<<
+      //     pileupData.PileupAlignments[i].IsNextDeletion<<"\t"<<
+      //     pileupData.PileupAlignments[i].IsNextInsertion<<"\t"<<
+      //     pileupData.PileupAlignments[i].DeletionLength<<"\t"<<
+      //     pileupData.PileupAlignments[i].InsertionLength<<"\t"<<
+      //     pileupData.PileupAlignments[i].IsSegmentBegin<<"\t"<<
+      //     pileupData.PileupAlignments[i].IsSegmentEnd<<"\t"<<
+      //     endl;
+    }
 
-	    m_infoPPos->at(posVector).mapqAvg = m_infoPPos->at(posVector).mapqAvg/(long double)(m_infoPPos->at(posVector).cov);
-	    m_infoPPos->at(posVector).mapqAvg = -10.0*( log( m_infoPPos->at(posVector).mapqAvg )/log(10.0) );
-
-
+    m_infoPPos->at(posVector).mapqAvg = m_infoPPos->at(posVector).mapqAvg/(long double)(m_infoPPos->at(posVector).cov);
+    m_infoPPos->at(posVector).mapqAvg = -10.0*( log( m_infoPPos->at(posVector).mapqAvg )/log(10.0) );
 
 
-	    //There are 3 possibilities:
-	    //1) There is a insertion in the sample (or deletion in the reference)
-	    //2) There is a deletion in the sample (or insertion in the reference)
-	    //3) There is potentially a variation of a single nucleotide
+
+
+    //There are 3 possibilities:
+    //1) There is a insertion in the sample (or deletion in the reference)
+    //2) There is a deletion in the sample (or insertion in the reference)
+    //3) There is potentially a variation of a single nucleotide
 	    	    
 
 
-	    /////////////////////////////////////////////////////
-	    //insertion in the reads/deletion in the reference
-	    ///////////////////////////////////////////////////
-	    //detecting to find all possible insertions
-	    // set<string> allInsert;
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
+    /////////////////////////////////////////////////////
+    //insertion in the reads/deletion in the reference
+    ///////////////////////////////////////////////////
+    //detecting to find all possible insertions
+    // set<string> allInsert;
+    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
 
-		if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
-		    pileupData.PileupAlignments[i].IsNextInsertion &&
-		    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
-		    string insert="";
-		    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
-			insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
-		    }
-		    m_infoPPos->at(posVector).allInserts.insert(insert);
+      if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
+	  pileupData.PileupAlignments[i].IsNextInsertion &&
+	  (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
+	string insert="";
+	for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
+	  insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
+	}
+	m_infoPPos->at(posVector).allInserts.insert(insert);
 		    
-		    m_infoPPos->at(posVector).insertionRight.push_back(insert);
-		    m_infoPPos->at(posVector).insertion2count[insert]++;
-		} //else{
-		// string insert="";
-		// m_infoPPos->at(posVector).allInserts.insert(insert);
-		    //}
-	    }
-	    //entering an "null" model of not having an insertion
-	    m_infoPPos->at(posVector).allInserts.insert("");
+	m_infoPPos->at(posVector).insertionRight.push_back(insert);
+	m_infoPPos->at(posVector).insertion2count[insert]++;
+      } //else{
+      // string insert="";
+      // m_infoPPos->at(posVector).allInserts.insert(insert);
+      //}
+    }
+    //entering an "null" model of not having an insertion
+    m_infoPPos->at(posVector).allInserts.insert("");
 	    
-	    //init likelihood for all possible pairs of inserts
-	    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-		it1 != m_infoPPos->at(posVector).allInserts.end(); 
-		++it1) {
-		for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-		    it2 != m_infoPPos->at(posVector).allInserts.end(); 
-		    ++it2) {
-		    pair<string,string> keytouse (*it1,*it2);
-		    m_infoPPos->at(posVector).insertion2loglikeEndoCont[ keytouse ] = 0.0;
-		}
-	    }
+    //init likelihood for all possible pairs of inserts
+    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+	it1 != m_infoPPos->at(posVector).allInserts.end(); 
+	++it1) {
+      m_infoPPos->at(posVector).insertion2loglike[*it1] = 0.0;
+
+      for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+	  it2 != m_infoPPos->at(posVector).allInserts.end(); 
+	  ++it2) {
+	pair<string,string> keytouse (*it1,*it2);
+	m_infoPPos->at(posVector).insertion2loglikeEndoCont[ keytouse ] = 0.0;
+      }
+    }
 
 
 
-	    //re-iterate over each read
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
-		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
-		long double probEndogenous=1.0-contaminationPrior;
-		if(read2endoProbInit){ //include probability of endogenous		    
-		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
-											    "#"+ 
-											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+    //re-iterate over each read
+    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){				
+      int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+      long double probEndogenous=1.0-contaminationPrior;
+      if(read2endoProbInit){ //include probability of endogenous		    
+	map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+										"#"+ 
+										stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
 		    
 		    
-		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
-			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
-		    }else{
-			probEndogenous = itRead2endoProb->second;
-		    }
-		}
+	if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+	  probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
+	}else{
+	  probEndogenous = itRead2endoProb->second;
+	}
+      }
 
 
 		
-		if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
-		    pileupData.PileupAlignments[i].IsNextInsertion &&
-		    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
+      if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
+	  pileupData.PileupAlignments[i].IsNextInsertion &&
+	  (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
 		    
-		    string insert="";
-		    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
-			insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
-		    }
-		    //cout<<"ins "<<insert<<endl;
+	string insert="";
+	for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
+	  insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
+	}
+	//cout<<"ins "<<insert<<endl;
 		    
 		    
-		    if(singleCont){
-			// m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			// m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			//both endo and cont have the insert, both right
-			if(1){
-			    pair<string,string> keytouse (insert,insert);
-			    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-			}
-			//only endo has the insert, endo has it right, cont has is wrong
-			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it) {
-			    if( *it != insert){
-				pair<string,string> keytouse (insert,*it);
-				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-			    }
+	if(singleCont){
+	  // m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  // m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  //both endo and cont have the insert, both right
+	  if(1){
+	    pair<string,string> keytouse (insert,insert);
+	    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+	      log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+	  }
+	  //only endo has the insert, endo has it right, cont has is wrong
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert){
+	      pair<string,string> keytouse (insert,*it);
+	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+	    }
 			    
-			}
+	  }
 			
-			//only cont has the insert, endo has it wrong, cont has is cont
-			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it) {
-			    if( *it != insert){
-				pair<string,string> keytouse (*it   ,insert);
-				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-			    }
+	  //only cont has the insert, endo has it wrong, cont has is cont
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert){
+	      pair<string,string> keytouse (*it   ,insert);
+	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+	    }
 			    
-			}
+	  }
 			
-			//none have the insert, both have it wrong
-			for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it1 != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it1) {
-			    if( *it1 != insert){
-				for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-				    it2 != m_infoPPos->at(posVector).allInserts.end(); 
-				    ++it2) {
-				    if( *it2 != insert){
-					pair<string,string> keytouse (*it1  ,*it2);
-					m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-					    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-				    }
-				}
-			    }
-			}
+	  //none have the insert, both have it wrong
+	  for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it1 != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it1) {
+	    if( *it1 != insert){
+	      for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+		  it2 != m_infoPPos->at(posVector).allInserts.end(); 
+		  ++it2) {
+		if( *it2 != insert){
+		  pair<string,string> keytouse (*it1  ,*it2);
+		  m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		}
+	      }
+	    }
+	  }
 			
 			
-		    }else{ //not single cont
-			//got it right for the insert
-		      m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-		      //The remaining insertions have it wrong
-		      for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			  it != m_infoPPos->at(posVector).allInserts.end(); 
-			  ++it) {
-			if( *it != insert)
-			  m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		      }
-		    }
+	}else{ //not single cont
+	  //got it right for the insert
+	  m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+	  //The remaining insertions have it wrong
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert)
+	      m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  }
+	}
 		    
-		}else{ //does not have insert but bases
-		    string insert="";
-		    //push none
-		    if(singleCont){
-			// m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			// m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			//both endo and cont have the insert, both right
-			if(1){
-			    pair<string,string> keytouse (insert,insert);
-			    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-			}
-			//only endo has the insert, endo has it right, cont has is wrong
-			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it) {
-			    if( *it != insert){
-				pair<string,string> keytouse (insert,*it);
-				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-			    }
+      }else{ //does not have insert but bases
+	string insert="";
+	//push none
+	if(singleCont){
+	  // m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  // m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  //both endo and cont have the insert, both right
+	  if(1){
+	    pair<string,string> keytouse (insert,insert);
+	    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+	      log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+	  }
+	  //only endo has the insert, endo has it right, cont has is wrong
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert){
+	      pair<string,string> keytouse (insert,*it);
+	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+	    }
 
-			}
+	  }
 			
-			//only cont has the insert, endo has it wrong, cont has is cont
-			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it) {
-			    if( *it != insert){
-				pair<string,string> keytouse (*it   ,insert);
-				m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-				    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-			    }
+	  //only cont has the insert, endo has it wrong, cont has is cont
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert){
+	      pair<string,string> keytouse (*it   ,insert);
+	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+	    }
 			    
-			}
+	  }
 			
-			//none have the insert, both have it wrong
-			for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it1 != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it1) {
-			    if( *it1 != insert){
-				for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-				    it2 != m_infoPPos->at(posVector).allInserts.end(); 
-				    ++it2) {
-				    if( *it2 != insert){
-					pair<string,string> keytouse (*it1  ,*it2);
-					m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-					    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-				    }
-				}
-			    }
-			}
+	  //none have the insert, both have it wrong
+	  for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it1 != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it1) {
+	    if( *it1 != insert){
+	      for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+		  it2 != m_infoPPos->at(posVector).allInserts.end(); 
+		  ++it2) {
+		if( *it2 != insert){
+		  pair<string,string> keytouse (*it1  ,*it2);
+		  m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		}
+	      }
+	    }
+	  }
 			
 			
-		    }else{ //not single cont
-			//got it right for the insert
-			m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-			//The remaining insertions have it wrong
-			for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-			    it != m_infoPPos->at(posVector).allInserts.end(); 
-			    ++it) {
-			    if( *it != insert)
-				m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-			}
-		    }
+	}else{ //not single cont
+	  //got it right for the insert
+	  m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+	  //The remaining insertions have it wrong
+	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+	      it != m_infoPPos->at(posVector).allInserts.end(); 
+	      ++it) {
+	    if( *it != insert)
+	      m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	  }
+	}
 		    
-		}//end, no insert
-	    }//end for each read
+      }//end, no insert
+    }//end for each read
 	
 
 
 
 
 
-	    // for(map<int,int>::iterator it = test2test.begin(); 
-	    // 	it != test2test.end(); 
-	    // 	++it) {
+    // for(map<int,int>::iterator it = test2test.begin(); 
+    // 	it != test2test.end(); 
+    // 	++it) {
 
-	    // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+    // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
 
-	    /////////////////////////////////////////////////////
-	    //deletion in the reads/insertion in the reference
-	    /////////////////////////////////////////////////////
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
-		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
-		long double probEndogenous=1.0-contaminationPrior;
-		string rg;
-		pileupData.PileupAlignments[i].Alignment.GetTag("RG",rg);//REMOVE ME
-		if(read2endoProbInit){ //include probability of endogenous
+    /////////////////////////////////////////////////////
+    //deletion in the reads/insertion in the reference
+    /////////////////////////////////////////////////////
+    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
+      int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+      long double probEndogenous=1.0-contaminationPrior;
+      string rg;
+      pileupData.PileupAlignments[i].Alignment.GetTag("RG",rg);//REMOVE ME
+      if(read2endoProbInit){ //include probability of endogenous
 		    
-		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
-											    "#"+ 
-											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+	map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+										"#"+ 
+										stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
 		    
 		    
-		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
-			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
-		    }else{
-			probEndogenous = itRead2endoProb->second;
-		    }
-		}
+	if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+	  probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
+	}else{
+	  probEndogenous = itRead2endoProb->second;
+	}
+      }
 
-		// if(posVector>=513 && posVector<=516){
-		//     cout<<"pos ="<<posVector<<"\t"<<rg<<endl;
-		// }
+      // if(posVector>=513 && posVector<=516){
+      //     cout<<"pos ="<<posVector<<"\t"<<rg<<endl;
+      // }
 		
-		if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
-		    pileupData.PileupAlignments[i].IsNextInsertion &&
-		    (pileupData.PileupAlignments[i].InsertionLength == 0)){ //has deletion
-		    //continue;
-		    //cout<<"del"<<endl;
+      if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
+	  pileupData.PileupAlignments[i].IsNextInsertion &&
+	  (pileupData.PileupAlignments[i].InsertionLength == 0)){ //has deletion
+	//continue;
+	//cout<<"del"<<endl;
 		    
-		    // if(posVector>=513 && posVector<=516){
-		    // 	cout<<"pos ="<<posVector<<"\tdel\t"<<rg<<endl;
-		    // }
+	// if(posVector>=513 && posVector<=516){
+	// 	cout<<"pos ="<<posVector<<"\tdel\t"<<rg<<endl;
+	// }
 
-		    m_infoPPos->at(posVector).numDel++;
+	m_infoPPos->at(posVector).numDel++;
 
-		    if(singleCont){
-			// m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
-			// m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
-			// m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right	
-			// m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong	
+	if(singleCont){
+	  // m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+	  // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+	  // m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right	
+	  // m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong	
 
-			//there is a deletion in both, got it right 2x
-			m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
-			//only in endo, right if endo, wrong if cont
-			m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
-			//only in cont, wrong if endo, right if cont
-			m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
-			//none have it, wrong in both
-			m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+	  //there is a deletion in both, got it right 2x
+	  m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+	  //only in endo, right if endo, wrong if cont
+	  m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+	  //only in cont, wrong if endo, right if cont
+	  m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+	  //none have it, wrong in both
+	  m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
 
-		    }else{
-			m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
-			m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
-		    }
-		}else{ //does not have deletion
+	}else{
+	  m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+	  m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+	}
+      }else{ //does not have deletion
 
-		    // if(posVector>=513 && posVector<=516){
-		    // 	cout<<"pos ="<<posVector<<"\tnodel\t"<<rg<<endl;
-		    // }
+	// if(posVector>=513 && posVector<=516){
+	// 	cout<<"pos ="<<posVector<<"\tnodel\t"<<rg<<endl;
+	// }
 
-		    if(singleCont){
-			//there is a deletion in both, got it wrong 2x
-			m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
-			//only in endo, wrong in endo, right in cont
-			m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
-			//only in cont, right in endo, wrong in cont
-			m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
-			//none have it, right in both
-			m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+	if(singleCont){
+	  //there is a deletion in both, got it wrong 2x
+	  m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+	  //only in endo, wrong in endo, right in cont
+	  m_infoPPos->at(posVector).llikDeletionEndo += log( probEndogenous*probMapping[m]*(    INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
+	  //only in cont, right in endo, wrong in cont
+	  m_infoPPos->at(posVector).llikDeletionCont += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10); 
+	  //none have it, right in both
+	  m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10); 
 
-			// m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
-			// m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
-			// m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
-			// m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
+	  // m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
+	  // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
+	  // m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
+	  // m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
 
-		    }else{
-			m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
-			m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
-		    }
-		}
-	    }
+	}else{
+	  m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
+	  m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
+	}
+      }
+    }
 	    
 
 
 
 
 
-	    /////////////////////////////////////////////////////
-	    //       Variations of a single nucleotide         //
-	    /////////////////////////////////////////////////////
-	    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		 //for each alignment
-		unsigned int numReads=0;
+    /////////////////////////////////////////////////////
+    //       Variations of a single nucleotide         //
+    /////////////////////////////////////////////////////
+    for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		 //for each alignment
+      unsigned int numReads=0;
 		    
-		numReads++;
-		if(numReads >= MAXCOV){
-		    break;
-		}
+      numReads++;
+      if(numReads >= MAXCOV){
+	break;
+      }
 		
-		//skip deletion in the reads/insertion in the reference
-		if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
-		    pileupData.PileupAlignments[i].IsNextInsertion ){
-		    continue;
-		}
+      //skip deletion in the reads/insertion in the reference
+      if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
+	  pileupData.PileupAlignments[i].IsNextInsertion ){
+	continue;
+      }
 		
-		//base that was read
-		char b   = pileupData.PileupAlignments[i].Alignment.QueryBases[pileupData.PileupAlignments[i].PositionInAlignment];
-		//quality score
-		char q   = pileupData.PileupAlignments[i].Alignment.Qualities[pileupData.PileupAlignments[i].PositionInAlignment]-offsetQual;
-		int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+      //base that was read
+      char b   = pileupData.PileupAlignments[i].Alignment.QueryBases[pileupData.PileupAlignments[i].PositionInAlignment];
+      //quality score
+      char q   = pileupData.PileupAlignments[i].Alignment.Qualities[pileupData.PileupAlignments[i].PositionInAlignment]-offsetQual;
+      int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
 		
-		//skip unresolved
-		if(b == 'N')
-		    continue;
-		// if(posVector== 145){
-		//     cout<<b<<endl;
-		// }
+      //skip unresolved
+      if(b == 'N')
+	continue;
+      // if(posVector== 145){
+      //     cout<<b<<endl;
+      // }
 
-		// BEGIN DEAMINATION COMPUTATION
-		//zero base distance to the 5p/3p end
-		int dist5p=-1;
-		int dist3p=-1;
+      // BEGIN DEAMINATION COMPUTATION
+      //zero base distance to the 5p/3p end
+      int dist5p=-1;
+      int dist3p=-1;
 
-		if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
-		    dist5p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
-		    dist3p = pileupData.PileupAlignments[i].PositionInAlignment;
-		}else{
-		    dist5p = pileupData.PileupAlignments[i].PositionInAlignment;
-		    dist3p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
-		}
+      if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
+	dist5p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
+	dist3p = pileupData.PileupAlignments[i].PositionInAlignment;
+      }else{
+	dist5p = pileupData.PileupAlignments[i].PositionInAlignment;
+	dist3p = pileupData.PileupAlignments[i].Alignment.QueryBases.size() - pileupData.PileupAlignments[i].PositionInAlignment-1;
+      }
 		    		    
-		probSubstition * probSubMatchToUseEndo = &defaultSubMatch ;
-		probSubstition * probSubMatchToUseCont = &defaultSubMatch ;
+      probSubstition * probSubMatchToUseEndo = &defaultSubMatch ;
+      probSubstition * probSubMatchToUseCont = &defaultSubMatch ;
 
-		// for(int jas=0;jas<16;jas++){
-		// 	cout<<jas<<"\t"<<probSubMatchToUse->s[jas]<<endl;
-		// }
-		// cout<<"sub\t"<<dist5p<<"\t"<<dist3p<<"\t"<<int(sub5p.size())<< "\t"<<int(sub3p.size()) <<endl;
+      // for(int jas=0;jas<16;jas++){
+      // 	cout<<jas<<"\t"<<probSubMatchToUse->s[jas]<<endl;
+      // }
+      // cout<<"sub\t"<<dist5p<<"\t"<<dist3p<<"\t"<<int(sub5p.size())<< "\t"<<int(sub3p.size()) <<endl;
 
-		if(dist5p <= (int(sub5p.size()) -1)){
-		    probSubMatchToUseEndo = &sub5p[ dist5p ];			
-		    // cout<<"5p sub"<<endl;
-		}
+      if(dist5p <= (int(sub5p.size()) -1)){
+	probSubMatchToUseEndo = &sub5p[ dist5p ];			
+	// cout<<"5p sub"<<endl;
+      }
 		    
-		if(dist3p <= (int(sub3p.size()) -1)){
-		    probSubMatchToUseEndo = &sub3p[ dist3p ];
-		    // cout<<"3p sub"<<endl;
-		}
+      if(dist3p <= (int(sub3p.size()) -1)){
+	probSubMatchToUseEndo = &sub3p[ dist3p ];
+	// cout<<"3p sub"<<endl;
+      }
 		    
-		//we have substitution probabilities for both... take the closest
-		if(dist5p <= (sub5p.size() -1) &&
-		   dist3p <= (sub3p.size() -1) ){
+      //we have substitution probabilities for both... take the closest
+      if(dist5p <= (sub5p.size() -1) &&
+	 dist3p <= (sub3p.size() -1) ){
 		    
-		    if(dist5p < dist3p){
-			probSubMatchToUseEndo = &sub5p[ dist5p ];
-			// cout<<"5p sub"<<endl;
-		    }else{
-			probSubMatchToUseEndo = &sub3p[ dist3p ];
-			// cout<<"3p sub"<<endl;
-		    }
+	if(dist5p < dist3p){
+	  probSubMatchToUseEndo = &sub5p[ dist5p ];
+	  // cout<<"5p sub"<<endl;
+	}else{
+	  probSubMatchToUseEndo = &sub3p[ dist3p ];
+	  // cout<<"3p sub"<<endl;
+	}
 		    
-		}
-		// END DEAMINATION COMPUTATION
+      }
+      // END DEAMINATION COMPUTATION
 
-		long double probEndogenous=1.0-contaminationPrior;
-		if(read2endoProbInit){ //include probability of endogenous
+      long double probEndogenous=1.0-contaminationPrior;
+      if(read2endoProbInit){ //include probability of endogenous
 
-		    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
-											    "#"+ 
-											    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+	map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+										"#"+ 
+										stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
 		    
 
-		    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
-			probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
-		    }else{
-			probEndogenous = itRead2endoProb->second;
-		    }
-		}
+	if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+	  probEndogenous = 1.0-contaminationPrior;      // assume that a read is equally to belong to either the endo or the contaminant
+	}else{
+	  probEndogenous = itRead2endoProb->second;
+	}
+      }
 
 
 
 
 
 
-		if(singleCont){ // we consider a single contaminant
+      if(singleCont){ // we consider a single contaminant
 
-		    for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
+	for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
 
-			char currentNuc=dnaAlphabet[nuce];
+	  char currentNuc=dnaAlphabet[nuce];
 			
 
-			if(currentNuc == b){//match
-			    m_infoPPos->at(posVector).covPerBase[nuce]++;			
-			}else{//mismatch
-			}
+	  if(currentNuc == b){//match
+	    m_infoPPos->at(posVector).covPerBase[nuce]++;			
+	  }else{//mismatch
+	  }
 			
-			// b   is the observed
-			// nuce is the model for the endogenous base
-			int dinucIndexe;//The index depends on the strand
-			if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
-			    dinucIndexe= (3-nuce)*4+baseResolved2int(complement(b));
-			}else{
-			    dinucIndexe=    nuce *4+baseResolved2int(b);
-			}
+	  // b   is the observed
+	  // nuce is the model for the endogenous base
+	  int dinucIndexe;//The index depends on the strand
+	  if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
+	    dinucIndexe= (3-nuce)*4+baseResolved2int(complement(b));
+	  }else{
+	    dinucIndexe=    nuce *4+baseResolved2int(b);
+	  }
 
-		        // probability of generating the base for the endogenous
-			//                          (1-e)          *  p(sub|1-e)                               + (         e                ) *  p(sub|1-e)
-			long double probBasee =  likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndexe] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndexe]);
+	  // probability of generating the base for the endogenous
+	  //                          (1-e)          *  p(sub|1-e)                               + (         e                ) *  p(sub|1-e)
+	  long double probBasee =  likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndexe] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndexe]);
 
-			for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
-			    // b   is the observed
-			    // nucc is the model for the endogenous base
-			    int dinucIndexc;//The index depends on the strand
-			    if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
-				dinucIndexc= (3-nucc)*4+baseResolved2int(complement(b));
-			    }else{
-				dinucIndexc=    nucc *4+baseResolved2int(b);
-			    }
+	  for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
+	    // b   is the observed
+	    // nucc is the model for the endogenous base
+	    int dinucIndexc;//The index depends on the strand
+	    if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
+	      dinucIndexc= (3-nucc)*4+baseResolved2int(complement(b));
+	    }else{
+	      dinucIndexc=    nucc *4+baseResolved2int(b);
+	    }
 
-			    // probability of generating the base for the contaminant
-			    // The substitution probability is probSubMatchToUseCont 
-			    // which is simply the Illumina sub probability
-			    //                          (1-e)          *  p(sub|1-e)                               + (         e                ) *  p(sub|1-e)
-			    long double probBasec =  likeMatchProb[int(q)]  * (probSubMatchToUseCont->s[dinucIndexc] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndexc]);
+	    // probability of generating the base for the contaminant
+	    // The substitution probability is probSubMatchToUseCont 
+	    // which is simply the Illumina sub probability
+	    //                          (1-e)          *  p(sub|1-e)                               + (         e                ) *  p(sub|1-e)
+	    long double probBasec =  likeMatchProb[int(q)]  * (probSubMatchToUseCont->s[dinucIndexc] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndexc]);
 
 			    
-			    long double probBase = ( probEndogenous )*(probBasee)  + ( 1.0-probEndogenous )*(probBasec) ;
-			    long double probFinal;
+	    long double probBase = ( probEndogenous )*(probBasee)  + ( 1.0-probEndogenous )*(probBasec) ;
+	    long double probFinal;
 
 
-			    if(ignoreMQ){ //ignore MQ
-				probFinal = (               probBase                          );
-			    }else{
-				probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
-			    }
+	    if(ignoreMQ){ //ignore MQ
+	      probFinal = (               probBase                          );
+	    }else{
+	      probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+	    }
 			
 
-			    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc] += log(probFinal)/log(10);
+	    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc] += log(probFinal)/log(10);
 
 #ifdef DEBUG3		    
-			    if(posVector== 146){
-				cout<<posAlign<<"\t"<<"b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
-				    <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
-				    <<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc])<<"\t"
-				    <<"p(match)= "<<likeMatchProb[int(q)]  <<"\t"
-				    <<"p(sub|matche)= "<< (probSubMatchToUseEndo->s[dinucIndexe] ) <<"\t"
-				    <<"p(sub|matchc)= "<< (probSubMatchToUseCont->s[dinucIndexc] ) <<"\t"
-				    <<"p(match)*p(sub|matche) "<< (likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndexe] )) <<"\t"
-				    <<"p(match)*p(sub|matchc) "<< (likeMatchProb[int(q)]  * (probSubMatchToUseCont->s[dinucIndexc] )) <<"\t"
-				    <<"p(mismatch)= "<<(1.0 - likeMatchProb[int(q)]) <<"\t"
-				    <<"p(sub|mismatche)= "<<(illuminaErrorsProb.s[dinucIndexe])<<"\t"
-				    <<"p(sub|mismatchc)= "<<(illuminaErrorsProb.s[dinucIndexc])<<"\t"
-				    <<"p(mismatch)*p(sub|mismatche) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexe]) )<<"\t"
-				    <<"p(mismatch)*p(sub|mismatchc) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexc]) )<<endl;
-				//cout<<"-----------------"<<endl;
-			    }
+	    if(posVector== 146){
+	      cout<<posAlign<<"\t"<<"b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
+		  <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
+		  <<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc])<<"\t"
+		  <<"p(match)= "<<likeMatchProb[int(q)]  <<"\t"
+		  <<"p(sub|matche)= "<< (probSubMatchToUseEndo->s[dinucIndexe] ) <<"\t"
+		  <<"p(sub|matchc)= "<< (probSubMatchToUseCont->s[dinucIndexc] ) <<"\t"
+		  <<"p(match)*p(sub|matche) "<< (likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndexe] )) <<"\t"
+		  <<"p(match)*p(sub|matchc) "<< (likeMatchProb[int(q)]  * (probSubMatchToUseCont->s[dinucIndexc] )) <<"\t"
+		  <<"p(mismatch)= "<<(1.0 - likeMatchProb[int(q)]) <<"\t"
+		  <<"p(sub|mismatche)= "<<(illuminaErrorsProb.s[dinucIndexe])<<"\t"
+		  <<"p(sub|mismatchc)= "<<(illuminaErrorsProb.s[dinucIndexc])<<"\t"
+		  <<"p(mismatch)*p(sub|mismatche) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexe]) )<<"\t"
+		  <<"p(mismatch)*p(sub|mismatchc) "<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndexc]) )<<endl;
+	      //cout<<"-----------------"<<endl;
+	    }
 #endif
 
 
-			}//end for each contaminant
+	  }//end for each contaminant
 
-		    }//end for each endo
+	}//end for each endo
 
 #ifdef DEBUG3
 	if(posVector== 146){
-	    cout<<"-----------------"<<endl;
+	  cout<<"-----------------"<<endl;
 	}	    
 #endif
 
-		}else{ //if we cannot assume that there is a single contaminant
+      }else{ //if we cannot assume that there is a single contaminant
 
 
-		    for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-			char currentNuc=dnaAlphabet[nuc];
+	for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+	  char currentNuc=dnaAlphabet[nuc];
 
 
-			if(currentNuc == b){//match
-			    m_infoPPos->at(posVector).covPerBase[nuc]++;			
-			}else{//mismatch
-			}
+	  if(currentNuc == b){//match
+	    m_infoPPos->at(posVector).covPerBase[nuc]++;			
+	  }else{//mismatch
+	  }
 
 
-			// b   is the observed
-			// nuc is the model
-			int dinucIndex;//The index depends on the strand
-			if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
-			    dinucIndex= (3-nuc)*4+baseResolved2int(complement(b));
-			}else{
-			    dinucIndex=    nuc *4+baseResolved2int(b);
-			}
-			// = nuc*4+baseResolved2int(b);
+	  // b   is the observed
+	  // nuc is the model
+	  int dinucIndex;//The index depends on the strand
+	  if( pileupData.PileupAlignments[i].Alignment.IsReverseStrand() ){
+	    dinucIndex= (3-nuc)*4+baseResolved2int(complement(b));
+	  }else{
+	    dinucIndex=    nuc *4+baseResolved2int(b);
+	  }
+	  // = nuc*4+baseResolved2int(b);
 		    
-			//                        (1-e)           *  p(sub|1-e)                          + (         e                 ) *  p(sub|1-e)
-			long double probBase =  likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]);
-			//m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
-			long double probFinal;
+	  //                        (1-e)           *  p(sub|1-e)                          + (         e                 ) *  p(sub|1-e)
+	  long double probBase =  likeMatchProb[int(q)]  * (probSubMatchToUseEndo->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]);
+	  //m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
+	  long double probFinal;
 		    
 
-			if(read2endoProbInit){ //include probability of endogenous
+	  if(read2endoProbInit){ //include probability of endogenous
 
-			    probBase = ( probEndogenous )*(probBase)  + ( 1.0-probEndogenous )*(0.25) ;
-			}
+	    probBase = ( probEndogenous )*(probBase)  + ( 1.0-probEndogenous )*(0.25) ;
+	  }
 
 
 
-			if(ignoreMQ){ //ignore MQ
-			    probFinal = (               probBase                          );
-			}else{
-			    probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
-			}
+	  if(ignoreMQ){ //ignore MQ
+	    probFinal = (               probBase                          );
+	  }else{
+	    probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+	  }
 			
 			
-			m_infoPPos->at(posVector).likeBaseNoindel[nuc] += log(probFinal)/log(10);
+	  m_infoPPos->at(posVector).likeBaseNoindel[nuc] += log(probFinal)/log(10);
 
 #ifdef DEBUG2		    
-			cout<<"b_obs="<<b<<" n_model="<<currentNuc<<"\tindex="<<dinucIndex<<" q="<<int(q)<<" m="<<m<<endl;
-			cout<<"p(match)="<<likeMatchProb[int(q)]  <<"\t"
-			    <<"p(sub|match)="<< (probSubMatchToUse->s[dinucIndex] ) <<"\t"
-			    <<"p(match)*p(sub|match)"<< (likeMatchProb[int(q)]  * (probSubMatchToUse->s[dinucIndex] )) <<"\t"
-			    <<"p(mismatch)="<<(1.0 - likeMatchProb[int(q)]) <<"\t"
-			    <<"p(sub|mismatch)="<<(illuminaErrorsProb.s[dinucIndex])<<"\t"
-			    <<"p(mismatch)*p(sub|mismatch)"<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndex]) )
-			    <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<endl;
+	  cout<<"b_obs="<<b<<" n_model="<<currentNuc<<"\tindex="<<dinucIndex<<" q="<<int(q)<<" m="<<m<<endl;
+	  cout<<"p(match)="<<likeMatchProb[int(q)]  <<"\t"
+	      <<"p(sub|match)="<< (probSubMatchToUse->s[dinucIndex] ) <<"\t"
+	      <<"p(match)*p(sub|match)"<< (likeMatchProb[int(q)]  * (probSubMatchToUse->s[dinucIndex] )) <<"\t"
+	      <<"p(mismatch)="<<(1.0 - likeMatchProb[int(q)]) <<"\t"
+	      <<"p(sub|mismatch)="<<(illuminaErrorsProb.s[dinucIndex])<<"\t"
+	      <<"p(mismatch)*p(sub|mismatch)"<<( (1.0 - likeMatchProb[int(q)]) *(illuminaErrorsProb.s[dinucIndex]) )
+	      <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<endl;
 #endif
 
 
 		    
 
 #ifdef DEBUG2	
-			cout<<posAlign<<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindel[nuc])<<endl;
-			cout<<"-----------------"<<endl;
+	  cout<<posAlign<<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindel[nuc])<<endl;
+	  cout<<"-----------------"<<endl;
 #endif
 
-		    }//end for each nuc
+	}//end for each nuc
 
-		}//end for !singleCont
-
-
+      }//end for !singleCont
 
 
 
-	    }//end each read
+
+
+    }//end each read
 	    
 #ifdef DEBUG3
 
-	    if(singleCont){ // we consider a single contaminant
+    if(singleCont){ // we consider a single contaminant
 
-		cout<<endl;
-		for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
-		    for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base			    
-			cout<<posVector<<"\te="<<dnaAlphabet[nuce]<<"\tc="<<dnaAlphabet[nucc]<<"\t"<<m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc]<<endl;
-		    }
-		}
-	    }
+      cout<<endl;
+      for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
+	for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base			    
+	  cout<<posVector<<"\te="<<dnaAlphabet[nuce]<<"\tc="<<dnaAlphabet[nucc]<<"\t"<<m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc]<<endl;
+	}
+      }
+    }
 #endif
 
-	    //exit(1);
-	    //store
-	    // toStore.cov = numReads;
+    //exit(1);
+    //store
+    // toStore.cov = numReads;
 
-	    // toStore.alt = alt;
-	    //  toStore.pos = posAlign;
+    // toStore.alt = alt;
+    //  toStore.pos = posAlign;
 
-	    // positionsInfoFound->push_back( toStore );
+    // positionsInfoFound->push_back( toStore );
 
-	    // if(positionsInfoFound->size()%10000 == 0){
-	    // 	cerr<<"Found  "<<thousandSeparator(positionsInfoFound->size())<<" positions "<<endl;
-	    // }
+    // if(positionsInfoFound->size()%10000 == 0){
+    // 	cerr<<"Found  "<<thousandSeparator(positionsInfoFound->size())<<" positions "<<endl;
+    // }
 	    
 	    
-	    // skiptonextpos:
-	    //     return;
+    // skiptonextpos:
+    //     return;
 
-	    // cout <<m_references[pileupData.RefId].RefName << "\t" 
-	    // 	 <<referenceBase<<"\t"
-	    // 	 << pileupData.Position << "\t" 
-	    // 	 	 << pileupData.PileupAlignments.size() << endl;
-        }//end visit
+    // cout <<m_references[pileupData.RefId].RefName << "\t" 
+    // 	 <<referenceBase<<"\t"
+    // 	 << pileupData.Position << "\t" 
+    // 	 	 << pileupData.PileupAlignments.size() << endl;
+  }//end visit()
         
-    private:
-    RefVector m_references;
-    Fasta * m_fastaReference;
-    vector<singlePosInfo> * m_infoPPos;
-    int sizeGenome;
-    bool ignoreMQ;
-    long double contaminationPrior;
-    bool singleCont;
+private:
+  RefVector m_references;
+  Fasta * m_fastaReference;
+  vector<singlePosInfo> * m_infoPPos;
+  int sizeGenome;
+  bool ignoreMQ;
+  long double contaminationPrior;
+  bool singleCont;
 
-    //        ostream*  m_out;
+  //        ostream*  m_out;
 };
 
 
@@ -1975,6 +2115,18 @@ class MyPileupVisitor : public PileupVisitor {
 
 
 
+//! A method calls the BAM reader and populates infoPPos
+/*!
+  This method is called by the main. It initializes infoPPos and builds an instance of MyPileupVisitor which will fill the slots of the infoPPos vector
+
+  \param fastaFile : The string of the filename of the fasta file for the reference
+  \param bamfiletopen : The string for the filename for the BAM file
+  \param infoPPos: The vector of structure populated by the bam reader, needed to get the coverage to break ties in likelihood, unlikely to be used
+  \param sizeGenome: the actual (biological) size of the mitochondrial. The reference can be longer if the first base pairs were copied at the end
+  \param ignoreMQ : Boolean flag if the user chooses to ignore mapping quality and assume all reads are correctly mapped
+  \param contaminationPrior: Prior on the contamination rate
+  \param singleCont: Boolean as to we assume that we have a single contaminant or not
+*/
 
 void iterateOverReads(const string fastaFile,
 		      const string bamfiletopen,
@@ -2083,6 +2235,17 @@ void iterateOverReads(const string fastaFile,
 
 }
 
+
+
+//! A method to compute the prior for a single read of being contaminant or endogenous
+/*!
+  This method is called by the main. After the first round, it is called and will use either the deamination profile information or the length distribution to set a prior on each read of being endogenous.
+
+  \param bamfiletopen : The string for the filename for the BAM file
+  \param deamread: Boolean to know if we will use deamination pattern in the calculation
+  \param useLengthPrior: Boolean to know if we will use sequence length information 
+  \param contaminationPrior: Prior on the contamination rate
+*/
 
 void computePriorOnReads(const string bamfiletopen,
 			 const bool deamread,
@@ -2323,7 +2486,10 @@ void computePriorOnReads(const string bamfiletopen,
     } //for each read
 }
 
-
+//! A method to initialize various probability scores to avoid recomputation
+/*!
+  This method is called by the main after capturing the arguments
+*/
 void initScores(){
 
     for(int i=0;i<2;i++){
@@ -2388,6 +2554,18 @@ void initScores(){
 
 }
 
+
+//! Main method
+/*!
+  The main:
+    calls initScores(), 
+    captures the arguments
+    reads the deamination and Illumina error profiles
+    calls     iterateOverReads() to populated infoPPos and printLogAndGenome to print the information contained therein
+    if we use deamination or length priors:
+       Call computePriorOnReads() to compute the prob. that each read is endogenous
+       Recalls iterateOverReads() to populated infoPPos and printLogAndGenome to print the information contained therein using the new prior on the reads
+*/
 int main (int argc, char *argv[]) {
 
     int sizeGenome=0;

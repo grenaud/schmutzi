@@ -34,7 +34,7 @@
 
 %Let $r$ be a read of length $l$ with sequenced bases = $r_1 r_2 ... r_l$ with error probabilities  $\epsilon_1 \epsilon_1 ... \epsilon_l$.  Let the read $r$ have the probability of mismapping $m$. 
 
-\title{Contamination estimate for ancient homonin samples}
+\title{Bayesian maximum {\it a posteriori} consensus and contamination estimate for mitochondria for ancient samples }
 \date{\today}
 \author{Gabriel Renaud}
 
@@ -43,17 +43,25 @@
 
 \section{Introduction}
 
-Upon extracting ancient DNA (aDNA) from homonin samples, the DNA from one of the individuals that handled the material from which aDNA was extracted from. During sequencing of the aDNA libraries, this contaminant DNA intermixes with the endogenous DNA, gets sequenced and mapped thus contributing to genotype likelihoods or mitochondrial consensus calling. Althought methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results.
-
+Upon performing ancient DNA (aDNA) extraction from homonin samples, the DNA from the individuals that handled the material will mingle itself to the one from the sample. During sequencing of the aDNA libraries, this contaminant DNA intermixes with the endogenous DNA, the one that genuily originates from the sample. This contaminant gets sequenced and mapped along with the endogenous thus contributing to genotype likelihoods for nuclear data or mitochondrial consensus calling. Althought methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results. Furthermore, a reliable contamination estimate that help researchers discard extragenous material as being a source of false signals. Previous approaches discarded transitions and did not incorporate uncertainties such as mapping quality and base error scores.
 
 %High contamination  
+We describe a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach to determine the endogenous base for mitochondrial data and estimate contamination given a database of known contaminant.  
 
-We describe a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach.  
-
-For the mitochondrial case, we estimate what is the most likely endogenous base without using any phylogenetic information as to avoid biases. If differences between deamination rates and molecules between the endogenous sample and contaminant are present, they can be used as a prior on each read to increase robustness to higher levels of contamination. This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. For the case of having multiple contaminant sources, we also allow allele frequency profiles to be used. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input. 
+For the mitochondrial case, we estimate what is the most likely endogenous base without using any phylogenetic information. If differences between deamination rates exist between the endogenous sample and contaminant, they can be used as a prior on each read to increase robustness to higher levels of contamination. We can also include differences in read lengths. This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. For the case of having multiple contaminant sources, we also allow allele frequency profiles to be used. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input. 
 
 
 \section{Methods}
+
+\subsection{Mapping with SHRIMP}
+
+\subsection{Endogenous versus contaminant material}
+Describe libraries, isolate according to segregating sites
+
+\subsubsection{Deamination differences}
+
+
+\subsubsection{Length differences}
 
 
 \subsection{Mitochondrial contamination}
