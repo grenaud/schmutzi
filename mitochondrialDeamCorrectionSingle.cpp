@@ -2580,7 +2580,7 @@ int main (int argc, char *argv[]) {
 
 
     string nameMTC  = "MTc";
-
+    bool useWantsContProduced=false;
   
     int minQual=0;
     bool ignoreMQ=false;
@@ -2780,6 +2780,7 @@ int main (int argc, char *argv[]) {
 	if(strcmp(argv[i],"-seqc") == 0 ){
 	    outSeqC=string(argv[i+1]);
 	    outSeqCflag = true;
+	    userWantsContProduced=true;
 	    i++;
 	    continue;
 	}
@@ -2787,12 +2788,14 @@ int main (int argc, char *argv[]) {
 	if(strcmp(argv[i],"-logc") == 0 ){
 	    outLogC=string(argv[i+1]);
 	    outLogCflag = true;
+	    userWantsContProduced=true;
 	    i++;
 	    continue;
 	}
 
 	if(strcmp(argv[i],"-namec") == 0 ){
 	    nameMTC=string(argv[i+1]);
+	    userWantsContProduced=true;
 	    i++;
 	    continue;
 	}
@@ -2844,13 +2847,20 @@ int main (int argc, char *argv[]) {
 
     }
 
-    if(specifiedContPrior ){
-	if( !(deamread || useLengthPrior) ){
-	    cerr<<"Error: cannot specify -cont if you do not specify -deamread or use the length distribution priors, exiting"<<endl;
+
+    if( (deamread || useLengthPrior) ){
+	if(!specifiedContPrior ){	
+	    cerr<<"Error: You need to specify the contamination prior (via -cont) if you do  specify -deamread or use the length distribution priors, exiting"<<endl;
 	    return 1;	
 	}
     }
+    
+    if(userWantsContProduced &&
+       !singleCont){
+	cerr<<"Error: You cannot specify either the -seqc, -logc or -namec if you do not specify the -singleCont option, there options are only used if you are willing to accept the possibilty of the single contaminant"<<endl;
+	return 1;	
 
+    }
 
     ////////////////////////////////////
     // END Parsing arguments        //
@@ -2956,8 +2966,11 @@ int main (int argc, char *argv[]) {
 
 
 
+    if(nameMT[0] != '>')
+	nameMT = ">"+nameMT;
 
-    nameMT = ">"+nameMT;
+    if(nameMTC[0] != '>')
+	nameMTC = ">"+nameMTC;
 
 
 
@@ -3052,7 +3065,7 @@ int main (int argc, char *argv[]) {
 		      outSeqC,
 		      outLogC,
 		      outSeqCflag,
-		      outLogCflag,`
+		      outLogCflag,
 		      nameMTC);
 
     // delete coverageCounter;
