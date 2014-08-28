@@ -2580,7 +2580,7 @@ int main (int argc, char *argv[]) {
 
 
     string nameMTC  = "MTc";
-    bool useWantsContProduced=false;
+    bool userWantsContProduced=false;
   
     int minQual=0;
     bool ignoreMQ=false;
