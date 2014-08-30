@@ -36,76 +36,109 @@
 
 \title{Bayesian maximum {\it a posteriori} consensus and contamination estimate for mitochondria for ancient samples }
 \date{\today}
-\author{Gabriel Renaud}
+\author{Gabriel Renaud, Udo Stenzel and Janet Kelso}
 
 
 \maketitle
 
 \section{Introduction}
 
-Upon performing ancient DNA (aDNA) extraction from homonin samples, the DNA from the individuals that handled the material will mingle itself to the one from the sample. During sequencing of the aDNA libraries, this contaminant DNA intermixes with the endogenous DNA, the one that genuily originates from the sample. This contaminant gets sequenced and mapped along with the endogenous thus contributing to genotype likelihoods for nuclear data or mitochondrial consensus calling. Althought methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results. Furthermore, a reliable contamination estimate that help researchers discard extragenous material as being a source of false signals. Previous approaches discarded transitions and did not incorporate uncertainties such as mapping quality and base error scores.
+Ancient DNA (aDNA) has enabled the study of dead organisms and the comparison to extant ones has allowed researchers to reconstruct the phylogenetic history of various species including our own. The two main computational challenges with aDNA analysis remain deamination, the loss of amine groups which transforms cytosines into uracils which are read as thymines, and exogenous contamination \cite{kay?}. Upon performing aDNA extraction from bones, the DNA pertaining to the organism {\it per se} along with DNA from microbes which colonize the organism {\it post-mortem} will be sequenced \cite{susanna?}. Furthermore, the DNA of the individuals involved in excavating, manipulating and ultimately sequencing the bone will also be sequenced along with the ancient material. If the endogenous sample is an ancient homonin, there is a difference as to how harmful to downstream analyses the bacterial and modern human contaminants will be . Upon sequecing and subsequent mapping, the former will share little homology to the reference while the latter, due to the low genetic divergence between the contaminant and the endogenous material, will lead to falacious alignments. Such falacious alignments can lead to spurious signals during mitochondrial consensus calling and genotyping for nuclear DNA. 
+
+Although methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Due to the differences between deamination patterns between the ancient endogenous material and modern contaminant, compensatory measures such as using only deaminated reads have been utilized \cite{pontus}. Howver, such heuristic do not allow for estimates of contamination rates. Furthermore, using only deaminated reads will lead to potentially incorrect calls especially for low coverage samples if a deamination model is not incorporated into consensus calling as reads will be enriched for deaminated bases. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results. 
+
+Due to the abundance of homonin mitonchondrial DNA for its relative small genome size (~16MB versus ~3G for the nuclear), a sufficient coverage the mitochondrial genome can be obtained even with high amounts of bacterial contamination \cite{}. Traditionally, groups have called a consensus of the mitochondrion and used it along with known human mitochondria to infer phylogeny and estimate split times. Unfortunately, most methods do not allow for uncertainty in the bases to be used and for potential contamination to be modeled. For homonin samples, estimating modern human contamination and identifying the endogenous mitonchondrial genome despite relatively high levels of contamination remain computational challenges with the analysis of such data. Current methods described in the litterature for estimating contaminant usually discard transitions and do not incorporate base quality scores which allows models to quantify the likelihood of a mismatch stemming from a novel variant or a sequencing error. A probabilistic method that incorporates endogenous and exogenous genome identification and contaminantion estimates as one while considering uncertainty due to mismappings and sequencing errors has yet to be described. 
+
+%Furthermore, a reliable contamination estimate that helps researchers discard extragenous material as being a source of false signals. Previous approaches discarded transitions and did not incorporate uncertainties such as mapping quality and base error scores.
 
 %High contamination  
-We describe a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach to determine the endogenous base for mitochondrial data and estimate contamination given a database of known contaminant.  
+We describe, schmutzi, a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach to determine the endogenous genome for mitochondrial next-generation sequencing (NGS) data and to estimate contamination given a database of known human contaminants. For the case of having multiple contaminant sources, allele frequency profiles to be used. Furthermore, if the user is willing to accept the hypothesis that there is a single contaminant genome, schmutzi can call it along with the endogenous. Our program uses empirical differences between endogenous and exogenous rates of deamination and molecule length to achieve a greater accuracy even for samples whose phylogeny is unresolved. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input to estimate contamination to determine whether further sequencing is likely to be fruitful or not.
 
-For the mitochondrial case, we estimate what is the most likely endogenous base without using any phylogenetic information. If differences between deamination rates exist between the endogenous sample and contaminant, they can be used as a prior on each read to increase robustness to higher levels of contamination. We can also include differences in read lengths. This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. For the case of having multiple contaminant sources, we also allow allele frequency profiles to be used. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input. 
+We describe the two main programs that are part of schmutzi, one to infer the most likely endogenous base given a contamination prior without using any phylogenetic information and the other to use the endogenous base and a set of known contaminants to estimate contamination. As both modules require the information provided by the other, a small script allows users to call both until a stable consensus is reached. An implementation in C++ of our model is released under the GPLv3.0 and is freely available from http://bioinfo.eva.mpg.de/schmutzi
+
+%For the mitochondrial case, we estimate what is the most likely endogenous base without using any phylogenetic information. 
+%If differences between deamination rates exist between the endogenous sample and contaminant, they can be used as a prior on each read to increase robustness to higher levels of contamination. 
+%We can also include differences in read lengths. 
+%This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. 
 
 
 \section{Methods}
 
-\subsection{Mapping with SHRIMP}
+Our method can be dichotomized into two parts, the first aims that determining the endogenous base while the latter part, computes the contamination rate given the endogenous base and a database of potential contaminants. Both parts are called iteratively until a stable contamination rate is reached. An assumption that can be made is that there is a single contaminant instead of multiple ones. The user has the ability to tell schmutzi to enable this option which will produce both the contaminant and endogenous mitochondrial. We first describe the algorithm used for inferring the endogenous allele and then describe the contamination estimate. 
 
-\subsection{Endogenous versus contaminant material}
-Describe libraries, isolate according to segregating sites
+% put figure for both single and multiple contaminants
+\subsection{Endogenous base inferrence}
 
-\subsubsection{Deamination differences}
-
-
-\subsubsection{Length differences}
-
-
-\subsection{Mitochondrial contamination}
-
-The mitochondrial contamination estimate relies on two main modules that:
+\label{endogenous}
+The goal of this subprogram is, given a mitochrondial alignment and a contamination prior, to produce the endogenous base. An adequate contamination prior can be computed using the program described in the second section \ref{contest}. Again, if the user considers that there is a single contaminant mitochondrion, the genome for this exogenous source will also be produced. As this subprogram does not rely on having an {\it a priori}  mitochondrial phylogeny, this approach is suitable for inferring the endogenous mitochondrial genome for hitherto unsequenced samples and unknown mitochondrial contaminants. Briefly, in order to disentangle which bases pertain to the contaminant and the endogenous material, we rely on 3 main sources of information:
 
 \begin{itemize}
-\item Calls the endogenous base
-\item Estimates contamination based on that endogenous base
+\item The distribution of the amount of bases given the contamination prior. If we have a contamination prior of $c$, at segregating sites, we expect on average $c$ bases to belong to the contaminant and $1-c$ bases to belong to the endogenous organism.
+\item The differences in deamination patterns between the endogenous and contaminant. Endogenous molecules tend to be deaminated while contaminant ones tend retain their original bases due to their more recent nature. 
+\item The discrepency between molecule lengths between contaminant and endogenous samples. The endogenous ones tend to be shorter due to degradation.
 \end{itemize}
 
+However, care must be taken upon aligning raw reads to the mitochondrial human reference. For highly variable mitochondrial loci (e.g. the D-loop), the endogenous reads might show a dearth of coverage due to the higher divergence. Such discrepency might lead to regions showing reduced coverage and therefore, falacious consensus calls.
 
+\subsubsection{Pre-Mapping}
 
+\subsubsubsection{Handling circular references}
+
+Prior to performing the endogenous consensus call, reads from both the contaminant and the endogenous must be aligned. Most aligners for NGS do not allow for circular reference genomes thus leading to spurious drops of coverage around the ends. To circumvent this, the first 1000 basepairs  of the mitochondrial reference can be appended at the end of it and used as new reference. A script (URL) folds alignments exceeding the actual length of the mitochondrion back at the beginning of the reference. To illustrate the corrective effect on coverage, a set of 1M reads of 100 bp each from the hg19 reference mitochondrial genome were simulated. Random coordinates were simulated using a uniform distribution. Reads were simulated using in-house programs\footnote{}. When a read exceeded the length of the mitochondrial reference, the bases from the start were added at the end. The reads were aligned to the default reference using BWA v0.5.10\cite{} and, separately to the reference with the extended 1000 bases and where reads exceeding the original length of the genome were folded back. Figure \ref{} shows the more even coverage after correction.
+
+%no wrap versus wrap
+
+\subsubsubsection{Sensitive mapping}
+
+As alluded to earlier, lack of sensitivity of the aligner for highly divergent loci can create a bias towards having a greater proportion of contaminant reads aligning than the genome average. This is particularly true for highly divergent samples like the Denisovan mitochondrion\cite{}. To evaluate this, aDNA molecules from the Denisovan mitochondrial genome\footnote{genbank} were simulated again using the looping strategy described above. The simulated length of the molecules was taken from \cite{Meyer} and deamination rates were added using the same rates described in the manuscript. Sequencing errors were added along with representative quality scores using empirical rates obtained using Illumina reads of PhiX control. The reads were aligned to the extended Human mitochondrial reference using both BWA v0.5.10 (options) and SHRIMP vXX \cite{} (options). Again, reads exceeding the length of the genome were wrapped back at the beginning. Figure \ref{} shows the correlation between divergence and coverage. When using BWA, a lesser amount of reads align to highly divergent loci while SHRIMP, a more sensitive aligned \cite{comparison}, seems more robust to highly divergent loci. Hence, to avoid coverage biases between endogenous and exogenous material, a sensitive aligner is required.
+
+%FIGURE: make fake plot of green and red, on top, a density line of divergence (in folder, make better)
+%FIGURE: shrimp  vs BWA
+
+\subsubsection{Idiosyncrasies of endogenous DNA}
+Describe libraries, isolate according to segregating sites
+
+\subsubsubsection{Deamination differences}
+
+%FIGURE: deamination for endogenous vs contaminant
+
+\subsubsubsection{Length distribution}
+
+%FIGURE: length for endogenous vs contaminant
 
 
 \subsubsection{Calling the endogenous base}
 
-\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads ovelapping a position.  Let the potential endogenous base $b\in\{A,C,G,T\}$. Given that all the reads are independent observations, we can compute the posterior probability as such:
+
+\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads ovelapping a position.  Let $b$ be the potential nucleotide endogenous base such as $b\in\{A,C,G,T\}$. Given that all the reads are independent observations and assuming a uniform prior, we can compute the posterior probability as such:
 
 \begin{eqnarray}
   p(b|R)   & = & p(R|b) \cdot p(b)  \\
-           & = & p(R|b) \cdot \frac {1} {4} \\
-           & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
+  & = & p(R|b) \cdot \frac {1} {4} \\
+  & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
 \end{eqnarray} 
 
 
-
-\noindent  Finally we retain the most likely $\hat{b}$ the most likely base such that 
+\noindent The probability of seeing read $R_j$ given that $b$ is the correct base is described in greater details in the following section.  We retain the most likely $\hat{b}$ the most likely base such that it maximizes the posterior probability:
 
 \begin{equation}
 \hat{b} = \argmax_{b \in \{A,C,G,T\} }   p(b|R)
 \end{equation} 
 
 
-\noindent  The probability of error on $\hat{b}$ is given by:
+\noindent  The probability of error on $\hat{b}$ is given by by the ratio of probability space for all alternative bases:
 
 \begin{equation}
 p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} } p(b|R) } { \sum\limits_{ b \in \{A,C,G,T\}  } p(b|R) }
 \label{errormt}
 \end{equation}
  
-
+\subsubsubsection{For a given read}
 %\subsubsection{For a given read}
-\noindent For a given base $r$ from read $R_j$  ($R_j = \{ r_1, ..., r_l \}$), we consider a position base $r_{i}$ :
+
+\noindent The formula to compute the posterior for a specific base at a particular position given our observation has been described. As we make an assumption of independence between reads, we describe how to compute the probability of observation of a single read given the base. Let read $R_j$ be a read such that the individual bases $r$ that comprise the read describe the bases obtained from the basecaller ($R_j = \{ r_1, ..., r_l \}$). Quality scores: \epsilon
+
+%For a given read $r$ from read $R_j$  ($R_j = \{ r_1, ..., r_l \}$), we consider a position base $r_{i}$ :
 \begin{equation}
   p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
 \end{equation} 
@@ -245,6 +278,14 @@ Majority vote is used.
 %  = (1-\epsilon_i) \frac{ \epsilon_1} {3}
 %\end{equation}
 
+\subsection{Mitochondrial contamination}
+
+The mitochondrial contamination estimate relies on two main modules that:
+
+\begin{itemize}
+\item Calls the endogenous base and, in if a single contaminant is expected, the contaminant base
+\item Estimates contamination based on that endogenous base
+\end{itemize}
 
 \section{Mitonchodrial contamination}
 
