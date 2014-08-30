@@ -84,7 +84,7 @@ However, care must be taken upon aligning raw reads to the mitochondrial human r
 
 \subsubsubsection{Handling circular references}
 
-Prior to performing the endogenous consensus call, reads from both the contaminant and the endogenous must be aligned. Most aligners for NGS do not allow for circular reference genomes thus leading to spurious drops of coverage around the ends. To circumvent this, the first 1000 basepairs  of the mitochondrial reference can be appended at the end of it and used as new reference. A script (URL) folds alignments exceeding the actual length of the mitochondrion back at the beginning of the reference. To illustrate the corrective effect on coverage, a set of 1M reads of 100 bp each from the hg19 reference mitochondrial genome were simulated. Random coordinates were simulated using a uniform distribution. Reads were simulated using in-house programs\footnote{}. When a read exceeded the length of the mitochondrial reference, the bases from the start were added at the end. The reads were aligned to the default reference using BWA v0.5.10\cite{} and, separately to the reference with the extended 1000 bases and where reads exceeding the original length of the genome were folded back. Figure \ref{} shows the more even coverage after correction.
+Prior to performing the endogenous consensus call, reads from both the contaminant and the endogenous must be aligned. Most aligners for NGS do not allow for circular reference genomes thus leading to spurious drops of coverage around the ends. To circumvent this, the first 1000 basepairs  of the mitochondrial reference can be appended at the end of it and used as new reference. A script (URL) folds alignments exceeding the actual length of the mitochondrion back at the beginning of the reference. To illustrate the corrective effect on coverage, a set of 1M reads of 100 bp each from the hg19 reference mitochondrial genome were simulated. Random coordinates were simulated using a uniform distribution. Reads were simulated using in-house programs\footnote{https://github.com/grenaud/simulateAncientDNA}. When a read exceeded the length of the mitochondrial reference, the bases from the start were added at the end. The reads were aligned to the default reference using BWA v0.5.10\cite{} and, separately to the reference with the extended 1000 bases and where reads exceeding the original length of the genome were folded back. Figure \ref{} shows the more even coverage after correction.
 
 %no wrap versus wrap
 
@@ -95,16 +95,54 @@ As alluded to earlier, lack of sensitivity of the aligner for highly divergent l
 %FIGURE: make fake plot of green and red, on top, a density line of divergence (in folder, make better)
 %FIGURE: shrimp  vs BWA
 
+
+
+
+
+
+
+
 \subsubsection{Idiosyncrasies of endogenous DNA}
 Describe libraries, isolate according to segregating sites
 
 \subsubsubsection{Deamination differences}
+\begin{figure}[H]
+\centering
+\begin{tabular}{lr}
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-5.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-3.eps} \\
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-5.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-3.eps} \\
+\end{tabular}
+\caption{text}
+\end{figure}
 
 %FIGURE: deamination for endogenous vs contaminant
 
 \subsubsubsection{Length distribution}
 
 %FIGURE: length for endogenous vs contaminant
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/plot.eps}
+\caption{text}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 \subsubsection{Calling the endogenous base}
@@ -116,6 +154,7 @@ Describe libraries, isolate according to segregating sites
   p(b|R)   & = & p(R|b) \cdot p(b)  \\
   & = & p(R|b) \cdot \frac {1} {4} \\
   & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
+\label{eqn:idenp}
 \end{eqnarray} 
 
 
@@ -136,68 +175,92 @@ p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} }
 \subsubsubsection{For a given read}
 %\subsubsection{For a given read}
 
-\noindent The formula to compute the posterior for a specific base at a particular position given our observation has been described. As we make an assumption of independence between reads, we describe how to compute the probability of observation of a single read given the base. Let read $R_j$ be a read such that the individual bases $r$ that comprise the read describe the bases obtained from the basecaller ($R_j = \{ r_1, ..., r_l \}$). Quality scores: \epsilon
+\noindent The formula to compute the posterior for a specific base at a particular position given our observation of all aligned reads at that position has been described in the section above. As we make an assumption of independence between reads, the probability of observation of all reads corresponds to the product of the probabilities of observation for each one of them. In this section, we describe how to compute the probability of observation of a single read given the base. Let read the individual nucleotides $\{ r_1, ..., r_l \}$ be the bases of the read $R_j$, as identified by the basecaller, which also provides the respective error probabilities $\{ \epsilon_1, ..., \epsilon_l \}$. For a given position, in the alignment, let base $r_i$ and error probability $\epsilon_i$ be the base of read $R_J$ that aligns at that position. The probability of observation of base $r_i$ given a certain base $b$ is determined by whether the read is correctly mapped:
 
 %For a given read $r$ from read $R_j$  ($R_j = \{ r_1, ..., r_l \}$), we consider a position base $r_{i}$ :
 \begin{equation}
-  p(r_i|b)   =  (1-m_{r_i}) \cdot p_{mapped}(r_i|b) + m_{r_i} \cdot p_{mismapped}(r_i|b) 
+  p(r_i|b)   =  (1-m_{R_J}) \cdot p_{mapped}(r_i|b) + m_{R_j} \cdot p_{mismapped}(r_i|b) 
 \end{equation} 
 
-
-\noindent No information is available for mismapped read:
+\noindent where $m_{R_J}$ is the probability that read $R_j$ is mismapped. Given that the read is mismapped, the probability of observing $r_i$ is independent of $b$ and therefore we revert to the a uniform probability distribution for nucleotides:
 \begin{equation}
-  p_{mismapped}(r_i|b)   =  p(b) =     \frac{ 1} {4} 
+  p_{mismapped}(r_i|b)   =  p(r_i) =     \frac{ 1} {4} 
 \end{equation} 
 
 
 %\noindent Let the base $b\in\{A,C,G,T\}$, the probability of observing the base $r_i$ from read $r$, given that it was properly aligned and given that $b$ is the correct base, is computed by:
 
-\noindent If we do not consider a read to be endogenous or not
+{\bf Potentially multiple contaminants}
+
+Given that the read was correctly mapped, there are two possibilities, either the read was part of the endogenous genome or the contaminant's. Let $P_{endo}(R_j)$ be the probability that the read came from the endogenous genome (refer to section \ref{priorendo} for further information as to how this probability is computer). The probability that the read stemmed from the contaminant genome is simply $1-P_{endo}(R_j)$. If we ignore whether there single contaminant, given that the read was correctly mapped, the read was could have come from the endogenous or the contaminant genome. In the latter case, no information can be obtained on the probability of observing $r_i$ given $b$ hence the uniform prior for nucleotides is used:
+
 \begin{equation}
-  p_{mapped}(r_i|b)   =  (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   
-%\end{cases}
+p_{mapped}(r_i|b) =  P_{endo}(R_j) \cdot P_{endo} (r_i|b)   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
+\label{eqn:correctmap}
+\end{equation}
+
+\noindent Given that we accept that the read $R_j$ is endogenous, the probability $P_{endo} (r_i|b)$ will depend on wther there whether there was a sequencing error or not. Since the probability of such an event happening at position $i$ is $\epsilon_i$, the following equation is used:
+
+\begin{equation}
+  p_{endo}(r_i|b)   =  (1-\epsilon_i ) \cdot  P_{endo}( b \to r_i|correct) +  (\epsilon_i) \cdot P_{endo}(  b \to r_i |error)   
+\ref{eqn:match}
 \end{equation} 
 
-\noindent If we do weight reads according to their probability of being endogenous, $p_{mapped}(r_i|b)$ is given by:
+\noindent For the error case, the probability of base substitution is obtained using empirical nucleotide substitutions for Illumina sequencers. However, if the base was called correctly, in the case where no deamination is present (null case), we expect that the bases should match:
+
 \begin{equation}
-P_{endo}(R_j) \cdot (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
-%\end{cases}
+p_{endo}(b \to r_i | correct) =   p_{null}(b \to r_i | correct)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1  &  \text{if }  b = r_i    \\
+    0 &  \text{if }  b \ne r_i    \\
+  \end{cases}
+\label{eqn:nullmatch}
 \end{equation} 
+
+\noindent Despite the fact that deaminated bases represent a mismatch, they are not a genuine sequencing error {\it per se}. If deamination is believed to have occured, users can enter a position specific substitution matrix which indicate the probability that an endogenous base became deaminated and is now read as another for a given position on the molecule ($p_{deam}(b \to r_i | correct)$). 
+
+{\bf Single contaminant}
+
+If we assume that there is a single contaminant, there are two bases to infer, $b_e$ and $b_c$ for the endogenous and contaminant genome respectively. Equation \ref{eqn:correctmap} now becomes:
+
+\begin{equation}
+p_{mapped}(r_i|b_e,b_c) =  P_{endo}(R_j) \cdot P_{endo} (r_i|b_e)   + (1-P_{endo}(R_j)) \cdot P_{cont} (r_i|b_c)
+\end{equation}
+
+\noindent The new term for the contaminant $P_{cont} (r_i|b_c)$ is similar to the expression for the endogenous case in equation \ref{eqn:match} with dual correct and sequencing error cases except that for the correct case, the null model from equation \ref{eqn:nullmatch} is always used. This is based on the assumption that only endogenous molecules can be deaminated. 
+
+The use of the single contaminant changes equation \ref{eqn:idenp} as the two most likely bases $b_e$ and $b_c$ need to be added :
+
+\begin{equation}
+  p(b_e,b_c|R)   = \prod_{R_j \in R} p(R_j|b_e,b_c) \cdot \frac {1} {4^2} 
+\end{equation} 
+
+\noindent Once the likelihood for all pairs is computed, to compute the likelihood of a given endogenous base, a marginalization needs to be performed on the other: 
+
+\begin{equation}
+  p(b_e,|R)   = \sum_{b_c \in {A,C,G,T}} p(b_e,b_c|R) \cdot \frac {1} {4} 
+\end{equation} 
+
+\noindent The converse is used for the contaminant base. 
+
+%P_{endo}(  b \to r_i |error)   
+%\noindent If we do weight reads according to their probability of being endogenous, $p_{mapped}(r_i|b)$ is given by:
+%\begin{equation}
+%P_{endo}(R_j) \cdot (1-\epsilon_i ) \cdot  P_{correct}( b \to r_i) +  (\epsilon_i) \cdot P_{error}(  b \to r_i )   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
+%\end{cases}
+%\end{equation} 
+
 
 
 
 \subsubsection{Endogenous consensus}
-
+\label{priorendo}
 We take into consideration two factors, length of the molecules and deamination patterns.
-
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.9\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/plot.eps}
-\caption{text}
-\end{figure}
-
-\noindent {\bf Length}
-
-\begin{equation}
-P(i) = \frac {1} {i \sqrt{2\pi} \sigma} e^{ - \frac{(ln(i) - \mu)^2 }  {2 \sigma^2} } 
-\end{equation}
 
 \noindent {\bf Deamination}
 
 
-\begin{figure}[H]
-\centering
-\begin{tabular}{lr}
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-5.eps} &
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-3.eps} \\
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-5.eps} &
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-3.eps} \\
-\end{tabular}
-\caption{text}
-\end{figure}
 
-
+%NOTE SEE PREVIOUS SECTION
 \noindent  Normal (null) case:
 \begin{equation}
   p_{correct_{null}}(r_i|b)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
@@ -257,6 +320,12 @@ P(i) = \frac {1} {i \sqrt{2\pi} \sigma} e^{ - \frac{(ln(i) - \mu)^2 }  {2 \sigma
 %\begin{equation}
 %p(b|R) = \prod_{r \in R} p(b|r)
 %\end{equation} 
+\noindent {\bf Length}
+
+
+\begin{equation}
+P(i) = \frac {1} {i \sqrt{2\pi} \sigma} e^{ - \frac{(ln(i) - \mu)^2 }  {2 \sigma^2} } 
+\end{equation}
 
 {\bf Combining both with a deamination prior}
 
@@ -267,8 +336,8 @@ P_{endo}(R_j) = \frac { \prod\limits_{r_i \in R_j} p_{correct_{deam}}(r_i|b) } {
 \end{equation}
 
 
-
-\subsection{Indels}
+\subsubsection{Calling the endogenous indels}
+%\subsection{Indels}
 
 
 Majority vote is used.
@@ -341,14 +410,20 @@ p_{cont}(r_i|c) = (1-\epsilon_i ) \cdot  P_{correct_{null}}( c \to r_i) +  (\eps
 
 
 
-\subsection{Nuclear Contamination}
+%\subsection{Nuclear Contamination}
 \section{Results}
 
-\subsection{Mitochondrial}
+%\subsection{Mitochondrial}
 
 
-\subsubsection{Calling the endogenous base}
-\subsubsection{Contamination}
+\subsection{Calling the endogenous base}
+
+\subsection{Contamination}
+
+\subsection{Expectation maximization}
+
+
+\subsection{Real data}
 
 
 
