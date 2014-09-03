@@ -327,7 +327,7 @@ void *mainContaminationThread(void * argc){
     // 	exit(1);
     // }
 
-    for(contaminationRate=0.0;contaminationRate<0.5;contaminationRate+=0.005){
+    for(contaminationRate=0.0;contaminationRate<1.0;contaminationRate+=0.005){
 	double logLike=0.0;
     
 	for(int i=0;i<sizeGenome;i++){
@@ -374,7 +374,7 @@ void *mainContaminationThread(void * argc){
 		    }
 		}//end for each di-nucleotide
 		
-
+		//TODO: ADD IT within loop under mappedProb+=
 		//        m = prob. of mismapping
 		//                  (1-m)     * p(data|mapped) +           m         * p(data|mismapped)	
 		double pread = (probMapping[mapq]*(mappedProb) + probMismapping[mapq]*(misappedProb) );
