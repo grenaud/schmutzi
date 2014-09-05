@@ -7,6 +7,7 @@
 \usepackage{color}
 \usepackage{titlesec} 
 \usepackage{afterpage}
+\usepackage{float}
 
 \newtheorem{thm}{Theorem}[section]
 \newtheorem{cor}[thm]{Corollary}
@@ -35,7 +36,7 @@
 
 \begin{document}
 
-%\section{Mitonchondrial}
+
 
 %Let $r$ be a read of length $l$ with sequenced bases = $r_1 r_2 ... r_l$ with error probabilities  $\epsilon_1 \epsilon_1 ... \epsilon_l$.  Let the read $r$ have the probability of mismapping $m$. 
 
@@ -45,19 +46,27 @@
 
 
 \maketitle
+
 \tableofcontents
+\begin{abstract}
+Due to their relative small length and intracellular abundance, mitochondrial genomes are routinely used for the reconstruction of species history and demographics. While existing computational tools suffice for modern DNA samples, data from ancient or forensic samples possess idiosyncrasies that require specialized methods. For instance, deamination and contamination from extant human DNA for homonin samples make straighforward haploid genotyping inpractical. Further, quantifying contamination can help investigators identify fossilized  bone extractions with a higher chance of yielding a high number of endogenous molecules. We introduce schmutzi, a Bayesian maximum {\it a posteriori} algorithm to call an endogenous mitochondrial consensus and quantify contamination from modern human handlers. 
+\end{abstract}
+
 \section{Introduction}
 
 Ancient DNA (aDNA) has enabled the study of dead organisms and the comparison to extant ones has allowed researchers to reconstruct the phylogenetic history of various species including our own. The two main computational challenges with aDNA analysis remain deamination, the loss of amine groups which transforms cytosines into uracils which are read as thymines, and exogenous contamination \cite{briggs2007patterns}. Upon performing aDNA extraction from bones, the DNA pertaining to the organism {\it per se} along with DNA from microbes which colonize the organism {\it post-mortem} will be sequenced \cite{sidow1991bacterial,handt1994ancient}. Furthermore, the DNA of the individuals involved in excavating, manipulating and ultimately sequencing the bone will also be sequenced along with the ancient material. If the endogenous sample is an ancient homonin, there is a difference as to how harmful to downstream analyses the bacterial and modern human contaminants will be . Upon sequecing and subsequent mapping, the former will share little homology to the reference while the latter, due to the low genetic divergence between the contaminant and the endogenous material, will lead to falacious alignments. Such falacious alignments can lead to spurious signals during mitochondrial consensus calling and genotyping for nuclear DNA. 
 
 Although methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Due to the differences between deamination patterns between the ancient endogenous material and modern contaminant, compensatory measures such as using only deaminated reads have been utilized \cite{skoglund2014separating}. However, such heuristic do not allow for estimates of contamination rates. Furthermore, using only deaminated reads will lead to potentially incorrect calls especially for low coverage samples if a deamination model is not incorporated into consensus calling as reads will be enriched for deaminated bases. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results. 
 
-Due to the abundance of homonin mitonchondrial DNA for its relative small genome size (~16MB versus ~3G for the nuclear), a sufficient coverage the mitochondrial genome can be obtained even with high amounts of bacterial contamination \cite{}. Traditionally, groups have called a consensus of the mitochondrion and used it along with known human mitochondria to infer phylogeny and estimate split times. Unfortunately, most methods do not allow for uncertainty in the bases to be used and for potential contamination to be modeled. For homonin samples, estimating modern human contamination and identifying the endogenous mitonchondrial genome despite relatively high levels of contamination remain computational challenges with the analysis of such data. Current methods described in the litterature for estimating contaminant usually discard transitions and do not incorporate base quality scores which allows models to quantify the likelihood of a mismatch stemming from a novel variant or a sequencing error. A probabilistic method that incorporates endogenous and exogenous genome identification and contaminantion estimates as one while considering uncertainty due to mismappings and sequencing errors has yet to be described. 
+Due to the abundance of homonin mitochondrial DNA for its relative small genome size (~16MB versus ~3G for the nuclear), a sufficient coverage the mitochondrial genome can be obtained even with high amounts of bacterial contamination \cite{first neandertal paper}. Traditionally, groups have called a consensus of the mitochondrion and used it along with known human mitochondria to infer phylogeny and estimate split times. Unfortunately, most methods do not allow for uncertainty in the bases to be used and for potential contamination to be modeled. For homonin samples, estimating modern human contamination and identifying the endogenous mitochondrial genome despite relatively high levels of contamination remain computational challenges with the analysis of such data. Tools like hstlib\cite{lh3 github} has subprograms that can call a haploid genome consensus (samtools+bcftools) however these tools fall short when the contamination DNA exceeds the endogenous one. 
+
+%TODO describe Philip's method and shortcomings
+Current methods described in the litterature for estimating contaminant usually discard transitions and do not incorporate base quality scores which allows models to quantify the likelihood of a mismatch stemming from a novel variant or a sequencing error. A probabilistic method that incorporates endogenous and exogenous genome identification and contaminantion estimates as one while considering uncertainty due to mismappings and sequencing errors has yet to be described. 
 
 %Furthermore, a reliable contamination estimate that helps researchers discard extragenous material as being a source of false signals. Previous approaches discarded transitions and did not incorporate uncertainties such as mapping quality and base error scores.
 
 %High contamination  
-We describe, schmutzi, a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} approach to determine the endogenous genome for mitochondrial next-generation sequencing (NGS) data and to estimate contamination given a database of known human contaminants. For the case of having multiple contaminant sources, allele frequency profiles to be used. Furthermore, if the user is willing to accept the hypothesis that there is a single contaminant genome, schmutzi can call it along with the endogenous. Our program uses empirical differences between endogenous and exogenous rates of deamination and molecule length to achieve a greater accuracy even for samples whose phylogeny is unresolved. For very low coverage mitonchondrial data, the endogenous bases from a closely related sample can be used as input to estimate contamination to determine whether further sequencing is likely to be fruitful or not.
+We describe, schmutzi, a methodology of estimating contamination using a Bayesian maximum {\it a posteriori} (MAP) approach to determine the endogenous genome for mitochondrial next-generation sequencing (NGS) data and to estimate contamination given a database of known human contaminants. For the case of having multiple contaminant sources, allele frequency profiles to be used. Furthermore, if the user is willing to accept the hypothesis that there is a single contaminant genome, schmutzi can call it along with the endogenous. Our program uses empirical differences between endogenous and exogenous rates of deamination and molecule length to achieve a greater accuracy even for samples whose phylogeny is unresolved. For very low coverage mitochondrial data, the endogenous bases from a closely related sample can be used as input to estimate contamination to determine whether further sequencing is likely to be fruitful or not.
 
 We describe the two main programs that are part of schmutzi, one to infer the most likely endogenous base given a contamination prior without using any phylogenetic information and the other to use the endogenous base and a set of known contaminants to estimate contamination. As both modules require the information provided by the other, a small script allows users to call both until a stable consensus is reached. An implementation in C++ of our model is released under the GPLv3.0 and is freely available from http://bioinfo.eva.mpg.de/schmutzi
 
@@ -67,18 +76,88 @@ We describe the two main programs that are part of schmutzi, one to infer the mo
 %This endogenous base along with a set of known human mitochondrial sequences is then used to infer contamination rates for each putative contamination source. The most likely contaminant source along with the posterior probability for a range of contamination rates is produced. 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \section{Methods}
 
-Our algorithm can be dichotomized into two parts, the first aims that determining the endogenous base while the latter part, computes the contamination rate given the endogenous base and a database of potential contaminants. Both parts are called iteratively until a stable contamination rate is reached. An assumption that can be made is that there is a single contaminant instead of multiple ones. The user has the ability to tell schmutzi to enable this option which will produce both the contaminant and endogenous mitochondrial. We first describe the algorithm used for inferring the endogenous allele and then describe the contamination estimate. Finally, we describe the methods used to simulate data as test set. 
+Our algorithm can be dichotomized into two parts, the first aims that determining the endogenous base while the latter part, computes the contamination rate given the endogenous base and a database of potential contaminants. Both parts are called iteratively until a stable contamination rate is reached. An assumption that can be made is that there is a single contaminant instead of multiple ones. The user has the ability to tell schmutzi to enable this option which will produce both the contaminant and endogenous mitochondrial. First, a biological test set used as benchmark is described. Using this dataset, we use foreknowledge about the nature of the endogenous and contaminant genomes to describe characteristics of the endogenous molecules. Using these characteristics, we then describe the algorithm used for inferring the endogenous genome. Once the endogenous allele has been inferred, we then describe the contamination estimate. Finally, we describe the methods used to simulate data as test sets.
 
 
+\subsection{Biological data}
+
+%TODO describe biological data used
 
 
+\subsection{Idiosyncrasies of endogenous DNA}
+\label{seq:endodeampattern}
+Describe libraries, isolate according to segregating sites
+As we knew sample ??? stemmed from ???, we created a list of segregating sites between the modern human lineage and the ??? lineage for the mitochondrial. We only retained sites where all humans shared the same allele and the putative endogenous lineage all shared another. Set of reads having a specific allele at a given position were created. The sets having the endogenous allele were merged and unique reads were retained. The same was done for the putative contaminant reads. Two quantities were measured, deamination rates and molecule length. 
+
+\noindent \paragraph{Deamination differences}
+
+Studies have previously reported in the literature \cite{sima de los huesos} that deamination rates are different for the endogenous and contaminant. This is a likely consequence of the ancient nature of the endogenous molecules and the more recent origin of the contaminant. Deamination has actually been a hallmark of genuine ancient DNA \cite{ancient DNA done right ? dinosaur DNA}. As the phylogeny of the contaminant and endogenous genomes was known in advance, the deamination rates for the both was computed \ref{fig:deaminationendo}. As expected, the deamination rates of the endogenous molecules exceed the one observed for the contaminant. Our methodology allows users to specify a position specific matrix representing deamination for the endogenous molecules. These use of these rates is twofold, first to allow to incorporate the deamination probability during consensus calling and to compute the probability that a given molecule is endogenous using deamination rates (see Section \ref{sec:priorendo}). 
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{lr}
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-5.eps} &
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-3.eps}   \\
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-5.eps} &
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-3.eps}   \\
+\end{tabular}
+\caption{The deamination rates for the potentially endogenous (top) and contaminant DNA (bottom) were computed. The rates were computed separately for the 5' end (left) and the 3' end (right) of the molecules. }
+\label{fig:deaminationendo}
+\end{figure}
+%\afterpage{\clearpage}
 
 
+\noindent \paragraph{Length distribution}
+\label{seq:lengthdistendo}
+
+%TODO previously reported in the literature length ???
+Using the assumption that endogenous molecules are more degraded than the more recent contaminant, the length of the latter should, on average, the length of the former. The length of both sets described in the section above was computed and plotted (see Figure \ref{fig:lengthendo}.  As expected the length of the endogenous molecules is much shorter than the contaminant ones. To model the distribution of both reads, we used log-normal distributions as previously used in the literature \cite{leehom}. The maximum likelihood performed using glm() using package ??? in Rv. ??? fit to both distributions is presented in Figure \ref{fig:lengthendo}. 
 
 
-
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/plot.eps}
+\caption{The distribution of the endogenous empirical distribution (solid red line) and the contaminant one (solid blue line). A maximum likelihood fit of a log-normal distribution for both distribution was performed for the endogenous (dotted red line) and contaminant molecule length (dotted blue line).}
+\label{fig:lengthendo}
+\end{figure}
+%\afterpage{\clearpage}
 
 
 
@@ -87,30 +166,32 @@ Our algorithm can be dichotomized into two parts, the first aims that determinin
 
 
 % put figure for both single and multiple contaminants
-\subsection{Endogenous base inferrence}
-
+\subsection{Endogenous genome inference}
 \label{sec:endogenous}
-The goal of this subprogram is, given a mitochrondial alignment and a contamination prior, to produce the endogenous base. An adequate contamination prior can be computed using the program described in the second section \ref{sec:contest}. Again, if the user considers that there is a single contaminant mitochondrion (Figure \ref{fig:singvsmult}), the genome for this exogenous source will also be produced. As this subprogram does not rely on having an {\it a priori}  mitochondrial phylogeny, this approach is suitable for inferring the endogenous mitochondrial genome for hitherto unsequenced samples and unknown mitochondrial contaminants. Briefly, in order to disentangle which bases pertain to the contaminant and the endogenous material, we rely on 3 main sources of information:
+
+The goal of this subprogram is, given a mitochondrial alignment and a contamination prior, to produce the endogenous base. An adequate contamination prior can be computed using the program described in the second section \ref{sec:contest}. Again, if the user considers that there is a single contaminant mitochondrion (Figure \ref{fig:singvsmult}), the genome for this exogenous source will also be produced. As this subprogram does not rely on having an {\it a priori}  mitochondrial phylogeny, this approach is suitable for inferring the endogenous mitochondrial genome for a hitherto unsequenced samples and unknown mitochondrial contaminants. Briefly, in order to disentangle which bases pertain to the contaminant and the endogenous material, we rely on 3 main sources of information:
 
 
 \begin{figure}[H]
 \centering
 \begin{tabular}{lr}
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/doc/contaminationsingle_bb} &
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/doc/contaminationmult_bb} \\
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/doc/contaminationsingle_bb.eps} &
+  \includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/doc/contaminationmult_bb.eps} \\
 \end{tabular}
-\caption{text}
+\caption{Schematic representation of alignments to the mitochondrial genome where green lines represent endogenous molecules and red lines, the contamination. However, depending on whether there is a single source of mitochondrial contamination (left) or multiple ones (right), the distribution of the bases at a segregating site can change. Given that the contamination rate is $\frac {1} {3}$ for the single contaminant scenario, inferring the endogenous and contaminant bases is straightforward. This is due to the fact that the relative amount of each base follows the expected distribution. However, in the figure to the right, knowing that the contamination rate is $\frac {2} {3}$ does not translate into having this relative amount of a particular base thus hindering identification.}
 \label{fig:singvsmult}
 \end{figure}
+
+%\afterpage{\clearpage}
 
 
 \begin{itemize}
 \item The distribution of the amount of bases given the contamination prior. If we have a contamination prior of $c_r$, at segregating sites, we expect on average $c_r$ bases to belong to the contaminant and $1-c_r$ bases to belong to the endogenous organism.
 \item The differences in deamination patterns between the endogenous and contaminant. Endogenous molecules tend to be deaminated while contaminant ones tend retain their original bases due to their more recent nature. 
-\item The discrepency between molecule lengths between contaminant and endogenous samples. The endogenous ones tend to be shorter due to degradation.
+\item The discrepancy between molecule lengths between contaminant and endogenous samples. The endogenous ones tend to be shorter due to degradation.
 \end{itemize}
 
-However, care must be taken upon aligning raw reads to the mitochondrial human reference. For highly variable mitochondrial loci (e.g. the D-loop), the endogenous reads might show a dearth of coverage due to the higher divergence. Such discrepency might lead to regions showing reduced coverage and therefore, falacious consensus calls.
+However, care must be taken upon aligning raw reads to the mitochondrial human reference. For highly variable mitochondrial loci (e.g. the D-loop), the endogenous reads might show a dearth of coverage due to the higher divergence. Such discrepancy might lead to regions showing reduced coverage and therefore, fallacious consensus calls.
 
 
 
@@ -119,29 +200,37 @@ However, care must be taken upon aligning raw reads to the mitochondrial human r
 
 
 
-\afterpage{\clearpage}
+
 
 
 
 \subsubsection{Mapping}
+\label{sec:methodsmapping}
+\noindent \paragraph{Handling circular references}
 
-\paragraph{Handling circular references}
+Prior to performing the endogenous consensus call, reads from both the contaminant and the endogenous must be aligned. Most aligners for NGS do not allow for circular reference genomes thus leading to spurious drops of coverage around the ends. To circumvent this, the first 1000 basepairs  of the mitochondrial reference can be appended at the end of it and used as new reference. A script \footnote{https://github.com/udo-stenzel/biohazard/} folds alignments exceeding the actual length of the mitochondrion back at the beginning of the reference. To illustrate the corrective effect on coverage, a set of 1M reads of 100 bp each from the hg19 reference mitochondrial genome were simulated. Random coordinates were simulated using a uniform distribution. Reads were simulated using in-house programs\footnote{https://github.com/grenaud/simulateAncientDNA}. When a read exceeded the length of the mitochondrial reference, the bases from the start were added at the end. The reads were aligned to the default reference using BWA v0.5.10\cite{li2009fast}.  In separate set, the reads were also aligned to the reference with the extended 1000 bases and where reads exceeding the original length of the genome were folded back. 
 
-Prior to performing the endogenous consensus call, reads from both the contaminant and the endogenous must be aligned. Most aligners for NGS do not allow for circular reference genomes thus leading to spurious drops of coverage around the ends. To circumvent this, the first 1000 basepairs  of the mitochondrial reference can be appended at the end of it and used as new reference. A script \footnote{https://github.com/udo-stenzel/biohazard/} folds alignments exceeding the actual length of the mitochondrion back at the beginning of the reference. To illustrate the corrective effect on coverage, a set of 1M reads of 100 bp each from the hg19 reference mitochondrial genome were simulated. Random coordinates were simulated using a uniform distribution. Reads were simulated using in-house programs\footnote{https://github.com/grenaud/simulateAncientDNA}. When a read exceeded the length of the mitochondrial reference, the bases from the start were added at the end. The reads were aligned to the default reference using BWA v0.5.10\cite{li2009fast} and, separately to the reference with the extended 1000 bases and where reads exceeding the original length of the genome were folded back. Figure \ref{fig:coveragebias} shows ????.
+
+%no wrap versus wrap
+
+\noindent \paragraph{Sensitive mapping}
+
+The lack of sensitivity of the aligner for highly divergent loci can create a bias towards having a greater proportion of contaminant reads aligning than the genome average (see Figure \ref{fig:coveragebias}). 
 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{coveragebias_bb}
+\includegraphics[width=0.9\textwidth]{coveragebias_bb.eps}
+\caption{Schematic representation of a potential problem using a low sensitivity aligner to the human reference. Since the endogenous DNA has higher divergence to the reference than the contaminant, it is possible that the endogenous reads will not align due to a higher edit distance. Although the distribution of the reads will be representative of the contamination rate in regions of low-divergence, contaminant reads may overtake endogenous ones. A paucity of endogenous reads could lead to an inability to call certain region, generate spurious signals and to an overestimate of the contaminantion rate.}
 \label{fig:coveragebias}
-\caption{text}
 \end{figure}
 
-%no wrap versus wrap
+%\afterpage{\clearpage}
 
-\paragraph{Sensitive mapping}
 
-As alluded to earlier, the lack of sensitivity of the aligner for highly divergent loci can create a bias towards having a greater proportion of contaminant reads aligning than the genome average. This is particularly true for highly divergent samples like the Denisovan mitochondrion \cite{krause2010complete}. To evaluate this, aDNA molecules from the Denisovan mitochondrial genome \footnote{GenBank: FN673705.1} were simulated again using the looping strategy described above. The simulated length of the molecules was taken from ??? and deamination rates were added using the same rates described in the manuscript. Sequencing errors were added along with representative quality scores using empirical rates obtained using Illumina reads of PhiX control. The reads were aligned to the extended Human mitochondrial reference using both BWA v0.5.10 (``-n 0.01 -o 2 -l 16500'') and SHRIMP v2.2.3\cite{david2011shrimp2} (options). Again, reads exceeding the length of the genome were wrapped back at the beginning. Figure \ref{} shows the correlation between divergence and coverage. When using BWA, a lesser amount of reads align to highly divergent loci while SHRIMP, a more sensitive aligned \cite{comparison}, seems more robust to highly divergent loci. Hence, to avoid coverage biases between endogenous and exogenous material, a sensitive aligner is required.
+This is particularly true for highly divergent samples like the Denisovan mitochondrion \cite{krause2010complete}.  To evaluate whether currently used aligners could have such a bias, aDNA molecules from the Denisovan mitochondrial genome \footnote{GenBank???: FN673705.1} were simulated again using the looping strategy described above. The simulated length of the molecules was taken from ??? and deamination rates were added using ???. Sequencing errors were added along with representative quality scores using empirical rates obtained using Illumina reads of PhiX control. The reads were aligned to the extended Human mitochondrial reference using both BWA v0.5.10 (with ``-n 0.01 -o 2 -l 16500'', optimized for increased sensitivty for ancient DNA) and SHRIMP v2.2.3\cite{david2011shrimp2} (options). Again, reads exceeding the length of the genome were wrapped back at the beginning. 
+
+
 
 %FIGURE: make fake plot of green and red, on top, a density line of divergence (in folder, make better)
 %FIGURE: shrimp  vs BWA
@@ -165,35 +254,6 @@ As alluded to earlier, the lack of sensitivity of the aligner for highly diverge
 
 
 
-\subsubsection{Idiosyncrasies of endogenous DNA}
-\label{seq:endodeampattern}
-Describe libraries, isolate according to segregating sites
-
-\paragraph{Deamination differences}
-
-
-\begin{figure}[H]
-\centering
-\begin{tabular}{lr}
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-5.eps} &
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/endogenous.uniq.deamsubstitutions-3.eps} \\
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-5.eps} &
-\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/contaminant.uniq.deamsubstitutions-3.eps} \\
-\end{tabular}
-\caption{text}
-\end{figure}
-
-%FIGURE: deamination for endogenous vs contaminant
-
-\paragraph{Length distribution}
-
-\label{seq:lengthdistendo}
-%FIGURE: length for endogenous vs contaminant
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.9\textwidth]{/home/gabriel_renaud/projects/schmutzi/lengthEndoVsCont/greaterSet/plot.eps}
-\caption{text}
-\end{figure}
 
 
 
@@ -211,16 +271,15 @@ Describe libraries, isolate according to segregating sites
 
 
 
-
-\subsubsection{Calling the endogenous base}
+\subsubsection{Calling endogenous bases}
 \label{sec:callingendobase}
 
-\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads ovelapping a position.  Let $b$ be the potential nucleotide endogenous base such as $b\in\{A,C,G,T\}$. Given that all the reads are independent observations and assuming a uniform prior, we can compute the posterior probability as such:
+\noindent Let $R$ be the set of all the reads overlapping a position, $R={R_1,R_2,...,R_n}$ be all the reads overlapping a position.  Let $b$ be the potential nucleotide endogenous base such as $b\in\{A,C,G,T\}$. Given that all the reads are independent observations and assuming a uniform prior, we can estimate the posterior probability as such:
 
 \begin{eqnarray}
-  p(b|R)   & = & p(R|b) \cdot p(b)  \\
-  & = & p(R|b) \cdot \frac {1} {4} \\
-  & = & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
+  p(b|R)   & \propto & p(R|b) \cdot p(b)  \\
+  & \propto & p(R|b) \cdot \frac {1} {4} \\
+  & \propto & \prod_{R_j \in R} p(R_j|b) \cdot \frac {1} {4} \\
 \label{eqn:idenp}
 \end{eqnarray} 
 
@@ -252,8 +311,7 @@ p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} }
 
 
 
- 
-\paragraph{For a given read}
+\noindent  \paragraph{For a given read}
 %\subsubsection{For a given read}
 \label{sec:forgivenread}
 
@@ -273,24 +331,38 @@ p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} }
 
 %\noindent Let the base $b\in\{A,C,G,T\}$, the probability of observing the base $r_i$ from read $r$, given that it was properly aligned and given that $b$ is the correct base, is computed by:
 
-{\bf Potentially multiple contaminants}
+\noindent Potentially multiple contaminants
 
 
-Given that the read was correctly mapped, there are two possibilities, either the read was part of the endogenous genome or the contaminant's. Let $P_{endo}(R_j)$ be the probability that the read came from the endogenous genome (refer to section \ref{sec:priorendo} for further information as to how this probability is computer). The probability that the read stemmed from the contaminant genome is simply $1-P_{endo}(R_j)$. If we ignore whether there single contaminant, given that the read was correctly mapped, the read was could have come from the endogenous or the contaminant genome. In the latter case, no information can be obtained on the probability of observing $r_i$ given $b$ hence the uniform prior for nucleotides is used:
+Given that the read was correctly mapped, there are two possibilities, either the read was part of the endogenous genome or the contaminant's. Let $P_{endo}(R_j)$ be the probability that the read came from the endogenous genome (refer to section \ref{sec:priorendo} for further information as to how this probability is computer). The probability that the read stemmed from the contaminant genome is simply $1-P_{endo}(R_j)$. If we ignore whether there is single contaminant, given that the read was correctly mapped, the read was could have come from the endogenous or the contaminant genome. In the latter case, no information can be obtained on the probability of observing $r_i$ given $b$ hence the uniform prior for nucleotides is used:
 
 \begin{equation}
 p_{mapped}(r_i|b) =  P_{endo}(R_j) \cdot P_{endo} (r_i|b)   + (1-P_{endo}(R_j)) \cdot \frac {1} {4}
 \label{eqn:correctmap}
 \end{equation}
 
-\noindent Given that we accept that the read $R_j$ is endogenous, the probability $P_{endo} (r_i|b)$ will depend on wther there whether there was a sequencing error or not. Since the probability of such an event happening at position $i$ is $\epsilon_i$, the following equation is used:
+\noindent Given that we accept that the read $R_j$ is endogenous, the probability $P_{endo} (r_i|b)$ will depend on whether there was a sequencing error or not. Since the probability of such an event happening at position $i$ is $\epsilon_i$, the following equation is used:
 
 \begin{equation}
   p_{endo}(r_i|b)   =  (1-\epsilon_i ) \cdot  P_{endo}( b \to r_i|correct) +  (\epsilon_i) \cdot P_{endo}(  b \to r_i |error)   
   \label{eqn:match}
 \end{equation} 
 
-\noindent For the error case, the probability of base substitution is obtained using empirical nucleotide substitutions for Illumina sequencers. However, if the base was called correctly, in the case where no deamination is present (null case), we expect that the bases should match:
+\noindent For the error case, the probability of base substitution can be obtained using an assumption than any given base is equally likely to be miscalled as any of the remaining 3 nucleotides:
+
+\begin{equation}
+P_{endo}(  b \to r_i |error)  = \frac {1} {3} \quad \forall b \ne r_i
+\end{equation}
+
+\noindent However, studies on Illumina sequencing errors show that this assumption is generally incorrect \cite{illumina error papers}. Our implementation offers the possibility of using empirical nucleotide substitutions from Illumina sequencers. The new error probability term becomes :
+
+\begin{equation}
+P_{endo}(  b \to r_i |error)  = \frac { \# b \to r_i } { \sum\limits_{ b' \in \{A,C,G,T\}  \setminus b }  \# b \to b' } 
+\end{equation}
+
+\noindent where $\# x \to y$ represents the number of times a mismatch from the reference base $x$ to a observed $y$. These counts were tallied on control sequences aligned to the PhiX genome provided by Illumina Corp. thus no natural divergence is expected. 
+
+However, if the base was called correctly, in the case where no deamination is present (null case), we expect that the bases should match:
 
 \begin{equation}
 p_{endo}(b \to r_i | correct) =   p_{null}(b \to r_i | correct)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
@@ -300,9 +372,17 @@ p_{endo}(b \to r_i | correct) =   p_{null}(b \to r_i | correct)   = \begin{cases
 \label{eqn:nullmatch}
 \end{equation} 
 
-\noindent Despite the fact that deaminated bases represent a mismatch, they are not a genuine sequencing error {\it per se}. If deamination is believed to have occured, users can enter a position specific substitution matrix which indicate the probability that an endogenous base became deaminated and is now read as another for a given position on the molecule ($p_{deam}(b \to r_i | correct)$). 
+\noindent Despite the fact that deaminated bases represent a mismatch, they are not a genuine sequencing error {\it per se}. If deamination is believed to have occurred, users can enter a position specific substitution matrix which indicate the probability that an endogenous base became deaminated and is now read as another for a given position on the molecule ($p_{deam}(b \to r_i | correct)$). Under the deamination model, equation \ref{eqn:nullmatch} becomes:
 
-{\bf Single contaminant}
+\begin{equation}
+p_{deam}(b \to r_i | correct)   = \begin{cases}[@{}l@{\quad}r@{}l@{}]
+    1 -  \sum\limits_{ b' \in \{A,C,G,T\}  \setminus b } rate_{deam}(b \to b') &  \text{if }  b = r_i    \\
+    rate_{deam}(b \to r_i) &  \text{if }  b \ne r_i    \\
+  \end{cases}
+  \label{eqn:deammatch}
+\end{equation} 
+
+\noindent Single contaminant
 
 If we assume that there is a single contaminant, there are two bases to infer, $b_e$ and $b_c$ for the endogenous and contaminant genome respectively. Equation \ref{eqn:correctmap} now becomes:
 
@@ -351,39 +431,121 @@ The use of the single contaminant changes equation \ref{eqn:idenp} as the two mo
 
 
 
+
+
+
+
+
+%\subsubsection{Calling the endogenous base}
+\subsubsection{Calling the endogenous indels}
+
+For indels, we consider two separate cases:
+
+\begin{itemize}
+\item A deletion in our sample or, in other words, an insertion in the reference 
+\item An insertion in our sample which could also be a deletion in the reference
+\end{itemize}
+
+\noindent Each case is described separately in the sections below. As in both cases, we can know {\it a priori} without using phylogenetics information in which lineage the indel occured, we consider the error rate of indels to be a constant $\epsilon_{indel}$ for both cases. This constant is defined from the literature on sequencer-specific error rates\cite{minoche} and should be adjusted for the sequencing technology used. Regardless, given than an indel was present in the read, we consider it to be present in the original molecule with probability $1-\epsilon_{indel}$ and absent with probability $\epsilon_{indel}$. As in the inference of a single nucleotide, the computation is different depending on whether we consider a single contaminant or multiple ones.
+
+\noindent \paragraph{Deletions}
+
+A deletion refers to missing nucleotides with respect to the reference in either the contaminant or the endogenous.
+
+\noindent  Potentially multiple contaminants:
+%\noindent {\bf Single contaminant}
+
+We consider two the likelihood of two scenarios: either the endogenous genome has a deletion or not. Again, using the assumption of independence of observation for each read, we multiple the likelihood for each read independently for each of these two possibilities. For the former where the endogenous genome has a deletion, for each read $R_j$ exhibiting a deletion, the term in the product becomes:
+
+\begin{equation}
+ (1-m_{R_J}) \cdot p_{endo}(R_J) \cdot (1-\epsilon_{indel})
+\label{eqn:correctindel}
+\end{equation}
+
+\noindent where $m_{R_J}$ is the probability of mismapping for that given read and $p_{endo}(R_J)$ is the probability that $R_j$ is endogenous as defined in section \ref{sec:priorendo}. For the second scenario where the endogenous does not have the deletion and the read $R_j$ still has the deletion, the expression in the product is:
+
+\begin{equation}
+ (1-m_{R_J}) \cdot p_{endo}(R_J) \cdot \epsilon_{indel}
+\label{eqn:incorrectindel}
+\end{equation}
+
+\noindent If read $R_j$ does not have a deletion, the two previously defined terms are swapped for one another in the products. Finally, an deletion in the endogenous consensus is produced if the likelihood of such an event exceeds the likelihood of not having a deletion. The error probability is computed by taking the ratio of the second scenario over the sum of the probabilities for both possibilities.
+
+\noindent Single contaminant:
+
+Given that a deletion is observed, four different scenarios need to be considered:
+
+\begin{itemize}
+\item Both endogenous and the contaminant genome have a deletion
+\item Only the endogenous has the deletion
+\item The contaminant has the deletion but not the endogenous genome
+\item None have the deletion
+\end{itemize}
+
+The observation of a read with or without a deletion changes the likelihood for each possibility. For instance, for the first case, the observation of a read $R_j$ with the deletion gives the following term in the product :
+
+\begin{equation}
+ (1-m_{R_J}) [  p_{endo}(R_J) \cdot (1-\epsilon_{indel})  +  (1-p_{endo}(R_J)) \cdot (1-\epsilon_{indel}) ] 
+\label{eqn:bothcorrectdel}
+\end{equation}
+
+\noindent As both genomes contain the deletion, the probability of observing the read $R_j$ is the probability of having correctly detected the deletion in both cases. If the read does not have the deletion, the term becomes:
+
+\begin{equation}
+ (1-m_{R_J}) [  p_{endo}(R_J) \cdot (\epsilon_{indel})  +  (1-p_{endo}(R_J)) \cdot (\epsilon_{indel}) ] 
+\label{eqn:bothincorrectdel}
+\end{equation}
+
+\noindent as the read missed it in both cases. A similar computation is done for the remaining three possibilities but where the indel error term is used differently depending on which genome has the deletion. Finally, the possibility with the maximum likelihood is used to produce both the endogenous and contaminant genomes. The error probability on that call is computed by the ratio of the sum of the probabilities for all 3 remaining scenarios over the sum of all probabilities. 
+
+
+\noindent \paragraph{Insertions}
+
+Insertions are produced in a manner similar to deletions. The only difference is the possibility of multiple insertions at a given position. 
+
+\noindent  Potentially multiple contaminants
+
+We compute the likelihood of all observed insertion at a given position, assuming that unobserved insertions have a negligible likelihood. We also consider the likelihood for not having an insertion. For a given insertion, if a read exhibits it, the term in the product becomes expression \ref{eqn:correctindel} while for remaining insertions, the term \ref{eqn:incorrectindel} is used. Again, the most likelihood insertion is produced and the error probability is defined as the ratio of the sum of the probabilities for possible insertions minus the most likely over the sum of all probabilities.
+
+\noindent Single contaminant
+
+We consider a bi-dimensional matrix for possible all insertions for both the endogenous and contaminant. Each cell represents a specific model where either genomes could have a given insertion. The likelihood is computed using a product over all reads using terms like expressions \ref{eqn:bothcorrectdel} and \ref{eqn:bothincorrectdel} depending on which of the two genomes have the insertion for that given model. Finally, the most likely model is retained. For calling the endogenous consensus, the error probability is marginalized over each possible contaminant insertion and vice-versa for the contaminant consensus calling. 
+
+
+
 \subsubsection{Probability of being endogenous}
 \label{sec:priorendo}
 
-We take into consideration two factors, length of the molecules and deamination patterns. Both indicators are calculated as likelihood ratios. Finally both are combined to compute the probability that a read is endogenous. Using the assumption that if a read is both deaminated and short, it is likely endogeous, both tests along with the contamination prior are combined into a single probability. 
+We take into consideration two factors, length of the molecules and deamination patterns. Both indicators are calculated as likelihood ratios. Finally both are combined to compute the probability that a read is endogenous. Using the assumption that if a read is both deaminated and short, it is likely endogenous, both tests along with the contamination prior are combined into a single probability. 
 
 \noindent {\bf Deamination}
 
-As described in section \ref{seq:endodeampattern}, endogenous molecules tend to exhibit deamination patterns while contaminant molecules do not. For a given read $R_j$ comprised of bases and $\{ r_1, ..., r_l \}$ and error probabilities $\{ \epsilon_1, ..., \epsilon_l \}$, we compute the probability that the read is deaminated using the endogenous bases called at each respetive position of the read ($\{ b_1, ..., b_l \}$). We compute the probability that read $R_j$ is deaminated is defined by:
+As described in section \ref{seq:endodeampattern}, endogenous molecules tend to exhibit deamination patterns while contaminant molecules do not. For a given read $R_j$ comprised of bases and $\{ r_1, ..., r_l \}$ and error probabilities $\{ \epsilon_1, ..., \epsilon_l \}$, we compute the probability that the read is deaminated using the likelihood for each endogenous base called at each respective position of the read. We compute the probability that read $R_j$ is deaminated ($P(R_j \in deam) $) is defined by:
+
 
 \begin{equation}
-P_(R_j \in deam)  = \prod_{i=1}^{l} (1-p(\neg \hat{b_i}|R)) \cdot 
-[ (1-\epsilon_i) \cdot p_{deam}(b_i \to r_i | correct)
+ \prod_{i=1}^{l} \sum_{b \in {A,C,G,T} }  (1-p(\neg b|R)) \cdot 
+[ (1-\epsilon_i) \cdot p_{deam}(b \to r_i | correct)
   + 
-  (\epsilon_i) \cdot p_{error}(b_i \to r_i | correct) + 
+  (\epsilon_i) \cdot p(b \to r_i | error)  
 ]
 %p(\neg \hat{b}|R) = \frac { \sum\limits_{ b \in \{A,C,G,T\}  \setminus \hat{b} } p(b|R) } { \sum\limits_{ b \in \{A,C,G,T\}  } p(b|R) }
 %\label{errormt}
 \end{equation} 
 
-\noindent where $p(\neg \hat{b_i}|R)$ is defined in equation \ref{eqn:errormt} and $p_{deam}(b_i \to r_i | correct)$  is defined in section \ref{sec:forgivenread}. For the null model, the probability that read $R_j$ was generated given the called endogenous consensus and sequencing errors is given by:
+\noindent where $p(\neg b|R)$ is the probability of error for base $b$ as defined in equation \ref{eqn:errormt} and $p_{deam}(b \to r_i | correct)$  is defined in section \ref{sec:forgivenread}. For the null model, the probability that read $R_j$ was generated given the called endogenous consensus and sequencing errors ($P(R_j \in null) $) is given by:
 
 \begin{equation}
-P_(R_j \in null)  = \prod_{i=1}^{l} \sum_{b \in {A,C,G,T} } (1-p(\neg \hat{b}|R)) \cdot 
+\prod_{i=1}^{l} \sum_{b \in {A,C,G,T} } (1-p(\neg b|R)) \cdot 
 [ (1-\epsilon_i) \cdot p_{null}(b \to r_i | correct)
   + 
-  (\epsilon_i) \cdot p_{error}(b \to r_i | correct) + 
-]
+  (\epsilon_i) \cdot p(b \to r_i | error) ]
 \end{equation} 
 
-\noindent where $p_{null}(b_i \to r_i | correct)$  is defined in equation \ref{eqn:nullmatch}. Finally, both likelihood scores are combined as a likelihood ratio to obtain the probability that a read is deaminated:
+\noindent where $p_{null}(b \to r_i | correct)$  is defined in equation \ref{eqn:nullmatch}. Finally, both likelihood scores are combined as a likelihood ratio to obtain the probability that a read is deaminated:
 
 \begin{equation}
-P_{deam}(R_j) = \frac {P_(R_j \in deam)} {P_(R_j \in deam) +  P_(R_j \in null)}
+P_{deam}(R_j) = \frac {P (R_j \in deam)} {P(R_j \in deam) +  P(R_j \in null)}
 \end{equation}
 
 \noindent Trivially, if the read $R_j$ does exhibit any deamination at any position, the test is uninformative and the final probability $P_{deam}(R_j)$ is equal to $\frac {1} {2}$.
@@ -450,110 +612,30 @@ P_{deam}(R_j) = \frac {P_(R_j \in deam)} {P_(R_j \in deam) +  P_(R_j \in null)}
 %\end{equation} 
 \noindent {\bf Length}
 
-As presented in section \ref{seq:lengthdistendo}, endogenous molecules tend to be shorter due to degradation while contaminant ones tend to be longer. We model both distributions using a log-normal distribution as previously used in the literature \cite{schmutzi} and infer using empirical distributions 4 parameters $\mu_{endo}, \sigma_{endo}, \mu_{cont} and \sigma_{cont}$ for the location and scale, for the endogenous and contaminant respectively. The probability that the read $R_J$ of length $l$ pertains to the endogenous distribution is given by the probability density function for the log-normal distribution:
+As presented in section \ref{seq:lengthdistendo}, endogenous molecules tend to be shorter due to degradation while contaminant ones tend to be longer. We model both distributions using a log-normal distributionand infer using empirical distributions 4 parameters $\mu_{endo}, \sigma_{endo}, \mu_{cont} and \sigma_{cont}$ for the location and scale, for the endogenous and contaminant respectively. The probability that the read $R_J$ of length $l$ pertains to the endogenous distribution is given by the probability density function for the log-normal distribution:
 
 \begin{equation}
-P_(R_j \in endo_{dist}) = \frac {1} {l \sqrt{2\pi} \sigma_{endo}} e^{ - \frac{(ln(l) - \mu_{endo})^2 }  {2 \sigma_{endo}^2} } 
+P(R_j \in endo_{dist}) = \frac {1} {l \sqrt{2\pi} \sigma_{endo}} e^{ - \frac{(ln(l) - \mu_{endo})^2 }  {2 \sigma_{endo}^2} } 
 \end{equation}
 
-\noindent The probability that the read pertains to the contaminant distribution ($P_(R_j \in cont_{dist})$) is calculated in the same way except using the location and scale for that distribution. 
+\noindent The probability that the read pertains to the contaminant distribution ($P(R_j \in cont_{dist})$) is calculated in the same way except using the location and scale for that distribution. 
 
 \begin{equation}
-P_{endo_{dist} }(R_j) = \frac {P_(R_j \in endo_{dist})} {P_(R_j \in endo_{dist}) + P_(R_j \in cont_{dist})}
+P_{endo_{dist} }(R_j) = \frac {P(R_j \in endo_{dist})} {P(R_j \in endo_{dist}) + P(R_j \in cont_{dist})}
 \end{equation}
 
 \noindent Again, if a read has a length that is uninformative, this probability will be equal to $\frac {1} {2}$.
 
-{\bf Combining both with a contamination prior}
+\noindent {\bf Combining both with a contamination prior}
 
 %\subsubsection{Endogenous consensus}
-Given our two likelihood ratio tests, one for deamination and the second for length, we combine both using our prior on a read being endogenous $1-c_{prior}$. The probability of being endogenous for read $R_j$ is given by:
-
+Given our two likelihood ratio tests, one for deamination and the second for length, we combine both using our prior on a read being endogenous $1-c_{prior}$. The probability of being endogenous for read $R_j$, written as $P_{endo} (R_j)$ throughout the manuscript, is given by:
+{\small
 \begin{equation}
-P_{endo} (R_j) = \frac {  (1-c_{prior}) \cdot ( P_{endo_{dist} }(R_j) P_{deam}(R_j) ) } {  (1-c_{prior}) \cdot ( P_{ endo_{dist} }(R_j) P_{deam}(R_j)) + c_{prior} \cdot ( (1-P_{endo_{dist} }(R_j)) (1- P_{deam}(R_j) )) }
+ \frac {  (1-c_{prior}) \cdot ( P_{endo_{dist} }(R_j) P_{deam}(R_j) ) } {  (1-c_{prior}) \cdot ( P_{ endo_{dist} }(R_j) P_{deam}(R_j)) + c_{prior} \cdot ( (1-P_{endo_{dist} }(R_j)) (1- P_{deam}(R_j) )) }
 %P_{endo} (R_j) = \frac { } 
 \end{equation}
-
-
-
-
-
-
-%\subsubsection{Calling the endogenous base}
-\subsubsection{Calling the endogenous indels}
-
-For indels, we consider two separate cases:
-
-\begin{itemize}
-\item A deletion in our sample or, in other words, an insertion in the reference 
-\item An insertion in our sample which could also be a deletion in the reference
-\end{itemize}
-
-\noindent Each case is described separately in the sections below. As in both cases, we can know {\it a priori} without using phylogenetics information in which lineage the indel occured, we consider the error rate of indels to be a constant $\epsilon_{indel}$ for both cases. This constant is defined from the literature on sequencer-specific error rates and should be ajusted for the sequencing technology used. Regardless, given than an indel was present in the read, we consider it to be present in the original molecule with probability $1-\epsilon_{indel}$ and absent with probability $\epsilon_{indel}$. As in the inferrence of a single nucleotide, the computation is different depending on whether we consider a single contaminant or multiple ones.
-
-\paragraph{Deletions}
-
-A deletion refers to missing nucleotides with respect to the reference in either the contaminant or the endogenous.
-
-{\bf Potentially multiple contaminants}
-{\bf Single contaminant}
-
-We consider two the likelihood of two scenarios: either the endogenous genome has a deletion or not. Again, using the assumption of indepedence of observation for each read, we multiple the likelihood for each read independently for each of these two possibilities. For the former where the endogenous genome has a deletion, for each read $R_j$ exhibiting a deletion, the term in the product becomes:
-
-\begin{equation}
- (1-m_{R_J}) \cdot p_{endo}(R_J) \cdot (1-\epsilon_{indel})
-\label{eqn:correctindel}
-\end{equation}
-
-\noindent where $m_{R_J}$ is the probability of mismapping for that given read and $p_{endo}(R_J)$ is the probability that $R_j$ is endogenous as defined in section \ref{sec:priorendo}. For the second scenario where the endogenous does not have the deletion and the read $R_j$ still has the deletion, the expression in the product is:
-
-\begin{equation}
- (1-m_{R_J}) \cdot p_{endo}(R_J) \cdot \epsilon_{indel}
-\label{eqn:incorrectindel}
-\end{equation}
-
-\noindent If read $R_j$ does not have a deletion, the two previously defined terms are swapped for one another in the products. Finally, an deletion in the endogenous consensus is produced if the likelihood of such an event exceeds the likelihood of not having a deletion. The error probability is computed by taking the ratio of the second scenario over the sum of the probabilities for both possibilities.
-
-{\bf Single contaminant}
-
-Given that a deletion is observed, four different scenarios need to be considered:
-
-\begin{itemize}
-\item Both endogenous and the contaminant genome have a deletion
-\item Only the endogenous has the deletion
-\item The contaminant has the deletion but not the endogenous genome
-\item None have the deletion
-\end{itemize}
-
-The observation of a read with or without a deletion changes the likelihood for each possibility. For instance, for the first case, the observation of a read $R_j$ with the deletion gives the following term in the product :
-
-\begin{equation}
- (1-m_{R_J}) [  p_{endo}(R_J) \cdot (1-\epsilon_{indel})  +  (1-p_{endo}(R_J)) \cdot (1-\epsilon_{indel}) ] 
-\label{eqn:bothcorrectdel}
-\end{equation}
-
-\noindent As both genomes contain the deletion, the probability of observing the read $R_j$ is the probability of having correctly detected the deletion in both cases. If the read does not have the deletion, the term becomes:
-
-\begin{equation}
- (1-m_{R_J}) [  p_{endo}(R_J) \cdot (\epsilon_{indel})  +  (1-p_{endo}(R_J)) \cdot (\epsilon_{indel}) ] 
-\label{eqn:bothincorrectdel}
-\end{equation}
-
-\noindent as the read missed it in both cases. A similar computation is done for the remaining three possibilities but where the indel error term is used differently depending on which genome has the deletion. Finally, the possibility with the maximum likelihood is used to produce both the endogenous and contaminant genomes. The error probability on that call is computed by the ratio of the sum of the probabilities for all 3 remaining scenarios over the sum of all probabilities. 
-
-
-\paragraph{Insertions}
-
-Insertions are produced in a manner similar to deletions. The only difference is the possiblity of multiple insertions at a given position. 
-
-{\bf Potentially multiple contaminants}
-
-We compute the likelihood of all observed insertion at a given position, assuming that unobserved insertions have a negligible likelihood. We also consider the likelihood for not having an insertion. For a given insertion, if a read exhibits it, the term in the product becomes expression \ref{eqn:correctindel} while for remaining insertions, the term \ref{eqn:incorrectindel} is used. Again, the most likelihood insertion is producted and the error probability is defined as the ratio of the sum of the probabilities for possible insertions minus the most likely over the sum of all probabilities.
-
-{\bf Single contaminant}
-
-We consider a bidimensional matrix for possible all insertions for both the endogenous and contaminant. Each cell represents a specific model where either genomes could have a given insertion. The likelihood is computed using a product over all reads using terms like expressions \ref{eqn:bothcorrectdel} and \ref{eqn:bothincorrectdel} depending on which of the two genomes have the insertion for that given model. Finally, the most likely model is retained. For calling the endogenous consensus, the error probability is marginalized over each possible contaminant insertion and vice-versa for the contaminant consensus calling. 
-
+}
 
 
 
@@ -587,7 +669,7 @@ p(r_i|b,c)  = (1-m_{R_J}) \cdot p_{mapped}(r_i|b,c) + m_{R_J} \cdot p_{mismapped
 \noindent where the probability of being mismapped is defined in equation \ref{eqn:mismapped}. If the read is properly mapped, there are two possibilities, either it pertains to the contaminant or to the endogenous. By using the defined contamination rate, we can quantify the probability of observing $r_i$ as :
 
 \begin{equation}
-p_{mapped}(r_i|b,c) = (1-c_r) \cdot P_{endo} (r_i|b,c)   + (c_r) \cdot P_{cont} (r_i|b,c)
+p_{mapped}(r_i|b,c) = (1-c_r) \cdot P_{endo} (r_i|b,c)   + c_r \cdot P_{cont} (r_i|b,c)
 \end{equation}
 
 \noindent Similarly to equation \ref{eqn:match}, we defined the probability of matching either the endogenous or the contaminant base separately:
@@ -597,15 +679,15 @@ p_{mapped}(r_i|b,c) = (1-c_r) \cdot P_{endo} (r_i|b,c)   + (c_r) \cdot P_{cont} 
 %\end{equation} 
 
 \begin{eqnarray}
-  p_{endo}(r_i|b,c)   & = &  (1-\epsilon_i ) \cdot  P_{endo}( b \to r_i|correct) +  (\epsilon_i) \cdot P_{endo}(  b \to r_i |error)   \\
-  p_{cont}(r_i|b,c)   & = &  (1-\epsilon_i ) \cdot  P_{cont}( c \to r_i|correct) +  (\epsilon_i) \cdot P_{cont}(  c \to r_i |error)   \\
+  p_{endo}(r_i|b,c)   & = &  (1-\epsilon_i ) \cdot  P_{endo}( b \to r_i|correct) +  \epsilon_i \cdot P_{endo}(  b \to r_i |error)   \\
+  p_{cont}(r_i|b,c)   & = &  (1-\epsilon_i ) \cdot  P_{cont}( c \to r_i|correct) +  \epsilon_i \cdot P_{cont}(  c \to r_i |error)   \\
 \end{eqnarray} 
 
-\noindent While probability of base substitution for an endogenous read given error ($P_{endo}(  b \to r_i |error)$) is identical to the probability if the read is a contaminant ($P_{cont}(  b \to r_i |error)$), the probability in a correctness scenario differs. Similarly to equation \ref{eqn:nullmatch}, a null model of Illumina errors is used when two nucleotides differ but a deaminated one can only be used for the endogenous case. 
+\noindent While probability of base substitution for an endogenous read given error ($P_{endo}(  b \to r_i |error)$) is identical to the probability if the read is a contaminant ($P_{cont}(  c \to r_i |error)$), the probability in a correctness scenario differs. Similarly to equation \ref{eqn:nullmatch}, a null model of Illumina errors is used when two nucleotides differ but a deaminated one can only be used for the endogenous case. 
 
-\subsubsection{Likelihood for a given contamination rate}
+\subsubsection{Contamination rate likelihood computation}
 
-As the endogenous base $b$ and the contaminant $c$ is not known in advance, we iterate over each possible 12 dimers where the bases differ as cases where $b=c$ contribute a constant quantity to all contamination levels. The likelihood of observing given read for all possibilities for a specific contamination rate ($c_r$) is therefore:
+As the endogenous base $b$ and the contaminant $c$ are not known in advance, we iterate over each possible 12 dimers where the bases differ as cases where $b=c$ contribute a constant quantity to all contamination levels. The likelihood of observing given read for all possibilities for a specific contamination rate ($c_r$) is therefore:
 
 \begin{equation}
 p_{c_r}(r_i) = \sum\limits_{ b,c \in \{AC,AG,AT,CA,CG,CT,GA,GC,GT,TA,TC,TG\} } p(r_i|b,c) p(b,c)
@@ -638,8 +720,8 @@ p(b)  = 1 - p(\neg b|R)
 
 \subsection{Simulated Data}
 
-As the divergence to the endogenous genome cannot be ascertained for biological data, simulated data can offer the ability to measure contamination estimates and endogenous consensus to its original source. One million reads from a Neandertal mitochondrion (genbank ACC) and a modern human (genbank ACC) were simulated using in-house programs (github simulate DNA). Molecules exceeding the length of the mitochondrial genome were appended with bases from the beginning of the file as to simulate circularity. The length of the endogenous and contaminant molecules were samples from the distribution described in section \ref{seq:lengthdistendo}. Deamination rates were applied to the endogenous molecules only using the rates observed in \ref{seq:endodeampattern}. %verify this !! 
-Both sets of molecules were pooled together by subsampling from each set at various levels ranging from 0 to 100\% for a given set. As reads were marked as either contaminant or endogenous using the RG field in the BAM file, the actual contamination rate was computed using the sum of the contamiant bases over the total number of bases. The sets were aligned using SHRIMP v?? and reads were re-wrapped around the reference using our in-house scripts described in section \ref{??}. 
+As the divergence to the endogenous genome cannot be ascertained for biological data, simulated data can offer the ability to measure contamination estimates and endogenous consensus to its original source. One million reads from a Neandertal mitochondrion (genbank??? ACC) and a modern human (genbank??? ACC) were simulated using in-house programs (github simulate DNA). Molecules exceeding the length of the mitochondrial genome were appended with bases from the beginning of the file as to simulate circularity. The length of the endogenous and contaminant molecules were samples from the distribution described in section \ref{seq:lengthdistendo}. Deamination rates were applied to the endogenous molecules only using the rates observed in \ref{seq:endodeampattern}. %verify this !! ???
+Both sets of molecules were pooled together by subsampling from each set at various levels ranging from 0 to 100\% for a given set. As reads were marked as either contaminant or endogenous using the RG field in the BAM file, the actual contamination rate was computed using the sum of the contamiant bases over the total number of bases. The sets were aligned using SHRIMP v?? and reads were re-wrapped around the reference using our in-house scripts described in Section \ref{sec:methodsmapping}. 
 
 
 
@@ -655,15 +737,35 @@ Both sets of molecules were pooled together by subsampling from each set at vari
 
 
 %smith-waterman on the neandertal and human. plos divergence versus position
+\subsection{Mapping strategies}
+
+
+To show the gains of rewrapping the reads around the junction section of the mitochondrial genome, a set of 1M molecules from the human reference were simulated. The molecules were taken from the human reference using the same strategy described in the methods section and using the length distribution of the contaminant sequences for the biological data. (??? Still true) Mapping was done with BWA v0.5.10 with increased sensitivity (``-n 0.01 -o 2 -l 16500'') against the standard human reference and against the extended one with the first 1000 basepairs copied at the end where reads exceeding the length of the reference were wrapped around. Figure \ref{fig:wrappingaroundmt} shows the coverage for the first and last bases of the mitochondrial reference. The advantage of including circularity in mapping is seen by the more even coverage. 
+
+\begin{figure}[H]
+\centering
+\begin{tabular}{lr}
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/testData/mappingmt/notLong/first.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/testData/mappingmt/notLong/firstrewrap.eps} \\
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/testData/mappingmt/notLong/last.eps} &
+\includegraphics[width=0.5\textwidth]{/home/gabriel_renaud/projects/schmutzi/testData/mappingmt/notLong/lastrewrap.eps} \\
+\end{tabular}
+\label{fig:wrappingaroundmt}
+\caption{Coverage for the first ??? bases of the mitochondrial genome (top) and last ???? bases (bottom) for simulated human reference short molecules. Without accounting for circularity (left) an artificial drop of coverage can be seen. However, if circularity is taken into account (right), coverage at the end of the sequence in the reference file does not influence coverage. }
+\end{figure}
+%\afterpage{\clearpage}
+
+
+As mentioned in the methods section, reads from the Denisova mitochondrial genome were simulated. Its divergence against the human genome was plotted (see Figure \ref{fig:divergenceMT}). The regions of the mitochondrial with the highest divergence can be found around the D-loop. Figure \ref{fig:coverageversusdiv} shows the correlation between divergence and coverage. When using BWA, a lesser amount of reads align to highly divergent loci while SHRIMP, a more sensitive aligned \cite{comparison}, seems more robust to highly divergent loci. Hence, to avoid coverage biases between endogenous and exogenous material, a sensitive aligner is required to accurately quantify contamination.
 
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.9\textwidth]{../testData/mappingmt/divMT_bb}
 \label{fig:divergenceMT}
-\caption{text}
+\caption{Divergence of the Denisova mitochondrial genome when aligned to the human reference for windows of 150 basepairs. The most divergent portion of the genome are found at the the D-loop.}
 \end{figure}
-
+%\afterpage{\clearpage}
 
 
 \begin{figure}[H]
@@ -673,9 +775,9 @@ Both sets of molecules were pooled together by subsampling from each set at vari
 \includegraphics[width=0.5\textwidth]{../testData/mappingmt/divMappedCont_bb} \\
 \end{tabular}
 \caption{text}
-\label{fig:}
+\label{fig:coverageversusdiv}
 \end{figure}
-
+%\afterpage{\clearpage}
 
 \subsection{Calling the endogenous base}
 
@@ -695,7 +797,7 @@ Both sets of molecules were pooled together by subsampling from each set at vari
 
 %plot cont rate as a function of the time
 
-\subsection{Real data}
+\subsection{Biological data}
 
 ML tree for various schmutzi settings
 
