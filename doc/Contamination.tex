@@ -49,12 +49,12 @@
 
 \tableofcontents
 \begin{abstract}
-Due to their relative small length and intracellular abundance, mitochondrial genomes are routinely used for the reconstruction of species history and demographics. While existing computational tools suffice for modern DNA samples, data from ancient or forensic samples possess idiosyncrasies that require specialized methods. For instance, deamination and contamination from extant human DNA for homonin samples make straighforward haploid genotyping inpractical. Further, quantifying contamination can help investigators identify fossilized  bone extractions with a higher chance of yielding a high number of endogenous molecules. We introduce schmutzi, a Bayesian maximum {\it a posteriori} algorithm to call an endogenous mitochondrial consensus and quantify contamination from modern human handlers. 
+Due to their relative small length and intracellular abundance, mitochondrial genomes are routinely used for the reconstruction of species history and demographics. While existing computational tools suffice for modern DNA samples, data from ancient or forensic samples possess idiosyncrasies that require specialized methods. For instance, deamination and contamination from extant human DNA for hominin samples make straighforward haploid genotyping inpractical. Further, quantifying contamination can help investigators identify fossilized  bone extractions with a higher chance of yielding a high number of endogenous molecules. We introduce schmutzi, a Bayesian maximum {\it a posteriori} algorithm to call an endogenous mitochondrial consensus and quantify contamination from modern human handlers. 
 \end{abstract}
 
 \section{Introduction}
 
-Ancient DNA (aDNA) has enabled the study of dead organisms and the comparison to extant ones has allowed researchers to reconstruct the phylogenetic history of various species including our own. The two main computational challenges with aDNA analysis remain deamination, the loss of amine groups which transforms cytosines into uracils which are read as thymines, and exogenous contamination \cite{briggs2007patterns}. Upon performing aDNA extraction from bones, the DNA pertaining to the organism {\it per se} along with DNA from microbes which colonize the organism {\it post-mortem} will be sequenced \cite{sidow1991bacterial,handt1994ancient}. Furthermore, the DNA of the individuals involved in excavating, manipulating and ultimately sequencing the bone will also be sequenced along with the ancient material \cite{Bandelt HJ. Mosaics of ancient mitochondrial DNA: positive indicators of nonauthenticity. Eur J Hum Genet. 2005; 13(10): 1106-1112.}. If the endogenous sample is an ancient homonin, there is a difference as to how harmful to downstream analyses the bacterial and modern human contaminants will be . Upon sequecing and subsequent mapping, the former will share little homology to the reference while the latter, due to the low genetic divergence between the contaminant and the endogenous material, will lead to falacious alignments. Such falacious alignments can lead to spurious signals during mitochondrial consensus calling and genotyping for nuclear DNA. 
+Ancient DNA (aDNA) has enabled the study of dead organisms and the comparison to extant ones has allowed researchers to reconstruct the phylogenetic history of various species including our own. The two main computational challenges with aDNA analysis remain deamination, the loss of amine groups which transforms cytosines into uracils which are read as thymines, and exogenous contamination \cite{briggs2007patterns}. Upon performing aDNA extraction from bones, the DNA pertaining to the organism {\it per se} along with DNA from microbes which colonize the organism {\it post-mortem} will be sequenced \cite{sidow1991bacterial,handt1994ancient}. Furthermore, the DNA of the individuals involved in excavating, manipulating and ultimately sequencing the bone will also be sequenced along with the ancient material \cite{bandelt2005mosaics}. If the endogenous sample is an ancient homonin, there is a difference as to how harmful to downstream analyses the bacterial and modern human contaminants will be . Upon sequecing and subsequent mapping, the former will share little homology to the reference while the latter, due to the low genetic divergence between the contaminant and the endogenous material, will lead to falacious alignments. Such falacious alignments can lead to spurious signals during mitochondrial consensus calling and genotyping for nuclear DNA. 
 
 Although methods have been described to reduce contamination during archaleogical excavation \cite{yang2005contamination}, they can still influence phylogenetic reconstruction \cite{wall2007inconsistencies}. Due to the differences between deamination patterns between the ancient endogenous material and modern contaminant, compensatory measures such as using only deaminated reads have been utilized \cite{skoglund2014separating}. However, such heuristic do not allow for estimates of contamination rates. Furthermore, using only deaminated reads will lead to potentially incorrect calls especially for low coverage samples if a deamination model is not incorporated into consensus calling as reads will be enriched for deaminated bases. Estimating contamination given a sample helps researchers identify which bones are more likely to yield optimal results. 
 
@@ -79,7 +79,7 @@ We describe the two main programs that are part of schmutzi, one to infer the mo
 
 
 
-
+\clearpage
 
 
 
@@ -162,7 +162,7 @@ Using the assumption that endogenous molecules\cite{garcia2011fragmentation} are
 
 
 
-
+\clearpage
 
 
 % put figure for both single and multiple contaminants
@@ -545,13 +545,14 @@ As described in section \ref{seq:endodeampattern}, endogenous molecules tend to 
   \epsilon_i \cdot p(b \to r_i | error) ]
 \end{equation} 
 }
-\noindent where $p_{null}(b \to r_i | correct)$  is defined in equation \ref{eqn:nullmatch}. Finally, both likelihood scores are combined as a likelihood ratio to obtain the probability that a read is deaminated:
+\noindent where $p_{null}(b \to r_i | correct)$  is defined in equation \ref{eqn:nullmatch}. Finally, both likelihood scores are combined with our prior on a read being endogenous of $1-c_{prior}$ as a likelihood ratio to obtain the probability that a read is deaminated:
 
 \begin{equation}
-P_{deam}(R_j) = \frac {P (R_j \in deam)} {P(R_j \in deam) +  P(R_j \in null)}
+P_{deam}(R_j) = \frac { (1-c_{prior}) \cdot  P (R_j \in deam)} { (1-c_{prior}) \cdot P(R_j \in deam) +   c_{prior} \cdot  P(R_j \in null)}
+\label{eqn:pdeamprior}
 \end{equation}
 
-\noindent Trivially, if the read $R_j$ does exhibit any deamination at any position, the test is uninformative and the final probability $P_{deam}(R_j)$ is equal to $\frac {1} {2}$.
+\noindent Trivially, if the read $R_j$ does exhibit any deamination at any position, the test is uninformative and the final probability $P_{deam}(R_j)$ is equal to the prior.
 
 %NOTE SEE PREVIOUS SECTION
 %\noindent  Normal (null) case:
@@ -624,19 +625,22 @@ P(R_j \in endo_{dist}) = \frac {1} {l \sqrt{2\pi} \sigma_{endo}} e^{ - \frac{(ln
 \noindent The probability that the read pertains to the contaminant distribution ($P(R_j \in cont_{dist})$) is calculated in the same way except using the location and scale for that distribution. 
 
 \begin{equation}
-P_{endo_{dist} }(R_j) = \frac {P(R_j \in endo_{dist})} {P(R_j \in endo_{dist}) + P(R_j \in cont_{dist})}
+P_{endo_{dist} }(R_j) = \frac { (1-c_{prior}) \cdot   P(R_j \in endo_{dist})} {(1-c_{prior}) \cdot   P(R_j \in endo_{dist}) + c_{prior} \cdot  P(R_j \in cont_{dist})}
+\label{eqn:pdistprior}
 \end{equation}
 
-\noindent Again, if a read has a length that is uninformative, this probability will be equal to $\frac {1} {2}$.
+\noindent Again, if a read has a length that is uninformative, this probability will be equal to the prior.
 
 \noindent {\bf Combining both with a contamination prior}
 
 %\subsubsection{Endogenous consensus}
-Given our two likelihood ratio tests, one for deamination and the second for length, we combine both using our prior on a read being endogenous $1-c_{prior}$. The probability of being endogenous for read $R_j$, written as $P_{endo} (R_j)$ throughout the manuscript, is given by:
+Given our two likelihood ratio tests, one for deamination and the second for length, we combine both using a likelihood ratio. The probability of being endogenous for read $R_j$  (written as $P_{endo} (R_j)$ throughout the manuscript) is given by:
+
 {\scriptsize
 \begin{equation}
- \frac {  (1-c_{prior}) \cdot ( P_{endo_{dist} }(R_j) P_{deam}(R_j) ) } {  (1-c_{prior}) \cdot ( P_{ endo_{dist} }(R_j) P_{deam}(R_j)) + c_{prior} \cdot ( (1-P_{endo_{dist} }(R_j)) (1- P_{deam}(R_j) )) }
+ \frac {   P_{endo_{dist} }(R_j) P_{deam}(R_j)  } {  ( P_{ endo_{dist} }(R_j) P_{deam}(R_j)) +   (1-P_{endo_{dist} }(R_j)) (1- P_{deam}(R_j) ) }
 %P_{endo} (R_j) = \frac { } 
+\label{eqn:pendoforread}
 \end{equation}
 }
 
@@ -648,6 +652,69 @@ Given our two likelihood ratio tests, one for deamination and the second for len
 
 \subsection{Mitochondrial contamination}
 \label{sec:contest}
+
+
+\subsubsection{Mitochondrial contamination based on deamination patterns}
+
+\label{sec:contestdeam}
+
+As we described in section \ref{sec:priorendo}, endogenous reads can be probabilistically identified using deamination patterns and molecule length. To obtain an estimate of contamination given a profile of endogenous molecules, one can compute the prior probability for each read to be endogenous and find the contamination rate that maximizes the likelihood of observing the data. An advantage of this approach is that is does not require the computation of the endogenous consensus however, it does not allow the user to pinpoint the source of the contamination. This quick approach can be used to as an estimate to feed the endogenous consensus caller. More precisely, we re-compute equation \ref{eqn:pdeamprior} for each reads $R_j$  using an flat prior:
+
+\begin{equation}
+P_{deamnull}(R_j) = \frac { (1-c_{prior}) \cdot  P (R_j \in deam)} { (1-c_{prior}) \cdot P(R_j \in deam) +   c_{prior} \cdot  P(R_j \in null)}
+\label{eqn:pdeampriorflat}
+\end{equation}
+
+\noindent and derive the probability of pertaining to the endogenous distribution similarly, by modifying equation \ref{eqn:pdistprior} with the use of an uninformative prior: 
+
+\begin{equation}
+P_{endonull_{dist} }(R_j) = \frac {    P(R_j \in endo_{dist})} {   P(R_j \in endo_{dist}) +   P(R_j \in cont_{dist})}
+\label{eqn:pdistpriorflat}
+\end{equation}
+
+\noindent and compute the probability of the read being endogenous using the same ratio as equation \ref{eqn:pendoforread} :
+
+{\scriptsize
+  \begin{equation}
+P_{endonull} (R_j) =    \frac {   P_{endonull_{dist} }(R_j) P_{deamnull}(R_j)  } {  ( P_{ endonull_{dist} }(R_j) P_{deamnull}(R_j)) +   (1-P_{endonull_{dist} }(R_j)) (1- P_{deamnull}(R_j) ) }
+    \label{eqn:pendoforreadflag}
+  \end{equation}
+}
+
+The probability of observing the data, $R$, for a given contamination rate $c_r$ is given by:
+
+\begin{equation}
+  p_{cont_{deam} } (R|c_r)  =  \prod_{R_j \in R} (1-c_r) \cdot P_{endonull} (R_j)    + (c_r) \cdot (1-P_{endonull} (R_j))
+\label{eqn:contdeam}
+\end{equation}
+
+\noindent finally the likelihood of the contamination rate is given by neglecting the evidence for the data (as it is independent of the contamination rate) and using a uniform prior for the contamination rate:
+\begin{eqnarray}
+  p_{cont_{deam} } (c_r|R)   & \propto &   p_{cont_{deam} } (R|c_r)   \\
+\label{eqn:idenp}
+\end{eqnarray} 
+
+
+\noindent we produce the most contamination rate $\hat{c_r}$ with the highest likelihood :
+
+\begin{equation}
+\hat{c_r} = \argmax     p_{cont_{deam} } (c_r|R)
+\end{equation} 
+
+
+
+
+
+
+
+
+
+
+
+\subsubsection{Mitochondrial contamination using endogenous consensus}
+
+\label{sec:contestondb}
+
 
 Once the endogenous consensus calling is done, for each position we have the likelihood for each possible 4 bases of being the endogenous one. To estimate contamination, we compute the likelihood of various contamination levels given a certain profile of contamination. The contamination profile is a set of allele frequencies for each position given as input. If a single, or at least a single dominant, contaminant is believed to be present, this allele frequency can be built from a single fasta file describing a mitochondrion alignment to the human reference.  Examples of contaminantion profiles along with programs to transform multiple sequence alignment fasta files into a set of profiles are provided along with the package. 
 
@@ -760,6 +827,7 @@ Both sets of molecules were pooled together by subsampling from each set at vari
 
 
 
+\clearpage
 
 
 %\subsection{Nuclear Contamination}
@@ -770,6 +838,7 @@ Both sets of molecules were pooled together by subsampling from each set at vari
 \subsection{Mapping strategies}
 
 To show the gains of rewrapping the reads around the junction section of the mitochondrial genome, a set of 1M molecules from the human reference were simulated. The molecules were taken from the human reference using the same strategy described in the methods section and using the length distribution of the contaminant sequences for the biological data. (??? Still true) Mapping was done with BWA v0.5.10 with increased sensitivity (``-n 0.01 -o 2 -l 16500'') against the standard human reference and against the extended one with the first 1000 basepairs copied at the end where reads exceeding the length of the reference were wrapped around. Figure \ref{fig:wrappingaroundmt} shows the coverage for the first and last bases of the mitochondrial reference. The advantage of including circularity in mapping is seen by the more even coverage. 
+
 
 \begin{figure}[H]
 \centering
@@ -808,6 +877,8 @@ As mentioned in the methods section, reads from the Denisova mitochondrial genom
 \end{figure}
 %\afterpage{\clearpage}
 
+\clearpage
+
 \subsection{Calling the endogenous base}
 
 Using the data described in \ref{sec:meth:simulated}, we called the endogenous genome consensus for various sets with contamination rates varying from 1 to 99\% simulated contamination rates. We tested schmutzi while allowing for deamination and molecule length information but not the single contaminant assumption. We repeated the experiment using the single contaminant assumption with deamination pattern only, once more with molecule length distribution only and finally with both deamination and molecule length at once. To test schmutzi against current methodology, we isolated deaminated molecules and decreased the quality of putative deaminated bases. A consensus was called on the resulting data using samtools version 1.0-13 and bcftools version 1.0-26  using a haploid model.
@@ -815,13 +886,45 @@ Using the data described in \ref{sec:meth:simulated}, we called the endogenous g
 %PUT results here
 %figure one for endogenous and contaminant, cannot call bcftools for contaminant
 %plot schmutzi (various settings) version versus samtools+bcftools (use on deaminated reads only too)
+See figure \ref{fig:endocallingendo} \ref{fig:endocallingcont}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../testData/simulation/divEndoZOOM_bb.eps} 
+\caption{text}
+\label{fig:endocallingendo}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../testData/simulation/divCont_bb.eps} 
+\caption{text}
+\label{fig:endocallingcont}
+\end{figure}
+
+
+
 
 To measure the robustness of our model to paucity of data, the dataset with a simulated contamination rate of 40\% was subsampled at various rates as described in section \ref{sec:meth:simulated}. The same settings for schmutzi were used to predict the endogenous and contaminant mitochondria. 
 
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../testData/subsamplingSimulation/matchEndo_bb.eps} 
+\caption{text}
+\label{fig:endocallingSUBendo}
+\end{figure}
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../testData/subsamplingSimulation/matchCont_bb.eps} 
+\caption{text}
+\label{fig:endocallingSUBendo}
+\end{figure}
 
 %figure downsampling
-
+See figure \ref{fig:endocallingSUBendo} and \ref{fig:endocallingSUBcont}
 
 
 %need to test what happens when the prior is wrong
@@ -829,9 +932,20 @@ To measure the robustness of our model to paucity of data, the dataset with a si
 
 %
 %how low can you go ? 
+\clearpage
 
 
 \subsection{Contamination}
+\label{sec:res:cont}
+
+\subsubsection{Mitochondrial contamination based on deamination patterns}
+\label{sec:res:contdeam}
+
+\input{/r1/people/gabriel_renaud/projects/schmutzi/testData/simulation/figurescontdeam}
+
+
+\input{/home/gabriel_renaud/projects/schmutzi/testData/subsamplingSimulation/figurescontdeamCOV}
+
 
 %posterior versus measured
 %schmutzi versus cont checker 
@@ -867,24 +981,28 @@ To measure the robustness of our model to paucity of data, the dataset with a si
 \label{fig:coverageversusdiv}
 \end{figure}
 
+
+{\footnotesize
 \begin{table}[H]
 \caption{caption}
 \centering
 \begin{tabular}{l|cccc}
-Method                                         & Branch length     & lower bound & upper bound & ancestral node \\
+Method                                         & Branch      & lower & upper & ancestral node \\
+                                               &  length     & lower & upper & ancestral node \\
+
 \hline
 deaminated+samtools                            & 0.00107           & 0.00055     & 0.00161     & external to all Denisovans \\ 
-schmutzi (single+deaminated+length)            & 0.00089           & 0.00042     & 0.00137     & with Denisova molar2 \\ 
-schmutzi (single+deaminated+length+$Q>50$)     & 0.00078           & 0.00034     & 0.00122     & with Denisova molar2 \\ 
-schmutzi (deaminated+length)                   & 0.00097           & 0.00047     & 0.00147     & with Denisova molar2 \\ 
-schmutzi (single+deaminated)                   & 0.00098           & 0.00047     & 0.00149     & with Denisova molar2 \\ 
-schmutzi (single+length)                       & 0.00112           & 0.00059     & 0.00165     & with Denisova molar2 \\ 
+schmutzi (s.+d.+l.)                            & 0.00089           & 0.00042     & 0.00137     & with Denisova molar2 \\ 
+schmutzi (s.+d.+l.+$Q>50$)                     & 0.00078           & 0.00034     & 0.00122     & with Denisova molar2 \\ 
+schmutzi (d.+l.)                               & 0.00097           & 0.00047     & 0.00147     & with Denisova molar2 \\ 
+schmutzi (s.+d.)                               & 0.00098           & 0.00047     & 0.00149     & with Denisova molar2 \\ 
+schmutzi (s.+l.)                               & 0.00112           & 0.00059     & 0.00165     & with Denisova molar2 \\ 
 \hline
 %inserts single line
 \end{tabular}
 \label{tab:branchlength}
 \end{table}
-
+}
 
 Group H3ae with 90\% quality using Haplogrep \cite{kloss2011haplogrep}.
 
@@ -911,6 +1029,7 @@ position & reference & alternative & Quality (PHRED) & Expected diagnostic \\
 \label{tab:diagpos}
 \end{table}
 
+\clearpage
 
 \section{Discussion}
 

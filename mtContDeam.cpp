@@ -13,8 +13,8 @@
 // #define DEBUG1
 // #define DEBUG2
 // #define DEBUG3
-#define CONTPRIORBEFORE
-//#define DEBUGPRIORENDO
+//#define CONTPRIORBEFORE
+// #define DEBUGPRIORENDO
 
 
 
@@ -1347,12 +1347,12 @@ void  printLogAndGenome(const int sizeGenome,
 	 outSeqFPC.close() ;
      }
 
-     outLogFP<<logToPrint.str();
+     outLogFP<<logToPrint.str()<<endl;
      outLogFP.close();
 
      if(outLogCflag)
      if(singleCont){//if single contaminant need to marginalized over each contaminant
-	 outLogFPC<<logToPrintC.str();
+	 outLogFPC<<logToPrintC.str()<<endl;
 	 outLogFPC.close();
      }
 }
@@ -2485,7 +2485,7 @@ void computePriorOnReads(const string bamfiletopen,
 	//long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
 
 #ifdef DEBUGPRIORENDO
-	cout<<"priorbefore\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
+	cout<<"priorbefore\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\tp(endo)="<<probEndo<<"\tp(deam)="<<probDeamUnscaled<<"\tp(length)="<<probLengthEndoForRead<<"\t(d*l)="<<probEndoProd<<"\t(1-d*1-l)="<<probContProd<<endl;
 #endif
 
 	
@@ -2508,8 +2508,9 @@ void computePriorOnReads(const string bamfiletopen,
 */
 void computePriorOnReads(const string bamfiletopen,
 			 const bool deamread,
-			 const bool useLengthPrior,
-			 const long double contaminationPrior
+			 const bool useLengthPrior ,
+			 const long double contaminationPrior,
+			 vector<double> & pEndoForEachReadVec
 			 ){
 
     //iterate over the reads once again and compute prob of deam
@@ -2568,35 +2569,40 @@ void computePriorOnReads(const string bamfiletopen,
 	    // cout<<i<<"\t"<<reconstructedReference.second[i]<<endl;
 	    transformRef(&refeBase,&readBase);
 
-	    if(refeBase == 'I'   ){
-	      continue;
-	    }
+	    // if(refeBase == 'I'   ){
+	    //   continue;
+	    // }
 
-	    if(refeBase == 'N' ){
-	      continue;
-	    }
+	    // if(refeBase == 'N' ){
+	    //   continue;
+	    // }
 
-	    if(readBase == 'N' ){
-	      continue;
+	    // if(readBase == 'N' ){
+	    //   continue;
+	    // }
+	    if(!isResolvedDNA(readBase) || 
+	       !isResolvedDNA(refeBase) ){
+		continue;
 	    }
-
-	    if(pos2phredgeno[ pos ].consensus == 'D'){//skip deletions
-	      continue;
-	    }
+	       
+	       
+	    // if(pos2phredgeno[ pos ].consensus == 'D'){//skip deletions
+	    //   continue;
+	    // }
 
 
 	   	    
-	    if(pos2phredgeno[ pos ].ref != refeBase){
-	      cerr<<"Query reference base is not the same for read "<<al.Name<<" pos "<<pos<<endl;
+	    // if(pos2phredgeno[ pos ].ref != refeBase){
+	    //   cerr<<"Query reference base is not the same for read "<<al.Name<<" pos "<<pos<<endl;
 
-	      cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
-	      for(unsigned int j=0;j<al.QueryBases.size();j++){
-		cout<<j<<"\t"<<reconstructedReference.first[j]<<"\t"<<reconstructedReference.second[j]<<endl;
-	      }
+	    //   cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
+	    //   for(unsigned int j=0;j<al.QueryBases.size();j++){
+	    // 	cout<<j<<"\t"<<reconstructedReference.first[j]<<"\t"<<reconstructedReference.second[j]<<endl;
+	    //   }
 
-	      //return 1;
-	      exit(1);
-	    }
+	    //   //return 1;
+	    //   exit(1);
+	    // }
 	    
 	    //deam model
 		
@@ -2652,24 +2658,26 @@ void computePriorOnReads(const string bamfiletopen,
 	    long double probBaseDeam = 0.0;
 	    long double probBaseNull = 0.0;
 
-	    for(unsigned int nuc=0;nuc<4;nuc++){
+	    //for(unsigned int nuc=0;nuc<4;nuc++){
 
-
-	      int dinucIndex;
-	      if( al.IsReverseStrand() ){
+	    int nuc = baseResolved2int(refeBase);
+	    int dinucIndex;
+	    if( al.IsReverseStrand() ){
 		dinucIndex= (3-nuc)*4+obsReadInt;
-	      }else{
+	    }else{
 		dinucIndex=     nuc*4+obsReadInt;
-	      }
-	      probBaseDeam +=
-		(1-pos2phredgeno[ pos ].perror[nuc])
+	    }
+	    probBaseDeam +=
+		//(1-pos2phredgeno[ pos ].perror[nuc])
+		1.0
 		*
-			//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
+		//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
 		(likeMatchProb[int(q)]  * (probSubMatchDeam->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]));
 
 
-	      probBaseNull +=
-		(1-pos2phredgeno[ pos ].perror[nuc])
+	    probBaseNull +=
+		//(1-pos2phredgeno[ pos ].perror[nuc])
+		1.0
 		*
 		//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
 		(likeMatchProb[int(q)]  * (probSubMatchNull->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex])); 
@@ -2677,7 +2685,7 @@ void computePriorOnReads(const string bamfiletopen,
 			
 
 
-	    }//end for each possible base
+	    // }//end for each possible base
 
 	    deamLogLike+=log(probBaseDeam);
 	    nullLogLike+=log(probBaseNull);
@@ -2730,8 +2738,10 @@ void computePriorOnReads(const string bamfiletopen,
 	// }else{
 	// 	probEndoProd   = 0.5;
 	// 	probContProd   = 0.5;
-
+	
 	// }
+	//contaminationPrior = 0.5 ;
+
 	long double probEndo         = 
 	    (1-contaminationPrior)*probEndoProd
 	    /
@@ -2746,7 +2756,8 @@ void computePriorOnReads(const string bamfiletopen,
 
 	
 	read2endoProb[ al.Name+"#"+ stringify(al.AlignmentFlag) ] = probEndo;
-
+	pEndoForEachReadVec.push_back(probEndo);
+	
     } //for each read
 
 } //end computePriorOnReads()
@@ -2837,21 +2848,21 @@ void initScores(){
 int main (int argc, char *argv[]) {
 
     int sizeGenome=0;
-    string outSeq  = "/dev/stdout";
-    string outLog  = "/dev/stderr";
-    string nameMT  = "MT";
+    // string outSeq  = "/dev/stdout";
+    // string outLog  = "/dev/stderr";
+    // string nameMT  = "MT";
 
-    string outSeqC  = "";
-    string outLogC  = "";
-    bool   outSeqCflag  = false;
-    bool   outLogCflag  = false;
+    // string outSeqC  = "";
+    // string outLogC  = "";
+    // bool   outSeqCflag  = false;
+    // bool   outLogCflag  = false;
 
 
-    string nameMTC  = "MTc";
-    bool userWantsContProduced=false;
+    // string nameMTC  = "MTc";
+    // bool userWantsContProduced=false;
   
-    int minQual=0;
-    bool ignoreMQ=false;
+    // int minQual=0;
+    // bool ignoreMQ=false;
 
 
     ////////////////////////////////////
@@ -2884,8 +2895,8 @@ int main (int argc, char *argv[]) {
     bool deamread=false;
     bool useLengthPrior  = false;
     long double contaminationPrior=0.5;
-    bool singleCont=false;
-    bool specifiedContPrior=false;
+    //bool singleCont=false;
+    //bool specifiedContPrior=false;
     bool specifiedLoce   = false;
     bool specifiedLocc   = false;
     bool specifiedScalee = false;
@@ -2896,11 +2907,11 @@ int main (int argc, char *argv[]) {
 			      string(argv[0])+			      
 			      " [options]  [reference fasta] [bam file] "+"\n\n"+
 
-			      "\n\tOutput options:\n"+	
-			      "\t\t"+"-seq  [fasta file]" +"\t\t"+"Output fasta file (default: stdout)"+"\n"+
-			      "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
-			      "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
-			      "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
+			      //"\n\tOutput options:\n"+	
+			      // "\t\t"+"-seq  [fasta file]" +"\t\t"+"Output fasta file (default: stdout)"+"\n"+
+			      // "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
+			      // "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
+			      // "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
 			      // "\t\t"+"-cont" +"\t\t"+"Contamination allele frequency"+"\n"+
 
 			      "\n\tContamination options:\n"+				      
@@ -2909,12 +2920,12 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
 			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
 
-			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n"+
+			      // "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n"+
 
-			      "\t\tIf the -single option is used, the following are available:\n"+
-			      "\t\t\t"+"-seqc  [fasta file]" +"\t\t"+"Output contaminant as fasta file (default: none)"+"\n"+
-			      "\t\t\t"+"-logc  [log file]" +"\t\t"+"Output contaminant as log  (default: none)"+"\n"+
-			      "\t\t\t"+"-namec [name]" +"\t\t\t"  +"Name of contaminant sequence (default "+nameMTC+") "+"\n"+
+			      // "\t\tIf the -single option is used, the following are available:\n"+
+			      // "\t\t\t"+"-seqc  [fasta file]" +"\t\t"+"Output contaminant as fasta file (default: none)"+"\n"+
+			      // "\t\t\t"+"-logc  [log file]" +"\t\t"+"Output contaminant as log  (default: none)"+"\n"+
+			      // "\t\t\t"+"-namec [name]" +"\t\t\t"  +"Name of contaminant sequence (default "+nameMTC+") "+"\n"+
 
 
 
@@ -2925,14 +2936,14 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"--locc"+  "\t\t\t\t"+"Location for lognormal dist for the contaminant sequences (default none)"+"\n"+
 			      "\t\t"+"--scalec"+"\t\t\t"+"Scale for lognormal dist for the contaminant sequences (default none)"+"\n"+
 
-			      "\n\tComputation options:\n"+	
-			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
-			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
+			      // "\n\tComputation options:\n"+	
+			      // "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
+			      // "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      
-			      "\n\tReference options:\n"+	
-			      "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
-			      "\t\t"+"  " +"\t\t\t\t"+"the reference as been wrapped around"+"\n"+
-			      "\t\t"+"  " +"\t\t\t\t"+"by default, the length of the genome will be used "+"\n"+
+			      // "\n\tReference options:\n"+	
+			      // "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
+			      // "\t\t"+"  " +"\t\t\t\t"+"the reference as been wrapped around"+"\n"+
+			      // "\t\t"+"  " +"\t\t\t\t"+"by default, the length of the genome will be used "+"\n"+
 			      
 			      "");
 			      
@@ -3002,18 +3013,18 @@ int main (int argc, char *argv[]) {
 	}
 
 
-	if(string(argv[i]) == "-single"  ){
-	    singleCont=true;
-	    continue;
-	}
+	// if(string(argv[i]) == "-single"  ){
+	//     singleCont=true;
+	//     continue;
+	// }
 
 
-	if(strcmp(argv[i],"-cont") == 0 ){
-	    contaminationPrior=destringify<long double>(argv[i+1]);
-	    specifiedContPrior=true;
-	    i++;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-cont") == 0 ){
+	//     contaminationPrior=destringify<long double>(argv[i+1]);
+	//     specifiedContPrior=true;
+	//     i++;
+	//     continue;
+	// }
 
 	// if(strcmp(argv[i],"-deam5") == 0 ){
 	//     deam5File=string(argv[i+1]);
@@ -3021,66 +3032,66 @@ int main (int argc, char *argv[]) {
 	//     continue;
 	// }
 
-	if(strcmp(argv[i],"-nomq") == 0 ){
-	    ignoreMQ=true;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-nomq") == 0 ){
+	//     ignoreMQ=true;
+	//     continue;
+	// }
 
-	if(strcmp(argv[i],"-seq") == 0 ){
-	    outSeq=string(argv[i+1]);
-	    i++;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-seq") == 0 ){
+	//     outSeq=string(argv[i+1]);
+	//     i++;
+	//     continue;
+	// }
 
-	if(strcmp(argv[i],"-log") == 0 ){
-	    outLog=string(argv[i+1]);
-	    i++;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-log") == 0 ){
+	//     outLog=string(argv[i+1]);
+	//     i++;
+	//     continue;
+	// }
 
-	if(strcmp(argv[i],"-name") == 0 ){
-	    nameMT=string(argv[i+1]);
-	    i++;
-	    continue;
-	}
-
-
-	if(strcmp(argv[i],"-seqc") == 0 ){
-	    outSeqC=string(argv[i+1]);
-	    outSeqCflag = true;
-	    userWantsContProduced=true;
-	    i++;
-	    continue;
-	}
-
-	if(strcmp(argv[i],"-logc") == 0 ){
-	    outLogC=string(argv[i+1]);
-	    outLogCflag = true;
-	    userWantsContProduced=true;
-	    i++;
-	    continue;
-	}
-
-	if(strcmp(argv[i],"-namec") == 0 ){
-	    nameMTC=string(argv[i+1]);
-	    userWantsContProduced=true;
-	    i++;
-	    continue;
-	}
-
-	if(strcmp(argv[i],"-qual") == 0 ){
-	    minQual=destringify<int>(argv[i+1]);
-	    i++;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-name") == 0 ){
+	//     nameMT=string(argv[i+1]);
+	//     i++;
+	//     continue;
+	// }
 
 
+	// if(strcmp(argv[i],"-seqc") == 0 ){
+	//     outSeqC=string(argv[i+1]);
+	//     outSeqCflag = true;
+	//     userWantsContProduced=true;
+	//     i++;
+	//     continue;
+	// }
 
-	if(strcmp(argv[i],"-l") == 0 ){
-	    sizeGenome=atoi(argv[i+1]);
-	    i++;
-	    continue;
-	}
+	// if(strcmp(argv[i],"-logc") == 0 ){
+	//     outLogC=string(argv[i+1]);
+	//     outLogCflag = true;
+	//     userWantsContProduced=true;
+	//     i++;
+	//     continue;
+	// }
+
+	// if(strcmp(argv[i],"-namec") == 0 ){
+	//     nameMTC=string(argv[i+1]);
+	//     userWantsContProduced=true;
+	//     i++;
+	//     continue;
+	// }
+
+	// if(strcmp(argv[i],"-qual") == 0 ){
+	//     minQual=destringify<int>(argv[i+1]);
+	//     i++;
+	//     continue;
+	// }
+
+
+
+	// if(strcmp(argv[i],"-l") == 0 ){
+	//     sizeGenome=atoi(argv[i+1]);
+	//     i++;
+	//     continue;
+	// }
 
 
 	cerr<<"Error: unknown option "<<string(argv[i])<<endl;
@@ -3120,45 +3131,45 @@ int main (int argc, char *argv[]) {
 
     }
 
-    if(outSeq == outLog){
-	cerr<<"Error: The sequence output is the same as the log"<<endl;
-	return 1;	
-    }
+    // if(outSeq == outLog){
+    // 	cerr<<"Error: The sequence output is the same as the log"<<endl;
+    // 	return 1;	
+    // }
 
-    if(outSeqCflag && outLogCflag){
-	if(outSeqC == outLogC){
-	    cerr<<"Error: The sequence output is the same as the log for the contaminant"<<endl;
-	    return 1;	
-	}
-    }
+    // if(outSeqCflag && outLogCflag){
+    // 	if(outSeqC == outLogC){
+    // 	    cerr<<"Error: The sequence output is the same as the log for the contaminant"<<endl;
+    // 	    return 1;	
+    // 	}
+    // }
 
-    if(outSeqCflag){
-	if(outSeq == outSeqC){
-	    cerr<<"Error: The sequence output is the same for the contaminant as for the endogenous"<<endl;
-	    return 1;	
-	}
-    }
+    // if(outSeqCflag){
+    // 	if(outSeq == outSeqC){
+    // 	    cerr<<"Error: The sequence output is the same for the contaminant as for the endogenous"<<endl;
+    // 	    return 1;	
+    // 	}
+    // }
 
-    if(outLogCflag){
-	if(outLog == outLogC){
-	    cerr<<"Error: The log output is the same for the contaminant as for the endogenous"<<endl;
-	    return 1;	
-	}
-    }
+    // if(outLogCflag){
+    // 	if(outLog == outLogC){
+    // 	    cerr<<"Error: The log output is the same for the contaminant as for the endogenous"<<endl;
+    // 	    return 1;	
+    // 	}
+    // }
 
-    if( (deamread || useLengthPrior) ){
-	if(!specifiedContPrior ){	
-	    cerr<<"Error: You need to specify the contamination prior (via -cont) if you do  specify -deamread or use the length distribution priors, exiting"<<endl;
-	    return 1;	
-	}
-    }
+    // if( (deamread || useLengthPrior) ){
+    // 	if(!specifiedContPrior ){	
+    // 	    cerr<<"Error: You need to specify the contamination prior (via -cont) if you do  specify -deamread or use the length distribution priors, exiting"<<endl;
+    // 	    return 1;	
+    // 	}
+    // }
     
-    if(userWantsContProduced &&
-       !singleCont){
-	cerr<<"Error: You cannot specify either the -seqc, -logc or -namec if you do not specify the -singleCont option, there options are only used if you are willing to accept the possibilty of the single contaminant"<<endl;
-	return 1;	
+    // if(userWantsContProduced &&
+    //    !singleCont){
+    // 	cerr<<"Error: You cannot specify either the -seqc, -logc or -namec if you do not specify the -singleCont option, there options are only used if you are willing to accept the possibilty of the single contaminant"<<endl;
+    // 	return 1;	
 
-    }
+    // }
 
     ////////////////////////////////////
     // END Parsing arguments        //
@@ -3264,11 +3275,11 @@ int main (int argc, char *argv[]) {
 
 
 
-    if(nameMT[0] != '>')
-	nameMT = ">"+nameMT;
+    // if(nameMT[0] != '>')
+    // 	nameMT = ">"+nameMT;
 
-    if(nameMTC[0] != '>')
-	nameMTC = ">"+nameMTC;
+    // if(nameMTC[0] != '>')
+    // 	nameMTC = ">"+nameMTC;
 
 
 
@@ -3341,32 +3352,32 @@ int main (int argc, char *argv[]) {
     // 		      const int sizeGenome,
     // 		      const bool ignoreMQ ){
 
-    iterateOverReads(fastaFile,
-		     bamfiletopen,
-		     &infoPPos,
-		     sizeGenome,
-		     ignoreMQ,
-		     contaminationPrior,
-		     singleCont);
+    // iterateOverReads(fastaFile,
+    // 		     bamfiletopen,
+    // 		     &infoPPos,
+    // 		     sizeGenome,
+    // 		     ignoreMQ,
+    // 		     contaminationPrior,
+    // 		     singleCont);
 
 
 
-    //printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
-    printLogAndGenome(sizeGenome, 
-		      infoPPos,
-		      outSeq,
-		      outLog, 
-		      genomeRef,
-		      minQual,
-		      nameMT,
-		      singleCont,
-		      outSeqC,
-		      outLogC,
-		      outSeqCflag,
-		      outLogCflag,
-		      nameMTC);
+    // //printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
+    // printLogAndGenome(sizeGenome, 
+    // 		      infoPPos,
+    // 		      outSeq,
+    // 		      outLog, 
+    // 		      genomeRef,
+    // 		      minQual,
+    // 		      nameMT,
+    // 		      singleCont,
+    // 		      outSeqC,
+    // 		      outLogC,
+    // 		      outSeqCflag,
+    // 		      outLogCflag,
+    // 		      nameMTC);
 
-    // delete coverageCounter;
+    // // delete coverageCounter;
 
 
 
@@ -3383,48 +3394,35 @@ int main (int argc, char *argv[]) {
 
     if(deamread || useLengthPrior){
 	
-
-      computePriorOnReads(bamfiletopen,
-			  deamread,
-			  useLengthPrior,
-			  contaminationPrior);
+	vector<double> pEndoForEachReadVec;
+	computePriorOnReads(bamfiletopen,
+			    deamread,
+			    useLengthPrior,
+			    contaminationPrior,
+			    pEndoForEachReadVec);
+	
+	cerr<<"...  done"<<endl;
+	read2endoProbInit=true;
+	
+	//return 1;
       
-      cerr<<"...  done"<<endl;
-      read2endoProbInit=true;
-	
+	for(long double contaminationRate=0.0;contaminationRate<1.0;contaminationRate+=0.005){
+	    double logLike=0.0;
 
+	    for(unsigned int pEndIndx=0;pEndIndx<pEndoForEachReadVec.size();pEndIndx++){
+		logLike += 
+		    log(
+			// (1-c_rate)             * p(endo)
+			( (1.0-contaminationRate) * (0.0+pEndoForEachReadVec[pEndIndx]) ) 
+			+
+			//  ( c_rate)             * p(cont)
+			( (0.0+contaminationRate) * (1.0-pEndoForEachReadVec[pEndIndx]) ) 
+			);
+	  
+	    }
 
-
-
-
-
-
-
-	//iterate over the reads once again
-	
-	//iterateOverReads();
-	// cerr<<"Reading BAM to find to compute probability of deamination ..."<<endl;
-
-	iterateOverReads(fastaFile,
-			 bamfiletopen,
-			 &infoPPos,
-			 sizeGenome,
-			 ignoreMQ,
-			 contaminationPrior,
-			 singleCont);
-	
-
-	
-
-
-	//printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
-	printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog, genomeRef,minQual,nameMT,singleCont,		      outSeqC,
-		      outLogC,
-		      outSeqCflag,
-		      outLogCflag,
- 
-		      nameMTC);
-
+	    cout<<"contamdeam\t"<<contaminationRate<<"\t"<<logLike<<endl;
+	}
     }
 
 

@@ -1,4 +1,3 @@
-
 CXX      = g++ #-g -pg
 BAMTOOLS= bamtools/
 LIBGAB   = libgab/
@@ -6,7 +5,7 @@ LIBGAB   = libgab/
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
 
-all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile
+all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq mtContDeam msa2freq
 
 
 libgab/utils.o:
@@ -20,6 +19,12 @@ mtCont.o:	libgab/utils.o mtCont.cpp
 	${CXX} ${CXXFLAGS} mtCont.cpp
 
 mtCont:	libgab/utils.o miscfunc.o mtCont.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+mtContDeam.o:	libgab/utils.o mtContDeam.cpp 
+	${CXX} ${CXXFLAGS} mtContDeam.cpp
+
+mtContDeam:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o miscfunc.o mtContDeam.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
@@ -43,6 +48,21 @@ mitochondrialDeamCorrectionSingle:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 
+log2freq.o:	libgab/utils.o log2freq.cpp
+	${CXX} ${CXXFLAGS} log2freq.cpp
+
+log2freq:	libgab/utils.o log2freq.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
+
+
+msa2freq.o:	libgab/utils.o msa2freq.cpp
+	${CXX} ${CXXFLAGS} msa2freq.cpp
+
+msa2freq:	libgab/utils.o msa2freq.o ${LIBGAB}utils.o  libgab/FastQParser.o libgab/FastQObj.o libgab/gzstream/libgzstream.a 
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
+
 
 damage2profile.o:	libgab/utils.o damage2profile.cpp
 	${CXX} ${CXXFLAGS} damage2profile.cpp
@@ -53,5 +73,5 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o
+	rm -f mtCont.o mtCont mtContDeam.o mtContDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
 

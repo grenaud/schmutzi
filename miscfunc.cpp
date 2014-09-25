@@ -186,6 +186,8 @@ void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredg
 	getline (consensusFD,line);
 
 	while ( getline (consensusFD,line)){
+	    if (line.empty())
+		continue;
 
 	    vector<string> fields = allTokens(line,'\t');
 	    PHREDgeno toadd;
