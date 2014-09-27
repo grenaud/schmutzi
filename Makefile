@@ -5,8 +5,9 @@ LIBGAB   = libgab/
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
 
-all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq mtContDeam msa2freq
+#all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq mtContDeam msa2freq
 
+all: libgab/utils.o endoCaller  mtCont damage2profile log2freq mtContDeam msa2freq
 
 libgab/utils.o:
 	make -C libgab/
@@ -27,26 +28,32 @@ mtContDeam.o:	libgab/utils.o mtContDeam.cpp
 mtContDeam:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o miscfunc.o mtContDeam.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
+#
+#mitochondrialDeam.o:	libgab/utils.o mitochondrialDeam.cpp
+#	${CXX} ${CXXFLAGS} mitochondrialDeam.cpp
+#
+#mitochondrialDeam:	libgab/utils.o mitochondrialDeam.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+#	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+#
+#mitochondrialDeamCorrection.o:	libgab/utils.o  mitochondrialDeamCorrection.cpp
+#	${CXX} ${CXXFLAGS} mitochondrialDeamCorrection.cpp
+#
+#mitochondrialDeamCorrection:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitochondrialDeamCorrection.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+#	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+#
+#
+#mitochondrialDeamCorrectionSingle.o:	libgab/utils.o  mitochondrialDeamCorrectionSingle.cpp
+#	${CXX} ${CXXFLAGS} mitochondrialDeamCorrectionSingle.cpp
+#
+#mitochondrialDeamCorrectionSingle:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitochondrialDeamCorrectionSingle.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+#	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+#
 
-mitochondrialDeam.o:	libgab/utils.o mitochondrialDeam.cpp
-	${CXX} ${CXXFLAGS} mitochondrialDeam.cpp
+endoCaller.o:	libgab/utils.o  endoCaller.cpp
+	${CXX} ${CXXFLAGS} endoCaller.cpp
 
-mitochondrialDeam:	libgab/utils.o mitochondrialDeam.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+endoCaller:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o endoCaller.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-mitochondrialDeamCorrection.o:	libgab/utils.o  mitochondrialDeamCorrection.cpp
-	${CXX} ${CXXFLAGS} mitochondrialDeamCorrection.cpp
-
-mitochondrialDeamCorrection:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitochondrialDeamCorrection.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
-	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-
-mitochondrialDeamCorrectionSingle.o:	libgab/utils.o  mitochondrialDeamCorrectionSingle.cpp
-	${CXX} ${CXXFLAGS} mitochondrialDeamCorrectionSingle.cpp
-
-mitochondrialDeamCorrectionSingle:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o mitochondrialDeamCorrectionSingle.o miscfunc.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
-	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
 
 log2freq.o:	libgab/utils.o log2freq.cpp
 	${CXX} ${CXXFLAGS} log2freq.cpp
@@ -73,5 +80,6 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont mtContDeam.o mtContDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
+	rm -f mtCont.o mtCont mtContDeam.o mtContDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
+#	rm -f mtCont.o mtCont mtContDeam.o mtContDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
 

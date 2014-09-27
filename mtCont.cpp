@@ -7,9 +7,10 @@
 
 // #define DEBUG1
 // #define DEBUG2
-//#define DEBUGPOS 145 //position to debug
-// #define DEBUGPOS 14250
+// #define DEBUGPOS 174 //position to debug
+//#define DEBUGPOS 14250
 // #define DEBUGPOSEACHREAD //to debug each read
+// #define DEBUGCONTPOS //print pos that are potential contaminants
 
 #define MAXCOV 5000            // beyond that coverage, we stop computing
 #define MINPRIOR 0.001         // below that prior for contamination at a given base, we give up
@@ -58,6 +59,7 @@
 #include <vector>
 #include <limits>
 #include <queue>
+#include <algorithm>
 
 #include "utils.h"
 #include "miscfunc.h"
@@ -80,6 +82,15 @@ using namespace std;
 }
  
 
+typedef struct{
+    long double logLike;
+    string fname;
+    long double contEst;
+    long double contEstLow;
+    long double contEstHigh;
+} contRecord;
+
+bool compContRecord (contRecord i, contRecord j) { return (i.logLike<j.logLike); }
 
 char   offsetQual=33;
 
@@ -164,7 +175,7 @@ void *mainContaminationThread(void * argc){
 
     threadID2Rank[(unsigned int)pthread_self()]  = threadID2Rank.size()+1;
 
-    cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
+    //cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
     cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" started "<<endl;
 
 	
@@ -215,54 +226,78 @@ void *mainContaminationThread(void * argc){
     // map<int, diNucleotideProb> priorDiNucVec;
     // map<int, vector<diNucleotideProb> > probConsVec;
     // map<int, vector<diNucleotideProb> > probContVec;
-    vector<         diNucleotideProb   >  priorDiNucVec;
-    vector< vector< diNucleotideProb > >  probEndoVec;
-    vector< vector< diNucleotideProb > >  probContVec;
-    
-    priorDiNucVec.reserve(sizeGenome+1);
-    probEndoVec.reserve(sizeGenome+1);
-    probContVec.reserve(sizeGenome+1);
 
+
+    vector<         diNucleotideProb * >      priorDiNucVec;
+    vector< vector< diNucleotideProb * > * >  probEndoVec;
+    vector< vector< diNucleotideProb * > * >  probContVec;
+    vector<bool> * definedSite = new vector<bool>(sizeGenome+1,false);
+
+    priorDiNucVec.resize(sizeGenome+1);
+    probEndoVec.resize(sizeGenome+1);
+    probContVec.resize(sizeGenome+1);
+
+    // cout<<probEndoVec.size()<<endl;
+    // exit(1);
+
+    // cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test1"<<endl;
 
 
     for(int i=0;i<sizeGenome;i++){
 	//for(int i=261;i<=262;i++){
-
+	// cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test2"<<endl;
 
 	 // cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 	// cout<<infoPPos[i].cov<<endl;
 	// cout<<(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())<<endl;
 	if( (infoPPos[i].cov == 0) || //no coverage
-	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 
+	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
+	    definedSite->at(i) = false;
 	    continue;
 	}
+	definedSite->at(i)     = true;
 
 	//cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
-	diNucleotideProb priorDiNuc;
+	diNucleotideProb * priorDiNuc = new diNucleotideProb;
+
 	bool hasPriorAboveThreshold=false;
 	//computing prior
 	//                 p(nuc1) is the prob. of endogenous                  *  p(contaminant)
 	for(unsigned int nuc1=0;nuc1<4;nuc1++){ //     b = endogenous
 	    for(unsigned int nuc2=0;nuc2<4;nuc2++){//  c = contaminant
 		long double priortemp = (1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1]) * freqFromFile[ infoPPos[i].posAlign ].f[nuc2];
-		priorDiNuc.p[nuc1][nuc2] = priortemp;
+		priorDiNuc->p[nuc1][nuc2] = priortemp;
 		
 		// if(i==3105){
 		//cout<<"i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<<freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<"\t"<<infoPPos[i].posAlign<<endl;			    			
 		// }
-
+#ifdef DEBUGPOS
+		if(i==DEBUGPOS){
+		    cout<<"MIN i"<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+		}
+#endif
 		if( (nuc1 != nuc2) && //){
 		    (priortemp > MINPRIOR) ){ //this is to speed up computation and only look at sites that are likely to be contaminated
 
-#ifdef DEBUGPOS
-			cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+// #ifdef DEBUGPOS
+// 		    cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+// #endif
+
+#ifdef DEBUGCONTPOS
+		    cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
 #endif
-			hasPriorAboveThreshold=true;
+		    hasPriorAboveThreshold=true;
 		    
 		}
 
 	    }
 	}
+
+
+#ifdef DEBUGCONTPOS
+	if(hasPriorAboveThreshold)
+	    cout<<endl;
+#endif
 
 	priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
@@ -270,14 +305,14 @@ void *mainContaminationThread(void * argc){
 
 
 
-	vector<diNucleotideProb> probEndoVecToAdd;
-	vector<diNucleotideProb> probContVecToAdd;
+	vector<diNucleotideProb *> * probEndoVecToAdd = new vector<diNucleotideProb *>();
+	vector<diNucleotideProb *> * probContVecToAdd = new vector<diNucleotideProb *>();
 
 
 	// continue;
 	for(unsigned int k=0;k<infoPPos[i].readsVec.size();k++){ //for every read at that position
-	    diNucleotideProb   probEndoDinuc;
-	    diNucleotideProb   probContDinuc;
+	    diNucleotideProb * probEndoDinuc= new diNucleotideProb;
+	    diNucleotideProb * probContDinuc= new diNucleotideProb;
 	   
 	    int baseIndex = baseResolved2int(infoPPos[i].readsVec[k].base);
 	    int qual      = infoPPos[i].readsVec[k].qual;
@@ -339,22 +374,25 @@ void *mainContaminationThread(void * argc){
 		    //                        (1-e)           *  p(sub|1-e)                             + (e) *  p(sub|1-e)
 		    long double probCont=likeMatchProb[qual]  * (probSubMatchToUseCont->s[dinucIndexCont] )  + (1.0 - likeMatchProb[qual])*(illuminaErrorsProb.s[dinucIndexCont]);
 
-		    probEndoDinuc.p[nuc1][nuc2] = probEndo;
-		    probContDinuc.p[nuc1][nuc2] = probCont;
+		    probEndoDinuc->p[nuc1][nuc2] = probEndo;
+		    probContDinuc->p[nuc1][nuc2] = probCont;
 		  
 		}
 	    }//end for each di-nucleotide
 		
 	    
-	    probEndoVecToAdd.push_back(probEndoDinuc);
-	    probContVecToAdd.push_back(probContDinuc);
+	    probEndoVecToAdd->push_back(probEndoDinuc);
+	    probContVecToAdd->push_back(probContDinuc);
 	    
 	    
 	} //end for each read at that position
 	
-
+	//	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3\t"<<probEndoVec.size()<<"\t"<<probContVec.size()<<endl;
+	//cout<<"adding vector at pos "<<i<<endl;
 	probEndoVec[i] = probEndoVecToAdd;
 	probContVec[i] = probContVecToAdd;
+
+	//	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4"<<endl;
 
     } //end for each position in the genome
     cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" is done with  pre-computations"<<endl;
@@ -394,6 +432,7 @@ void *mainContaminationThread(void * argc){
 
 	    // continue;
 	    for(unsigned int k=0;k<infoPPos[i].readsVec.size();k++){ //for every read at that position
+	    //for(unsigned int k=0;k<1;k++){ //for every read at that position
 		long double mappedProb  =0.0; //initialized
 		long double misappedProb=0.25;
 	   
@@ -409,9 +448,9 @@ void *mainContaminationThread(void * argc){
 			// long double probForDinuc =  priorDiNuc[nuc1][nuc2]*
 			//     ( ( (1.0-contaminationRate) * probEndo) +
 			//       ( (contaminationRate)     * probCont   ) ) ;
-		  	long double probForDinuc = priorDiNucVec[i].p[nuc1][nuc2]*
-			    ( ( (1.0-contaminationRate) * probEndoVec[i][k].p[nuc1][nuc2]) +
-			      ( (contaminationRate)     * probContVec[i][k].p[nuc1][nuc2]   ) ) ;
+		  	long double probForDinuc = priorDiNucVec[i]->p[nuc1][nuc2]*
+			    ( ( (1.0-contaminationRate) * probEndoVec[i]->at(k)->p[nuc1][nuc2]) +
+			      ( (contaminationRate)     * probContVec[i]->at(k)->p[nuc1][nuc2]   ) ) ;
 		     
 			mappedProb+=probForDinuc;
 
@@ -422,13 +461,14 @@ void *mainContaminationThread(void * argc){
 				cout<<"c               "<<contaminationRate<<endl;
 				cout<<"base read       "<<infoPPos[i].readsVec[k].base<<endl;
 				cout<<"base qual       "<<infoPPos[i].readsVec[k].qual<<endl;
-				cout<<"prior           "<<priorDiNucVec[i].p[nuc1][nuc2]<<endl;
-				cout<<"probCont        "<<probContVec[i][k].p[nuc1][nuc2]<<endl;
-				cout<<"probEndo        "<<probEndoVec[i][k].p[nuc1][nuc2]<<endl;
+				cout<<"prior           "<<priorDiNucVec[i]->p[nuc1][nuc2]<<endl;
+				cout<<"probCont        "<<probContVec[i]->at(k)->p[nuc1][nuc2]<<endl;
+				cout<<"probEndo        "<<probEndoVec[i]->at(k)->p[nuc1][nuc2]<<endl;
 				cout<<"probForDinuc    "<<probForDinuc<<endl;
 			    }else{
 				//if(priorDiNucVec[i].p[nuc1][nuc2]>0.9){
-				cout<<"k="<< k <<"\ti="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tbase="<<infoPPos[i].readsVec[k].base<<"\tqual=" <<infoPPos[i].readsVec[k].qual<<"\tprior="<<priorDiNucVec[i].p[nuc1][nuc2]<<"\tp(e)="<<probEndoVec[i][k].p[nuc1][nuc2]<<"\tp(c)="<<probContVec[i][k].p[nuc1][nuc2]<<"\tp="<<probForDinuc<<"\tp(ma)="<<mappedProb<<"\t"<<mapq<<endl;
+				cout.precision(15);
+				cout<<"k="<< k <<"\ti="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tbase="<<infoPPos[i].readsVec[k].base<<"\tqual=" <<infoPPos[i].readsVec[k].qual<<"\tprior="<<priorDiNucVec[i]->p[nuc1][nuc2]<<"\tp(e)="<<probEndoVec[i]->at(k)->p[nuc1][nuc2]<<"\tp(c)="<<probContVec[i]->at(k)->p[nuc1][nuc2]<<"\tp="<<probForDinuc<<"\tp(ma)="<<mappedProb<<"\t"<<mapq<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<endl;
 				    //}
 			    }
 			}
@@ -478,16 +518,34 @@ void *mainContaminationThread(void * argc){
 	
     }//end each contaminationRate
     // }//end for each cont freq file
-
+	
 
 
 
     //////////////////////////////////////////////////////////////
     //                END   COMPUTATION                         //
     //////////////////////////////////////////////////////////////
+	
+	// cout<<"done deleting"<<endl;
+	for(unsigned i=0;i<priorDiNucVec.size();i++){
+
+	    // cout<<"i "<<i<<endl;
+
+	    if(!definedSite->at(i))
+		continue;
+	    delete priorDiNucVec[i];
+
+	    for(unsigned j=0;j<probEndoVec[i]->size();j++){
+		// cout<<"j "<<j<<endl;
+		delete probEndoVec[i]->at(j);
+		delete probContVec[i]->at(j);
+	    }
 
 
-
+	    delete probEndoVec[i];
+	    delete probContVec[i];	    
+	}
+	delete definedSite;
     // int counterl=0;
     // int totall  =0;
     // string line;
@@ -510,7 +568,7 @@ void *mainContaminationThread(void * argc){
     // 	cerr << "Unable to open file "<<fileNameToUse<<endl;
     // 	exit(1);
     // }
-
+	//exit(1);
 
     //COUNTERS
     rc = pthread_mutex_lock(&mutexCounter);
@@ -860,11 +918,11 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	// if(strcmp(argv[i],"-cont") == 0 ){
-	//     fileFreq=string(argv[i+1]);
-	//     i++;
-	//     continue;
-	// }
+	if( string(argv[i]) == "-o"  ){
+	    outLog=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
 
 	if(strcmp(argv[i],"-nomq") == 0 ){
 	    ignoreMQ=true;
@@ -1128,13 +1186,49 @@ int main (int argc, char *argv[]) {
     // cout<<counter<<"\t"<<total<<endl;
     //outLogFP<<vectorToString(outputToPrint,"\n")<<endl;
     //outLogFP<<vectorToString(outputToPrint,"\n")<<endl;
+    //long double s=0;
+    vector< contRecord > vecPairfilenameLike;
+
+
     for(unsigned int i=0;i<outputToPrint.size();i++){
+	contRecord toaddCt;
+	toaddCt.fname="";
+	// long double maxLike;
+	// string fname = "";
 	for(unsigned int j=0;j<outputToPrint[i].size();j++){
+
+	    if(j==0){
+		toaddCt.logLike      = outputToPrint[i][j].logLike;
+		toaddCt.contEst      = outputToPrint[i][j].contaminationRate;
+		toaddCt.fname        = outputToPrint[i][j].filename;
+	    }
+
 	    outLogFP<<outputToPrint[i][j].filename<<"\t"<<outputToPrint[i][j].contaminationRate<<"\t"<<outputToPrint[i][j].logLike<<endl;
+	    
+	    
+	    //s+=pow(2.0,outputToPrint[i][j].logLike);
+	    if(toaddCt.logLike < outputToPrint[i][j].logLike){
+		toaddCt.logLike = outputToPrint[i][j].logLike;
+		toaddCt.contEst      = outputToPrint[i][j].contaminationRate;
+	    }
 	}
+	
+	vecPairfilenameLike.push_back( toaddCt );
     }
 
+    // for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
+    // 	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
+    // }
+    // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
+    sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
+    // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
+    outLogFP<<"############"<<endl<<"Source of contamination"<<endl<<"############"<<endl;
 
+    for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
+	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
+    }
+
+    // cout<<s<<endl;
 
 
     // string genomeToPrint="";
