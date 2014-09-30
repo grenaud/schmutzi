@@ -1222,7 +1222,7 @@ int main (int argc, char *argv[]) {
     // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
     sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
     // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
-    outLogFP<<"############"<<endl<<"Source of contamination"<<endl<<"############"<<endl;
+    outLogFP<<"################################################"<<endl<<"Sources of contamination (sorted by log likelihood)"<<endl<<"################################################"<<endl;
 
     for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
 	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;

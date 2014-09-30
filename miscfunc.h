@@ -99,8 +99,12 @@ typedef struct {
 typedef struct { 
     long double likeBaseNoindel[4];
     long double likeBaseNoindelCont[4][4];
+    long double likeBaseNoindelNoBoundary[4];           //when we do not consider bases at the ends of reads
+    long double likeBaseNoindelContNoBoundary[4][4];    //when we do not consider bases at the ends of reads
 
     int  covPerBase[4];
+    int  covPerBaseNoBoundary[4];
+
     long double mapqAvg;
     
     int numDel;
