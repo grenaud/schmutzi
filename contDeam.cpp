@@ -2846,6 +2846,7 @@ void initScores(){
        Recalls iterateOverReads() to populated infoPPos and printLogAndGenome to print the information contained therein using the new prior on the reads
 */
 int main (int argc, char *argv[]) {
+    string outLog  = "/dev/stdout";
 
     int sizeGenome=0;
     // string outSeq  = "/dev/stdout";
@@ -2907,9 +2908,9 @@ int main (int argc, char *argv[]) {
 			      string(argv[0])+			      
 			      " [options]  [reference fasta] [bam file] "+"\n\n"+
 
-			      //"\n\tOutput options:\n"+	
+			      "\n\tOutput options:\n"+	
 			      // "\t\t"+"-seq  [fasta file]" +"\t\t"+"Output fasta file (default: stdout)"+"\n"+
-			      // "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
+			      "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stdout)"+"\n"+
 			      // "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
 			      // "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
 			      // "\t\t"+"-cont" +"\t\t"+"Contamination allele frequency"+"\n"+
@@ -2918,7 +2919,7 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-deam5p [.prof file]" +"\t\t"+"5p deamination frequency (default: "+deam5pfreq+")"+"\n"+
 			      "\t\t"+"-deam3p [.prof file]" +"\t\t"+"3p deamination frequency (default: "+deam3pfreq+")"+"\n"+
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
-			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
+			      //"\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
 
 			      // "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n"+
 
@@ -3043,11 +3044,11 @@ int main (int argc, char *argv[]) {
 	//     continue;
 	// }
 
-	// if(strcmp(argv[i],"-log") == 0 ){
-	//     outLog=string(argv[i+1]);
-	//     i++;
-	//     continue;
-	// }
+	if(strcmp(argv[i],"-log") == 0 ){
+	    outLog=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
 
 	// if(strcmp(argv[i],"-name") == 0 ){
 	//     nameMT=string(argv[i+1]);
@@ -3389,7 +3390,13 @@ int main (int argc, char *argv[]) {
 
 
 
-
+    ofstream outLogFP;
+    outLogFP.open(outLog.c_str());
+    
+    if (!outLogFP.is_open()){
+	cerr << "Unable to write to qual file "<<outLog<<endl;
+	exit(1);
+    }
 
 
     if(deamread || useLengthPrior){
@@ -3421,10 +3428,11 @@ int main (int argc, char *argv[]) {
 	  
 	    }
 
-	    cout<<"contamdeam\t"<<contaminationRate<<"\t"<<logLike<<endl;
+	    outLogFP<<"contamdeam\t"<<contaminationRate<<"\t"<<logLike<<endl;
 	}
     }
 
+    outLogFP.close();
 
     return 0;
 }

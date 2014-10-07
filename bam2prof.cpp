@@ -19,56 +19,187 @@ using namespace BamTools;
 const int offset=33;
 int numberOfCycles;
 
+#define MAXLENGTH 1000
 
 
 
 
+// vector<unsigned int>    matches;
+// vector<unsigned int> mismatches;
 
-vector<unsigned int>    matches;
-vector<unsigned int> mismatches;
-vector< vector<unsigned int> > typesOfMismatches;
+vector< vector<unsigned int> > typesOfDimer5p; //5' deam rates
+vector< vector<unsigned int> > typesOfDimer3p; //3' deam rates
+vector< vector<unsigned int> > typesOfDimer5pDouble; //5' deam rates when the 3' is deaminated according to a double str.
+vector< vector<unsigned int> > typesOfDimer3pDouble; //3' deam rates when the 5' is deaminated according to a double str.
+vector< vector<unsigned int> > typesOfDimer5pSingle; //5' deam rates when the 3' is deaminated according to a single str.
+vector< vector<unsigned int> > typesOfDimer3pSingle; //3' deam rates when the 5' is deaminated according to a single str.
 
 
 //increases the counters mismatches and typesOfMismatches of a given BamAlignment object
-inline void increaseCounters(BamAlignment & al,string & reconstructedReference,int firstCycleRead,int increment){
+inline void increaseCounters(const BamAlignment & al,string & reconstructedReference){ // ,int firstCycleRead,int increment
 
     char refeBase;
     char readBase;
-    int cycleToUse=firstCycleRead;
+    //    int cycleToUse=firstCycleRead;
     // cout<<"name "<<al.Name<<endl;
     // cout<<"firstCycleRead "<<firstCycleRead<<endl;
     // cout<<"increment      "<<increment<<endl;
 
-    for(int i=0;i<numberOfCycles;i++,cycleToUse+=increment){
-        // cout<<"i = "<<i<<" cyc "<<cycleToUse<<endl;
+    //Checking if the 5' is deaminated
+    bool isDeam5pS=false; //C->T 5'
+    bool isDeam3pS=false; //C->T 3'
+    bool isDeam5pD=false; //C->T 5'
+    bool isDeam3pD=false; //G->A 3'
+
+    int i;
+
+
+    
+    i=0; //5p for forward str, 3p for reverse
+    refeBase=toupper(reconstructedReference[i]);
+    readBase=toupper(         al.QueryBases[i]);
+    
+    if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
+	goto eval3pdeam;
+    }
+    
+    if(refeBase == 'M'){//match
+	refeBase =  readBase;
+    }
+
+    if( isResolvedDNA(refeBase)  && 
+	isResolvedDNA(readBase) ){
+	if(al.IsReverseStrand()){ //need to take the complement
+	    refeBase=complement(refeBase);
+	    readBase=complement(readBase);
+	}
+	
+	if(refeBase == 'C' &&
+	   readBase == 'T' ){ //C->T
+
+	    if(al.IsReverseStrand()){ //3'
+		isDeam3pS=true;		
+	    }else{                    //5'
+		isDeam5pS=true;
+		isDeam5pD=true;
+	    }
+	}
+
+
+	if(refeBase == 'G' &&
+	   readBase == 'A' ){ //G->A
+
+	    if(al.IsReverseStrand()){ //3'
+		isDeam3pD=true;		
+	    }else{                    //5'
+	    }
+	}
+	   
+    }
+
+
+ eval3pdeam:
+    i=int(al.QueryBases.size())-1; //3p for forward str, 5p for reverse
+    refeBase=toupper(reconstructedReference[i]);
+    readBase=toupper(         al.QueryBases[i]);
+    
+    if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
+	goto iterateLoop;
+    }
+    
+    if(refeBase == 'M'){//match
+	refeBase =  readBase;
+    }
+
+    if( isResolvedDNA(refeBase)  && 
+	isResolvedDNA(readBase) ){
+	if(al.IsReverseStrand()){ //need to take the complement
+	    refeBase=complement(refeBase);
+	    readBase=complement(readBase);
+	}
+	
+	if(refeBase == 'C' &&
+	   readBase == 'T' ){ //C->T
+
+	    if(al.IsReverseStrand()){ //5'
+		isDeam5pS=true;
+		isDeam5pD=true;		
+	    }else{                    //3'
+		isDeam3pS=true;
+	    }
+	}
+
+	if(refeBase == 'G' &&
+	   readBase == 'A' ){ //G->A
+
+	    if(al.IsReverseStrand()){ //5'
+	    }else{                    //3'
+		isDeam3pD=true;
+	    }
+	}
+	   
+
+
+    }
+
+ iterateLoop:
+
+
+    for(i=0;i<int(al.QueryBases.size());i++){
+	//cout<<i<<endl;
 	refeBase=toupper(reconstructedReference[i]);
 	readBase=toupper(         al.QueryBases[i]);
 		     
-	//match
-	if(refeBase == 'M'){
-	    matches[cycleToUse]++;
-	    continue;
-	}
-
 	if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
 	    continue;
 	}
-		    
-	//mismatch
+
+	if(refeBase == 'M'){//match
+	    refeBase =  readBase;
+	}
+
 	if( isResolvedDNA(refeBase)  && 
 	    isResolvedDNA(readBase) ){
+	    int dist5p=i;
+	    int dist3p=int(al.QueryBases.size())-1-i;
+	    
 	    if(al.IsReverseStrand()){ //need to take the complement
 		refeBase=complement(refeBase);
 		readBase=complement(readBase);
+		dist5p=int(al.QueryBases.size())-1-i;
+		dist3p=i;
 	    }
-	    if(readBase == refeBase){
-		cerr<<"Internal error in reconstruction of read "<<al.Name<<", contact developer"<<endl;
+
+	    if(dist5p > MAXLENGTH ||
+	       dist3p > MAXLENGTH ){
+		cerr<<"Molecule found "<<al.Name<<" with length greater than limit"<<endl;
 		exit(1);;
-	    }						
-	    mismatches[cycleToUse]++;
-	    typesOfMismatches[dimer2index(refeBase,readBase)][cycleToUse]++;
-	    continue;
-	}		    		     
+	    }
+	       
+
+	    //mismatches[cycleToUse]++;
+	    typesOfDimer5p[dist5p][twoBases2index(refeBase,readBase)]++;
+	    typesOfDimer3p[dist3p][twoBases2index(refeBase,readBase)]++;
+
+	    if(isDeam5pS){
+		typesOfDimer3pSingle[dist3p][twoBases2index(refeBase,readBase)]++;
+	    }
+
+	    if(isDeam3pS){
+		typesOfDimer5pSingle[dist5p][twoBases2index(refeBase,readBase)]++;
+	    }
+
+
+	    if(isDeam5pD){
+		typesOfDimer3pDouble[dist3p][twoBases2index(refeBase,readBase)]++;
+	    }
+
+	    if(isDeam3pD){
+		typesOfDimer5pDouble[dist5p][twoBases2index(refeBase,readBase)]++;
+	    }
+
+
+	}
     }
 }
 
@@ -77,16 +208,32 @@ int main (int argc, char *argv[]) {
 
     string file5p="/dev/stdout";
     string file3p="/dev/stdout";
+    bool endo=false;
 
-    string usage=string(""+string(argv[0])+"  [in BAM file]"+
+    bool allStr   =true;
+    bool singleStr=false;
+    bool doubleStr=false;
+    int lengthMaxToPrint = 5;
+
+    string usage=string(""+string(argv[0])+" <options>  [in BAM file]"+
 			"\nThis program reads a BAM file and produces a deamination profile for the\n"+
 			"5' and 3' ends\n"+
 
 			// "\nreads and the puts the rest into another bam file.\n"+
 			// "\nTip: if you do not need one of them, use /dev/null as your output\n"+
+
+			"\n\n\tOther options:\n"+
+			"\t\t"+"-endo\t\t\tRequire the 5' end to be deaminated to compute the 3' end and vice-versa (Default: "+stringify( endo )+")\n"+
+			"\t\t"+"-length\t[length]\tDo not consider bases beyond this length  (Default: "+stringify(lengthMaxToPrint)+" ) \n"+
+
+			"\n\n\tSpecify either one of the two:\n"+
+			"\t\t"+"-single\t\t\tUse the deamination profile of a single strand library  (Default: "+booleanAsString( singleStr )+")\n"+
+			"\t\t"+"-double\t\t\tUse the deamination profile of a double strand library  (Default: "+booleanAsString( doubleStr )+")\n"+
+		
+
 			"\n\n\tOutput options:\n"+
-			 "\t\t"+"-5p\t[output file]\tOutput profile for the 5' end (Default: "+stringify(file5p)+")\n"+
-			 "\t\t"+"-3p\t[output file]\tOutput profile for the 3' end (Default: "+stringify(file3p)+")\n"+
+			"\t\t"+"-5p\t[output file]\tOutput profile for the 5' end (Default: "+stringify(file5p)+")\n"+
+			"\t\t"+"-3p\t[output file]\tOutput profile for the 3' end (Default: "+stringify(file3p)+")\n"+
 		       
 			"\n");
 
@@ -99,15 +246,78 @@ int main (int argc, char *argv[]) {
 
     for(int i=1;i<(argc-1);i++){ //all but the last 3 args
 
-        if(strcmp(argv[i],"-5p") == 0 ){
+
+        if(string(argv[i]) == "-length"  ){
+            lengthMaxToPrint=destringify<int>(argv[i+1]);
+            i++;
             continue;
         }
-        if(strcmp(argv[i],"-5p") == 0 ){
+
+        if(string(argv[i]) == "-5p" ){
+	    file5p = string(argv[i+1]);
+	    i++;
+            continue;
+        }
+
+        if(string(argv[i]) == "-3p" ){
+	    file3p = string(argv[i+1]);
+	    i++;
+            continue;
+        }
+
+        if(string(argv[i]) == "-endo" ){
+	    endo   = true;
+            continue;
+        }
+
+        if(string(argv[i]) == "-single" ){
+
+	    allStr    = false;
+	    singleStr = true;
+	    doubleStr = false;
+
+            continue;
+        }
+
+        if(string(argv[i]) == "-double" ){
+	    //doubleStr=true;
+
+	    allStr    = false;
+	    singleStr = false;
+	    doubleStr = true;
+
             continue;
         }
 
 
+	cerr<<"Error: unknown option "<<string(argv[i])<<endl;
+	return 1;
+    }
 
+    if(endo)
+	if( !singleStr &&
+	    !doubleStr ){
+	    cerr<<"Error: you have to provide the type of protocol used (single or double) when using endogenous"<<endl;
+	    return 1;
+	}
+
+    typesOfDimer5p       = vector< vector<unsigned int> >();
+    typesOfDimer3p       = vector< vector<unsigned int> >();
+    typesOfDimer5pDouble = vector< vector<unsigned int> >();
+    typesOfDimer3pDouble = vector< vector<unsigned int> >();
+    typesOfDimer5pSingle = vector< vector<unsigned int> >();
+    typesOfDimer3pSingle = vector< vector<unsigned int> >();
+
+    for(int l=0;l<MAXLENGTH;l++){
+	//for(int i=0;i<16;i++){
+	typesOfDimer5p.push_back( vector<unsigned int> ( 16,0 ) );
+	typesOfDimer3p.push_back( vector<unsigned int> ( 16,0 ) );
+	typesOfDimer5pDouble.push_back( vector<unsigned int> ( 16,0 ) );
+	typesOfDimer3pDouble.push_back( vector<unsigned int> ( 16,0 ) );
+	typesOfDimer5pSingle.push_back( vector<unsigned int> ( 16,0 ) );
+	typesOfDimer3pSingle.push_back( vector<unsigned int> ( 16,0 ) );
+
+	//}
     }
 
     string bamfiletopen = string( argv[ argc-1 ] );
@@ -131,46 +341,23 @@ int main (int argc, char *argv[]) {
 
     //iterating over the alignments for these regions
     BamAlignment al;
-    bool pairedEnd=false;
-    bool firstRead=true;
+    // bool pairedEnd=false;
+    // bool firstRead=true;
 
     while ( reader.GetNextAlignment(al) ) {
 
-	if(firstRead){ //reads are either all paired end or single end, I don't allow a mix
-	    numberOfCycles=al.QueryBases.size();
-	    // cout<<"numberOfCycles "<<numberOfCycles<<endl;
-	    if(al.IsPaired() ){  
-		pairedEnd=true;		
-		matches    = vector<unsigned int> (2*numberOfCycles,0);
-		mismatches = vector<unsigned int> (2*numberOfCycles,0);
-		typesOfMismatches = vector< vector<unsigned int> >();
-		for(int i=0;i<12;i++)
-		    typesOfMismatches.push_back( vector<unsigned int> (2*numberOfCycles,0) );
-	    }else{
-		matches    = vector<unsigned int> (  numberOfCycles,0);
-		mismatches = vector<unsigned int> (  numberOfCycles,0);
-		typesOfMismatches = vector< vector<unsigned int> >();
-		for(int i=0;i<12;i++)
-		    typesOfMismatches.push_back( vector<unsigned int> (  numberOfCycles,0) );
-	    }
-	    firstRead=false;
+	//cout<<"Read "<<al.Name<<" is wrong, cannot have a mixture of paired and unpaired read for this program"<<endl;
+	if( al.IsPaired()  ){
+	    // cerr<<"Read "<<al.Name<<" is wrong, cannot have a mixture of paired and unpaired read for this program"<<endl;
+	    // return 1;
+	    continue;
 	}
-
-	if( (  pairedEnd && !al.IsPaired()) ||  
-	    ( !pairedEnd &&  al.IsPaired())   ){
-	    cerr<<"Read "<<al.Name<<" is wrong, cannot have a mixture of paired and unpaired read for this program"<<endl;
-	    return 1;
-	}
-
 
 	//skip unmapped
-	if(!al.IsMapped())
+	if(!al.IsMapped()){
 	    continue;
-
-	if(numberOfCycles!=int(al.QueryBases.size())){
-	    cerr<<"The length of read "<<al.Name<<" is wrong, should be "<<numberOfCycles<<"bp"<<endl;
-	    return 1;
 	}
+
 
 
 	string reconstructedReference = reconstructRef(&al);
@@ -180,70 +367,142 @@ int main (int argc, char *argv[]) {
 	}
 
 
-	if( pairedEnd ){
-	    if( al.IsFirstMate() ){ //start cycle 0
 
-		if( al.IsReverseStrand()  ){ 
-		    increaseCounters(al,reconstructedReference,numberOfCycles-1,-1); //start cycle numberOfCycles-1
-		}else{
-		    increaseCounters(al,reconstructedReference,0               , 1); //start cycle 0
-		}
-       
-	    }else{
+	
+	increaseCounters(al,reconstructedReference); //start cycle numberOfCycles-1
 
-		if( al.IsSecondMate()  ){ 
-		    if( al.IsReverseStrand()  ){ 
-			increaseCounters(al,reconstructedReference,2*numberOfCycles-1,-1); //start cycle 2*numberOfCycles-1
-		    }else{
-			increaseCounters(al,reconstructedReference,numberOfCycles    , 1); //start cycle numberOfCycles
-		    }
-		}else{
-	    	    cerr<<"Reads "<<al.Name<<" must be either first or second mate"<<endl;
-	    	    return 1;
-	    	}
-	    }	
-	}else{ //single end 
+	
 
-	    if( al.IsReverseStrand()  ){ 
-		increaseCounters(al,reconstructedReference,numberOfCycles-1,-1); //start cycle numberOfCycles-1
-	    }else{
-		increaseCounters(al,reconstructedReference,0               , 1); //start cycle 0
-	    }
-	    
-	}
-
-
+      
     }//end while  each read
 	
 
 
     reader.Close();
 
-    cout<<"cycle\tmatches\tmismatches\tmismatches%\tA>C\tA>C%\tA>G\tA>G%\tA>T\tA>T%\tC>A\tC>A%\tC>G\tC>G%\tC>T\tC>T%\tG>A\tG>A%\tG>C\tG>C%\tG>T\tG>T%\tT>A\tT>A%\tT>C\tT>C%\tT>G\tT>G%"<<endl;
+    ofstream file5pFP;
+    file5pFP.open(file5p.c_str());
 
-
-
-    for(unsigned int i=0;i<matches.size();i++){
-cout<<(i+1);
-	if( (matches[i]+mismatches[i]!=0) )
-	    cout<<"\t"<<matches[i]<<"\t"<<mismatches[i]<<"\t"<< 100.0*(double(mismatches[i])/double(matches[i]+mismatches[i])) ;
-	else
-	    cout<<"\t"<<matches[i]<<"\t"<<mismatches[i]<<"\tNA";
-
-	for(int j=0;j<12;j++){   
-	    cout<<"\t"<<typesOfMismatches[j][i];
-	    if( (matches[i]+mismatches[i]!=0) )
-		cout<<"\t"<<100.0*double(typesOfMismatches[j][i])/double(matches[i]+mismatches[i]);
-	    else
-		cout<<"\tNA";
-	}
-
-	cout<<endl;
+    if (!file5pFP.is_open()){
+	cerr << "Unable to write to 5p file "<<file5p<<endl;
+	exit(1);
     }
 
 
 
 
+
+    //cout<<"cycle\tmatches\tmismatches\tmismatches%\tA>C\tA>C%\tA>G\tA>G%\tA>T\tA>T%\tC>A\tC>A%\tC>G\tC>G%\tC>T\tC>T%\tG>A\tG>A%\tG>C\tG>C%\tG>T\tG>T%\tT>A\tT>A%\tT>C\tT>C%\tT>G\tT>G%"<<endl;
+    file5pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
+  
+
+    vector< vector<unsigned int> > * typesOfDimer5pToUse;
+
+    if(endo){
+	if(doubleStr)
+	    typesOfDimer5pToUse = &typesOfDimer5pDouble;
+	else
+	    typesOfDimer5pToUse = &typesOfDimer5pSingle;
+    }else{
+	typesOfDimer5pToUse = &typesOfDimer5p;
+    }
+
+    for(int l=0;l<lengthMaxToPrint;l++){
+
+	for(int n1=0;n1<4;n1++){   
+	    int totalObs=0;
+	    for(int n2=0;n2<4;n2++){   
+		totalObs+=(*typesOfDimer5pToUse)[l][4*n1+n2];
+	    }
+
+	    for(int n2=0;n2<4;n2++){   
+		if(n1==n2)
+		    continue;
+		if(allStr){
+		    file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs);
+		}else{ 
+		    if(doubleStr){
+			if(     n1==1 && n2==3  ) {     file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+		    }else{ 
+			if(singleStr){
+			    if(     n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+			
+			}
+		    }
+		}
+
+		
+		if(!(n1 ==3 && n2 == 2 ))
+		    file5pFP<<"\t";
+	    }
+
+
+	}
+	file5pFP<<endl;
+    }
+
+
+    file5pFP.close();
+
+    ofstream file3pFP;
+    file3pFP.open(file3p.c_str());
+
+    if (!file3pFP.is_open()){
+	cerr << "Unable to write to 3p file "<<file3p<<endl;
+	exit(1);
+    }
+
+    file3pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
+
+
+    vector< vector<unsigned int> > * typesOfDimer3pToUse;
+
+    if(endo){
+	if(doubleStr)
+	    typesOfDimer3pToUse = &typesOfDimer3pDouble;
+	else
+	    typesOfDimer3pToUse = &typesOfDimer3pSingle;
+    }else{
+	typesOfDimer3pToUse = &typesOfDimer3p;
+    }
+
+    for(int l=0;l<lengthMaxToPrint;l++){
+
+	for(int n1=0;n1<4;n1++){   
+	    int totalObs=0;
+	    for(int n2=0;n2<4;n2++){   
+		totalObs+=(*typesOfDimer3pToUse)[l][4*n1+n2];
+	    }
+
+	    for(int n2=0;n2<4;n2++){   
+		if(n1==n2)
+		    continue;
+		if(allStr){
+		    file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs);
+		}else{ 
+		    if(doubleStr){
+			if(     n1==1 && n2==3  ) {     file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+		    }else{ 
+			if(singleStr){
+			    if(     n1==1 && n2==3  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+			
+			}
+		    }
+		}
+
+		
+		if(!(n1 ==3 && n2 == 2 ))
+		    file3pFP<<"\t";
+	    }
+
+
+	}
+	file3pFP<<endl;
+    }
+
+
+
+    file3pFP.close();
    
     return 0;
 }

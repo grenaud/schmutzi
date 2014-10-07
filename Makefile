@@ -5,9 +5,9 @@ LIBGAB   = libgab/
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
 
-#all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq mtContDeam msa2freq
+#all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq contDeam msa2freq
 
-all: libgab/utils.o endoCaller  mtCont damage2profile log2freq mtContDeam msa2freq
+all: libgab/utils.o endoCaller  mtCont damage2profile log2freq contDeam msa2freq bam2prof
 
 libgab/utils.o:
 	make -C libgab/
@@ -15,17 +15,22 @@ libgab/utils.o:
 miscfunc.o:	libgab/utils.o miscfunc.cpp
 	${CXX} ${CXXFLAGS} miscfunc.cpp
 
-
 mtCont.o:	libgab/utils.o mtCont.cpp 
 	${CXX} ${CXXFLAGS} mtCont.cpp
 
 mtCont:	libgab/utils.o miscfunc.o mtCont.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-mtContDeam.o:	libgab/utils.o mtContDeam.cpp 
-	${CXX} ${CXXFLAGS} mtContDeam.cpp
+bam2prof.o:	libgab/utils.o bam2prof.cpp 
+	${CXX} ${CXXFLAGS} bam2prof.cpp
 
-mtContDeam:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o miscfunc.o mtContDeam.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
+bam2prof:	libgab/utils.o miscfunc.o bam2prof.o ${LIBGAB}utils.o  ${LIBGAB}/ReconsReferenceBAM.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+contDeam.o:	libgab/utils.o contDeam.cpp 
+	${CXX} ${CXXFLAGS} contDeam.cpp
+
+contDeam:	libgab/utils.o ${LIBGAB}/ReconsReferenceBAM.o miscfunc.o contDeam.o ${LIBGAB}utils.o    ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 #
@@ -80,6 +85,6 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont mtContDeam.o mtContDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
-#	rm -f mtCont.o mtCont mtContDeam.o mtContDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq mtContDeam
+	rm -f mtCont.o mtCont contDeam.o contDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam
+#	rm -f mtCont.o mtCont contDeam.o contDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam
 
