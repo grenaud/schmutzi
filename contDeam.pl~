@@ -1,0 +1,14 @@
+#!/usr/bin/perl
+
+
+use strict;
+use warnings;
+
+#
+#open(FILE,$ARGV[0]) or die "cannot open ".$ARGV[0];
+#while(my $line = <FILE>){
+#  chomp($line);
+#  print $line;
+#}
+#close(FILE);
+#
