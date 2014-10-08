@@ -27,6 +27,7 @@ my $pathdir = join("/",@arraycwd);
 my $bam2prof   = $pathdir."/bam2prof";
 my $contDeam   = $pathdir."/contDeam";
 my $contDeamR  = $pathdir."/posteriorDeam.R";
+my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
 
 #
 # protocol s or d
@@ -35,7 +36,24 @@ my $contDeamR  = $pathdir."/posteriorDeam.R";
 sub usage
 {
   print "Unknown option: @_\n" if ( @_ );
-  print "This script is a wrapper that allows for the\nestimation of endogenous deamination and\nsubsequent contamination estimate.\n\n\tusage: ".$0." <options> input.bam\n\nOptions:\n\n\t--library (single|double)\n\t--out (output prefix)\n\t--cont (cont)\tIf you have prior knowledge about the contamination rate, enter it here [0-1]\n\t--ref (reference genome)\n\t--title (title)\tTitle for the graph\n\t--help|-?\n\n";
+  print "\n\nThis script is a wrapper that allows for the\nestimation of endogenous deamination and\nsubsequent contamination estimate. By default it will condition on seeing a deaminated base on the 5' end to measure endogenous deamination rates on the 3' end and vice-versa\n\n\tusage: ".$0." <options> input.bam\n\n".
+"Options:\n".
+"\n\t--library (single|double)\tType of library used\n\n".
+"Output Options:\n".
+"\t--out (output prefix)\n".
+"\t--title (title)\tTitle for the graph\n".
+"\t--cont (cont)\tIf you have prior knowledge about the contamination rate, enter it here [0-1]\n".
+"\nInput options:\n".
+"\t--split (file)\tSplit endogenous/contaminant according to diagnostic positions\n".
+"\t\t\tThe file must have the following format:\n".
+"\t\t\t\t[coord]tab[nucleotide]tab[endo or cont]\n".
+"\t\t\tWhere the coordinate is on the reference genome\n".
+"\t\t\tex:\t385\tA\tendo\n".
+"\nMandatory:\n".
+"\t--ref (reference genome)\n".
+
+#"\t--help|-?".
+"\n\n";
   exit;
 }
 
@@ -46,10 +64,10 @@ my $inbam          = "none";
 my $referenceFasta = "none";
 my $contPriorKnow  = -1;
 my $textGraph      = "Posterior probability for contamination\nusing deamination patterns";
-
+my $split          = "";
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix, )
+	     ! GetOptions('help|?' => \$help, 'split=s' => \$split,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix, )
           or defined $help );
 
 #die $contPriorKnow;
@@ -67,9 +85,35 @@ if($referenceFasta eq "none" ){
 
 $inbam = $ARGV[ $#ARGV ];
 
-my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".5p.prof  -3p ".$outputPrefix.".3p.prof $inbam";
 
-runcmd($cmdBam2Prof);
+if($split ne ""){
+  my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".5p.prof  -3p ".$outputPrefix.".3p.prof $inbam";
+
+  runcmd($cmdBam2Prof);
+} else {
+  open(FILEdiag,$split) or die "cannot open ".$split;
+
+
+  while (my $line = <FILEdiag>) {
+    chomp($line);
+
+    my @array = split("\t",$line);
+    if($#array != 2){
+      die "Line ".$line." does not have 3 fields\n";
+    }
+    if($array[2] ne "endo"  && 
+       $array[2] ne "cont"  ){
+      die "The third field in ".$line." is not either \"endo\" or \"cont\"\n";
+    }
+
+  }
+  close(FILEdiag);
+
+  #TO CONTINUE HERE TOMORROW
+  my $cmdBamSplit = $splitEndo."  ".$split." ".$outputPrefix
+
+
+}
 
 my $cmdcontdeam = $contDeam." -deamread -deam5p ".$outputPrefix.".5p.prof  -deam3p ".$outputPrefix.".3p.prof  -log  ".$outputPrefix.".cont.deam $referenceFasta $inbam";
 
