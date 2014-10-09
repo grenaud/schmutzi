@@ -7,27 +7,45 @@ use Getopt::Long;
 use Cwd 'abs_path';
 use List::Util qw(min max);
 
+my $mock =0;
+
 sub runcmd{
   my ($cmdtorun) = @_;
 
   print "running cmd ". $cmdtorun."\n";
-  if(system($cmdtorun) != 0){
-    die "system  cmd $cmdtorun failed: $?"
-  }else{
-
+  if($mock != 1){
+    if(system($cmdtorun) != 0){
+      die "system  cmd $cmdtorun failed: $?"
+    }else{
+    }
   }
 
 }
 
+sub fileExists{
+  my ($exeFile) = @_;
+
+  if (!( -e $exeFile)) {
+    die "Executable ".$exeFile." does not exist\n";
+  }
+}
 my @arraycwd=split("/",abs_path($0));
 pop(@arraycwd);
 my $pathdir = join("/",@arraycwd);
 
-
+my $inserSize  = $pathdir."/insertSize";
+my $approxDist = $pathdir."/approxDist.R";
 my $bam2prof   = $pathdir."/bam2prof";
 my $contDeam   = $pathdir."/contDeam";
 my $contDeamR  = $pathdir."/posteriorDeam.R";
 my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
+
+fileExists($insertSize);
+fileExists($approxDist);
+fileExists($bam2prof);
+fileExists($contDeam);
+fileExists($contDeamR);
+fileExists($splitEndo);
 
 #
 # protocol s or d
@@ -36,21 +54,23 @@ my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
 sub usage
 {
   print "Unknown option: @_\n" if ( @_ );
-  print "\n\nThis script is a wrapper that allows for the\nestimation of endogenous deamination and\nsubsequent contamination estimate. By default it will condition on seeing a deaminated base on the 5' end to measure endogenous deamination rates on the 3' end and vice-versa\n\n\tusage: ".$0." <options> input.bam\n\n".
+  print "\n\nThis script is a wrapper that allows for the estimation of endogenous deamination and\nsubsequent contamination estimate. By default it will condition on seeing a deaminated\nbase on the 5' end to measure endogenous deamination rates on the 3' end and vice-versa.\nUsers have also the possibility of conditioning on diagnostic positions to measure\nendogenous deamination.\n\nusage:\t".$0." <options> input.bam\n\n".
 "Options:\n".
-"\n\t--library (single|double)\tType of library used\n\n".
+"\n\t--library (single|double)\tType of library used".
+"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
+
 "Output Options:\n".
-"\t--out (output prefix)\n".
-"\t--title (title)\tTitle for the graph\n".
-"\t--cont (cont)\tIf you have prior knowledge about the contamination rate, enter it here [0-1]\n".
+"\t--out (output prefix)\t\tAll output files will share this prefix\n".
+"\t--title (title)\t\t\tTitle for the graph of the posterior distribution\n".
+"\t--cont (cont)\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\trate, enter it here [0-1]\n".
 "\nInput options:\n".
-"\t--split (file)\tSplit endogenous/contaminant according to diagnostic positions\n".
-"\t\t\tThe file must have the following format:\n".
-"\t\t\t\t[coord]tab[nucleotide]tab[endo or cont]\n".
-"\t\t\tWhere the coordinate is on the reference genome\n".
-"\t\t\tex:\t385\tA\tendo\n".
+"\t--split (file)\t\t\tSplit endogenous/contaminant according to diagnostic positions\n".
+"\t\t\t\t\tThe file must have the following format:\n".
+"\t\t\t\t\t\t[coord]tab[nucleotide]tab[endo or cont]\n".
+"\t\t\t\t\tWhere the coordinate is on the reference genome\n".
+"\t\t\t\t\tex:\t385\tA\tendo\n".
 "\nMandatory:\n".
-"\t--ref (reference genome)\n".
+"\t--ref (reference genome)\tThe fasta file used for alignment\n".
 
 #"\t--help|-?".
 "\n\n";
@@ -64,11 +84,12 @@ my $inbam          = "none";
 my $referenceFasta = "none";
 my $contPriorKnow  = -1;
 my $textGraph      = "Posterior probability for contamination\nusing deamination patterns";
-my $split          = "";
+my $splitPos          = "";
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'split=s' => \$split,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix, )
+	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock )
           or defined $help );
+
 
 #die $contPriorKnow;
 #print $data."\n";
@@ -86,13 +107,13 @@ if($referenceFasta eq "none" ){
 $inbam = $ARGV[ $#ARGV ];
 
 
-if($split ne ""){
+if($splitPos ne ""){
   my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".5p.prof  -3p ".$outputPrefix.".3p.prof $inbam";
 
   runcmd($cmdBam2Prof);
 } else {
-  open(FILEdiag,$split) or die "cannot open ".$split;
-
+  print "Examining file ".$splitPos."....\n";
+  open(FILEdiag,$splitPos) or die "cannot open ".$splitPos;
 
   while (my $line = <FILEdiag>) {
     chomp($line);
@@ -101,17 +122,28 @@ if($split ne ""){
     if($#array != 2){
       die "Line ".$line." does not have 3 fields\n";
     }
-    if($array[2] ne "endo"  && 
+
+    if($array[2] ne "endo"  &&
        $array[2] ne "cont"  ){
       die "The third field in ".$line." is not either \"endo\" or \"cont\"\n";
     }
 
   }
   close(FILEdiag);
+  print ".... fine\n";
 
-  #TO CONTINUE HERE TOMORROW
-  my $cmdBamSplit = $splitEndo."  ".$split." ".$outputPrefix
+  my $cmdBamSplit = $splitEndo."  ".$splitPos." ".$outputPrefix;
+  runcmd($cmdBamSplit);
+  #evaluate deamination
+  my $cmdBam2ProfEndo = $bam2prof."  -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof ".$outputPrefix."_endo.bam";
+  runcmd($cmdBam2ProfEndo);
 
+  my $cmdBam2ProfCont = $bam2prof."  -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
+  runcmd($cmdBam2ProfCont);
+  
+  #evaluate size
+my $inserSize  = $pathdir."/insertSize";
+my $approxDist = $pathdir."/approxDist.R";
 
 }
 
