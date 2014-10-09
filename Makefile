@@ -7,7 +7,10 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 #all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq contDeam msa2freq
 
-all: libgab/utils.o endoCaller  mtCont damage2profile log2freq contDeam msa2freq bam2prof insertSize
+all: libgab/utils.o endoCaller  mtCont damage2profile log2freq contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam
+
+splitEndoVsCont/poshap2splitbam:
+	make -C splitEndoVsCont/
 
 libgab/utils.o:
 	make -C libgab/
@@ -92,5 +95,6 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 clean :
 	rm -f mtCont.o mtCont contDeam.o contDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam insertSize
+	make -C splitEndoVsCont/ clean
 #	rm -f mtCont.o mtCont contDeam.o contDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam
 

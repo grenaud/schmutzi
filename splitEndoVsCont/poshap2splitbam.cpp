@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 #include <gzstream.h>
-#include "GenomicRange.h"
+// #include "GenomicRange.h"
 
 #include "utils.h"
 
@@ -134,7 +134,7 @@ int main (int argc, char *argv[]) {
 
 
     if(argc != 4){
-	cerr<<"Usage:"<<argv[0]<<" [haplogroup diag. pos.]  [bam file prefix out] [bam suffix] "<<endl<<"\tThis program takes a set of diagnostic positions and splits a bam file according to them"<<endl;
+	cerr<<"Usage:"<<argv[0]<<" [haplogroup diag. pos.]  [bam file in] [bam suffix out] "<<endl<<"\tThis program takes a set of diagnostic positions and splits a bam file according to them"<<endl;
 	return 1;
     }
 

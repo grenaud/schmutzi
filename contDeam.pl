@@ -6,6 +6,8 @@ use warnings;
 use Getopt::Long;
 use Cwd 'abs_path';
 use List::Util qw(min max);
+use Scalar::Util qw(looks_like_number);
+use Data::Dumper;
 
 my $mock =0;
 
@@ -14,7 +16,9 @@ sub runcmd{
 
   print "running cmd ". $cmdtorun."\n";
   if($mock != 1){
-    if(system($cmdtorun) != 0){
+    my @argstorun = ( "bash", "-c", $cmdtorun );
+
+    if(system(@argstorun) != 0){
       die "system  cmd $cmdtorun failed: $?"
     }else{
     }
@@ -33,7 +37,7 @@ my @arraycwd=split("/",abs_path($0));
 pop(@arraycwd);
 my $pathdir = join("/",@arraycwd);
 
-my $inserSize  = $pathdir."/insertSize";
+my $insertSize  = $pathdir."/insertSize";
 my $approxDist = $pathdir."/approxDist.R";
 my $bam2prof   = $pathdir."/bam2prof";
 my $contDeam   = $pathdir."/contDeam";
@@ -58,6 +62,7 @@ sub usage
 "Options:\n".
 "\n\t--library (single|double)\tType of library used".
 "\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
+"\n\t--uselength\t\t\t\tUse length of the molecules as well\n\n".
 
 "Output Options:\n".
 "\t--out (output prefix)\t\tAll output files will share this prefix\n".
@@ -83,11 +88,12 @@ my $outputPrefix   = "outputdeam";
 my $inbam          = "none";
 my $referenceFasta = "none";
 my $contPriorKnow  = -1;
-my $textGraph      = "Posterior probability for contamination\nusing deamination patterns";
-my $splitPos          = "";
+my $textGraph      = "Posterior probability for contamination\\nusing deamination patterns";
+my $splitPos       = "";
+my $useLength      = 0;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock )
+	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength )
           or defined $help );
 
 
@@ -106,9 +112,14 @@ if($referenceFasta eq "none" ){
 
 $inbam = $ARGV[ $#ARGV ];
 
+my $scaleLocSpecified=0;
+my $locE=1;
+my $scaE=1;
+my $locC=1;
+my $scaC=1;
 
-if($splitPos ne ""){
-  my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".5p.prof  -3p ".$outputPrefix.".3p.prof $inbam";
+if($splitPos eq ""){
+  my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof $inbam";
 
   runcmd($cmdBam2Prof);
 } else {
@@ -119,12 +130,12 @@ if($splitPos ne ""){
     chomp($line);
 
     my @array = split("\t",$line);
-    if($#array != 2){
+    if ($#array != 2) {
       die "Line ".$line." does not have 3 fields\n";
     }
 
-    if($array[2] ne "endo"  &&
-       $array[2] ne "cont"  ){
+    if ($array[2] ne "endo"  &&
+	$array[2] ne "cont"  ) {
       die "The third field in ".$line." is not either \"endo\" or \"cont\"\n";
     }
 
@@ -132,7 +143,7 @@ if($splitPos ne ""){
   close(FILEdiag);
   print ".... fine\n";
 
-  my $cmdBamSplit = $splitEndo."  ".$splitPos." ".$outputPrefix;
+  my $cmdBamSplit = $splitEndo."  ".$splitPos." $inbam ".$outputPrefix." > ".$outputPrefix."_split.log 2> /dev/null ";
   runcmd($cmdBamSplit);
   #evaluate deamination
   my $cmdBam2ProfEndo = $bam2prof."  -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof ".$outputPrefix."_endo.bam";
@@ -140,14 +151,89 @@ if($splitPos ne ""){
 
   my $cmdBam2ProfCont = $bam2prof."  -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
   runcmd($cmdBam2ProfCont);
-  
-  #evaluate size
-my $inserSize  = $pathdir."/insertSize";
-my $approxDist = $pathdir."/approxDist.R";
+
+  if ($useLength) {
+    #evaluate size
+    #my $inserSize  = $pathdir."/insertSize";
+    my $cmdBam2InsertsizeEndo = $insertSize."  ".$outputPrefix."_endo.bam |gzip  > ".$outputPrefix."_endo.size.gz";
+    runcmd($cmdBam2InsertsizeEndo);
+    my $cmdBam2InsertsizeCont = $insertSize."  ".$outputPrefix."_cont.bam |gzip  > ".$outputPrefix."_cont.size.gz";
+    runcmd($cmdBam2InsertsizeCont);
+
+    #Log normal fit
+    my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_endo.size.gz >  ".$outputPrefix."_endo.size.param";
+    runcmd($cmdinsertsize2LognormEndo);
+    my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_cont.size.gz >  ".$outputPrefix."_cont.size.param";
+    runcmd($cmdinsertsize2LognormCont);
+
+
+    if ($mock != 1) {
+
+
+      open(FILEparamEndo,$outputPrefix."_endo.size.param") or die "cannot open ".$outputPrefix."_endo.size.param";
+      my @linesEndo = <FILEparamEndo>;
+      close(FILEparamEndo);
+
+      if ($#linesEndo != 2) {
+	die "ERROR: Parameter file from the log normal distribution does not have 3 lines, it has ".$#linesEndo." lines check the size distribution of the endogenous and contaminant molecules";
+      }
+
+      my $lineParamEndo= $linesEndo[1];
+      chomp($lineParamEndo);
+      $lineParamEndo =~ s/^\s+//;
+      $lineParamEndo =~ s/\s+$//;
+
+      my @arrayEndo = split(/\s+/,$lineParamEndo);
+
+      if (!looks_like_number( $arrayEndo[0] )) {
+	die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
+      }
+      if (!looks_like_number( $arrayEndo[1] )) {
+	die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
+      }
+
+      $locE=$arrayEndo[0];
+      $scaE=$arrayEndo[1];
+
+
+
+      open(FILEparamCont,$outputPrefix."_cont.size.param") or die "cannot open ".$outputPrefix."_cont.size.param";
+      my @linesCont = <FILEparamCont>;
+      close(FILEparamCont);
+
+      if ($#linesCont != 2) {
+	die "ERROR: Parameter file from the log normal distribution does not have 3 lines, it has ".$#linesCont." lines check the size distribution of the contgenous and contaminant molecules";
+      }
+
+      my $lineParamCont= $linesCont[1];
+      chomp($lineParamCont);
+      $lineParamCont =~ s/^\s+//;
+      $lineParamCont =~ s/\s+$//;
+
+      my @arrayCont = split(/\s+/,$lineParamCont);
+
+      if (!looks_like_number( $arrayCont[0] )) {
+	die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamCont."\n";
+      }
+      if (!looks_like_number( $arrayCont[1] )) {
+	die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamCont."\n";
+      }
+
+      $locC=$arrayCont[0];
+      $scaC=$arrayCont[1];
+
+      $scaleLocSpecified=1;
+    }
+  }
 
 }
 
-my $cmdcontdeam = $contDeam." -deamread -deam5p ".$outputPrefix.".5p.prof  -deam3p ".$outputPrefix.".3p.prof  -log  ".$outputPrefix.".cont.deam $referenceFasta $inbam";
+my $cmdcontdeam = $contDeam." ";
+if($scaleLocSpecified){
+  $cmdcontdeam.=" --loce ".$locE." --scalee ".$scaE." --locc ".$locC." --scalec ".$scaC." ";
+}
+
+$cmdcontdeam.=" -deamread -deam5p ".$outputPrefix.".endo.5p.prof  -deam3p ".$outputPrefix.".endo.3p.prof  -log  ".$outputPrefix.".cont.deam $referenceFasta $inbam";
 
 runcmd($cmdcontdeam);
 
