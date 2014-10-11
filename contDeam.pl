@@ -55,6 +55,8 @@ fileExists($splitEndo);
 # protocol s or d
 # output prefix
 
+my $lengthDeam=2;
+
 sub usage
 {
   print "Unknown option: @_\n" if ( @_ );
@@ -63,6 +65,7 @@ sub usage
 "\n\t--library (single|double)\tType of library used".
 "\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
 "\n\t--uselength\t\t\t\tUse length of the molecules as well\n\n".
+"\n\t--lengthDeam (bp)\t\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
 
 "Output Options:\n".
 "\t--out (output prefix)\t\tAll output files will share this prefix\n".
@@ -93,7 +96,7 @@ my $splitPos       = "";
 my $useLength      = 0;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength )
+	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength,'lengthDeam' => \$lengthDeam )
           or defined $help );
 
 
@@ -119,7 +122,7 @@ my $locC=1;
 my $scaC=1;
 
 if($splitPos eq ""){
-  my $cmdBam2Prof = $bam2prof." -endo -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof $inbam";
+  my $cmdBam2Prof = $bam2prof." -length  $lengthDeam -endo -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof $inbam";
 
   runcmd($cmdBam2Prof);
 } else {
@@ -146,10 +149,10 @@ if($splitPos eq ""){
   my $cmdBamSplit = $splitEndo."  ".$splitPos." $inbam ".$outputPrefix." > ".$outputPrefix."_split.log 2> /dev/null ";
   runcmd($cmdBamSplit);
   #evaluate deamination
-  my $cmdBam2ProfEndo = $bam2prof."  -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof ".$outputPrefix."_endo.bam";
+  my $cmdBam2ProfEndo = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix.".endo.5p.prof  -3p ".$outputPrefix.".endo.3p.prof ".$outputPrefix."_endo.bam";
   runcmd($cmdBam2ProfEndo);
 
-  my $cmdBam2ProfCont = $bam2prof."  -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
+  my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
   runcmd($cmdBam2ProfCont);
 
   if ($useLength) {
