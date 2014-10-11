@@ -36,10 +36,11 @@ vector< vector<unsigned int> > typesOfDimer3pSingle; //3' deam rates when the 5'
 
 
 //increases the counters mismatches and typesOfMismatches of a given BamAlignment object
-inline void increaseCounters(const BamAlignment & al,string & reconstructedReference){ // ,int firstCycleRead,int increment
+inline void increaseCounters(const BamAlignment & al,string & reconstructedReference, const int & minQualBase){ // ,int firstCycleRead,int increment
 
     char refeBase;
     char readBase;
+    int  qualBase;
     //    int cycleToUse=firstCycleRead;
     // cout<<"name "<<al.Name<<endl;
     // cout<<"firstCycleRead "<<firstCycleRead<<endl;
@@ -58,7 +59,11 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
     i=0; //5p for forward str, 3p for reverse
     refeBase=toupper(reconstructedReference[i]);
     readBase=toupper(         al.QueryBases[i]);
+    qualBase=int(             al.Qualities[i])-offset;
     
+    if(qualBase < minQualBase)
+	goto eval3pdeam;
+
     if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
 	goto eval3pdeam;
     }
@@ -102,6 +107,10 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
     i=int(al.QueryBases.size())-1; //3p for forward str, 5p for reverse
     refeBase=toupper(reconstructedReference[i]);
     readBase=toupper(         al.QueryBases[i]);
+    qualBase=int(              al.Qualities[i])-offset;
+    
+    if(qualBase < minQualBase)
+	goto iterateLoop;
     
     if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
 	goto iterateLoop;
@@ -149,7 +158,11 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
 	//cout<<i<<endl;
 	refeBase=toupper(reconstructedReference[i]);
 	readBase=toupper(         al.QueryBases[i]);
-		     
+	qualBase=int(              al.Qualities[i])-offset;
+	//cout<<i<<"\t"<<qualBase<<"\t"<<minQualBase<<endl;
+	if(qualBase < minQualBase)
+	    continue;
+	//cout<<"-"<<i<<"\t"<<qualBase<<"\t"<<minQualBase<<endl;		     
 	if(refeBase == 'S' ||refeBase == 'I'){ //don't care about soft clipped or indels
 	    continue;
 	}
@@ -214,6 +227,7 @@ int main (int argc, char *argv[]) {
     bool singleStr=false;
     bool doubleStr=false;
     int lengthMaxToPrint = 5;
+    int minQualBase      = 3;
 
     string usage=string(""+string(argv[0])+" <options>  [in BAM file]"+
 			"\nThis program reads a BAM file and produces a deamination profile for the\n"+
@@ -223,6 +237,7 @@ int main (int argc, char *argv[]) {
 			// "\nTip: if you do not need one of them, use /dev/null as your output\n"+
 
 			"\n\n\tOther options:\n"+
+			"\t\t"+"-minq\t\t\tRequire the base to have at least this quality to be considered (Default: "+stringify( minQualBase )+")\n"+
 			"\t\t"+"-endo\t\t\tRequire the 5' end to be deaminated to compute the 3' end and vice-versa (Default: "+stringify( endo )+")\n"+
 			"\t\t"+"-length\t[length]\tDo not consider bases beyond this length  (Default: "+stringify(lengthMaxToPrint)+" ) \n"+
 
@@ -245,6 +260,13 @@ int main (int argc, char *argv[]) {
     }
 
     for(int i=1;i<(argc-1);i++){ //all but the last 3 args
+
+
+        if(string(argv[i]) == "-minq"  ){
+            minQualBase=destringify<int>(argv[i+1]);
+            i++;
+            continue;
+        }
 
 
         if(string(argv[i]) == "-length"  ){
@@ -369,7 +391,7 @@ int main (int argc, char *argv[]) {
 
 
 	
-	increaseCounters(al,reconstructedReference); //start cycle numberOfCycles-1
+	increaseCounters(al,reconstructedReference,minQualBase); //start cycle numberOfCycles-1
 
 	
 

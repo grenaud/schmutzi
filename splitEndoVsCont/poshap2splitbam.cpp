@@ -42,7 +42,8 @@ class myPileVisitor : public PileupVisitor {
     myPileVisitor(const RefVector& references,
 		  const vector< vector< pair<char,string> > > * pos2hap,
 		  vector< vector< pair<char,int> > > * pos2hapCounter,
-		  map<string,string>  * readname2hap)
+		  map<string,string>  * readname2hap,
+		  map<string,vector<int> >  * readname2posmask)
 		  //,int coordToFind, 
 		  // BamWriter * writerA,
 		  // BamWriter * writerC,
@@ -54,6 +55,8 @@ class myPileVisitor : public PileupVisitor {
 	    , m_pos2hap(pos2hap)
 	    , m_pos2hapCounter(pos2hapCounter)
 	    , m_readname2hap(readname2hap)
+	    , m_readname2posmask(readname2posmask)
+
 	    // , m_coverageCounter(coverageCounter)
 	    // , m_coordToFind(coordToFind)
 
@@ -101,8 +104,12 @@ class myPileVisitor : public PileupVisitor {
 		    if(pileupData.PileupAlignments[i].Alignment.QueryBases[pileupData.PileupAlignments[i].PositionInAlignment] 
 		       == 
 		       (*m_pos2hap)[ pileupData.Position+1 ][p].first ){ //if matches the base
-			(*m_readname2hap)[  pileupData.PileupAlignments[i].Alignment.Name ] = (*m_pos2hap)[ pileupData.Position+1 ][p].second;
+			
+			(*m_readname2hap)[      pileupData.PileupAlignments[i].Alignment.Name ] = (*m_pos2hap)[ pileupData.Position+1 ][p].second;
+			(*m_readname2posmask)[  pileupData.PileupAlignments[i].Alignment.Name ].push_back( pileupData.PileupAlignments[i].PositionInAlignment );
+
 			(*m_pos2hapCounter)[ pileupData.Position+1 ][p].second++;
+
 		    }
 
 		}
@@ -125,6 +132,7 @@ class myPileVisitor : public PileupVisitor {
     const vector< vector< pair<char,string> > >  * m_pos2hap;
     vector< vector< pair<char,int> > >           * m_pos2hapCounter;
     map<string,string>                           * m_readname2hap;
+    map<string,vector<int> >                     * m_readname2posmask;
     
 };
 
@@ -134,7 +142,7 @@ int main (int argc, char *argv[]) {
 
 
     if(argc != 4){
-	cerr<<"Usage:"<<argv[0]<<" [haplogroup diag. pos.]  [bam file in] [bam suffix out] "<<endl<<"\tThis program takes a set of diagnostic positions and splits a bam file according to them"<<endl;
+	cerr<<"Usage:"<<argv[0]<<" [haplogroup diag. pos.]  [bam file in] [bam suffix out] "<<endl<<"\tThis program takes a set of diagnostic positions and splits a bam file according to them. Please note that the bases overlapping the diagnostic positions will have their qualities decreased. "<<endl;
 	return 1;
     }
 
@@ -142,7 +150,9 @@ int main (int argc, char *argv[]) {
     vector< vector< pair<char,string> > > pos2hap;
     vector< vector< pair<char,int   > > > pos2hapCounter;
 
-    map<string,string>  readname2hap;
+    map<string,string>        readname2hap;
+    map<string,vector<int> >  readname2posmask;
+
     for(unsigned int p=0;p<SIZEGENOME;p++){
 	vector< pair<char,string> > toadd;
 
@@ -219,7 +229,8 @@ int main (int argc, char *argv[]) {
      myPileVisitor* cv = new myPileVisitor(references,
 					   &pos2hap,
 					   &pos2hapCounter,
-					   &readname2hap);
+					   &readname2hap,
+					   &readname2posmask);
      //coordToFind,&writerA,&writerC,&writerG,&writerT);
      PileupEngine pileup;
      pileup.AddVisitor(cv);
@@ -253,9 +264,17 @@ int main (int argc, char *argv[]) {
 
 
     //BamAlignment al;
+    //read everything again
     while ( reader2.GetNextAlignment(al) ) {
 	//cout<<"2 "<<al.Name<<endl;
 	if(readname2hap.find(al.Name) != readname2hap.end()){//found
+	    //decreasing the qualities of the base overlapping a diag. pos
+	    for(unsigned int i=0;
+		i<readname2posmask[al.Name].size();
+		i++){
+		al.Qualities[ readname2posmask[al.Name][i] ] = '#';//2 on the PHRED scale
+	    }
+
 	    hap2al[ readname2hap[al.Name] ] . push_back(al);
 	}
     }
