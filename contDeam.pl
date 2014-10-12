@@ -91,7 +91,7 @@ my $help;
 my $library        = "none";
 my $outputPrefix   = "outputdeam";
 my $inbam          = "none";
-my $referenceFasta = "none";
+my $referenceFasta = "";
 my $contPriorKnow  = -1;
 my $textGraph      = "Posterior probability for contamination\\nusing deamination patterns";
 my $splitPos       = "";
@@ -112,9 +112,9 @@ if($library ne "single" &&
   die "Please enter the type of library as either double or single\n";
 }
 
-if($referenceFasta eq "none" ){
-  die "Please enter the fasta reference used for mapping\n";
-}
+#if($referenceFasta eq "none" ){
+#  die "Please enter the fasta reference used for mapping\n";
+#}
 
 $inbam = $ARGV[ $#ARGV ];
 
@@ -244,7 +244,11 @@ if($scaleLocSpecified){
   $cmdcontdeam.=" --loce ".$locE." --scalee ".$scaE." --locc ".$locC." --scalec ".$scaC." ";
 }
 
-$cmdcontdeam.=" -deamread -deam5p ".$outputPrefix.".endo.5p.prof  -deam3p ".$outputPrefix.".endo.3p.prof  -log  ".$outputPrefix.".cont.deam $referenceFasta $inbam";
+$cmdcontdeam.=" -deamread -deam5p ".$outputPrefix.".endo.5p.prof  -deam3p ".$outputPrefix.".endo.3p.prof  -log  ".$outputPrefix.".cont.deam ";
+if($referenceFasta ne ""){
+  $cmdcontdeam.=" -r ".$referenceFasta." ";
+}
+$cmdcontdeam.="  $inbam";
 
 runcmd($cmdcontdeam);
 
@@ -312,19 +316,19 @@ if ($mock != 1) {
   close(FILEOUT);
 
   open(FILECONFIGOUT,">".$outputPrefix.".config") or die "cannot write to ".$outputPrefix.".config";
-  print FILECONFIGOUT "library\t$library";
-  print FILECONFIGOUT "outputPrefix\t$outputPrefix";
-  print FILECONFIGOUT "inbam\t$inbam";
-  print FILECONFIGOUT "referenceFasta\t$referenceFasta";
-  print FILECONFIGOUT "contPriorKnow\t$contPriorKnow";
-  print FILECONFIGOUT "textGraph\t$textGraph";
-  print FILECONFIGOUT "splitPos\t$splitPos";
-  print FILECONFIGOUT "useLength\t$useLength";
-  print FILECONFIGOUT "splitDeam\t$splitDeam";
+  print FILECONFIGOUT "library\t$library\n";
+  print FILECONFIGOUT "outputPrefix\t$outputPrefix\n";
+  print FILECONFIGOUT "inbam\t$inbam\n";
+  print FILECONFIGOUT "referenceFasta\t$referenceFasta\n";
+  print FILECONFIGOUT "contPriorKnow\t$contPriorKnow\n";
+  print FILECONFIGOUT "textGraph\t$textGraph\n";
+  print FILECONFIGOUT "splitPos\t$splitPos\n";
+  print FILECONFIGOUT "useLength\t$useLength\n";
+  print FILECONFIGOUT "splitDeam\t$splitDeam\n";
   close(FILECONFIGOUT);
 
 }
-my $lengthDeam=2;
+
 
 my $cmdPlot = $contDeamR." ".$outputPrefix.".cont.deam ".$outputPrefix.".cont.pdf  \"$textGraph\" ";
 if($contPriorKnow != -1){

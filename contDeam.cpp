@@ -289,130 +289,6 @@ inline bool skipAlign(const string & reconstructedReference,const BamAlignment  
 
 
 
-//! A method that calls the best nucleotide given the likelihood for the 4 nucleotides
-/*!
-  This method is called by callSingleNucleotide and  will use the information stored in likeBaseNoindel to find the most likely nucleotide and compute the error in this assignment. It can be used for both the contaminant and endogenous.
-
-  \param bestNuc : The best nucleotide will be stored here
-  \param sumLogLikeAll : Sum of the log-likelihood for every base will be stored here
-  \param sumLogLikeOnlyBest : Log-likelihood for the best nucleotide will be stored here
-  \param sumLogLikeAllButBest : Sum of the log-likelihood for every base excluding the best will be stored here
-  \param sumLogForNucs[] : The log-likelihood of the sum of the remaining bases (ex: For A, only consider C,G,T) for all 4 bases the will be stored here
-  \param likeBaseNoindel: The pre-computed likelihood for all bases
-  \param infoPPos: The vector of structure populated by the bam reader, needed to get the coverage to break ties in likelihood, unlikely to be used
-*/
-inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
-					       long double & sumLogLikeAll,        // sum of all the logs
-					       long double & sumLogLikeOnlyBest,   // sum of the logs for the best
-					       long double & sumLogLikeAllButBest, // sum of the logs for all but the best
-					       long double sumLogForNucs[],
-					       const long double likeBaseNoindel [],
-					       const vector<singlePosInfo> & infoPPos,
-					       const int i
-					       ){
-
-    //init
-    for(int nuc=0;nuc<4;nuc++){	    
-	sumLogForNucs[nuc]   = 0.0;
-    }
-
-    sumLogLikeAll          = 0.0; // sum of all the logs
-    sumLogLikeOnlyBest     = 0.0; // sum of the logs for the best
-    sumLogLikeAllButBest   = 0.0; // sum of the logs for all but the best
-    // bool sumLogLikeAllB           = true;
-    // bool sumLogLikeOnlyBestB      = true;
-    // bool sumLogLikeAllButBestB    = true;
-    // bool  sumLogForNucsB[4]; //sumLogForNucs has to be initialized
-    // for(int nuc=0;nuc<4;nuc++){
-    // 	sumLogForNucsB[nuc]=true;
-    // }
-    
-    long double bestLike=-INFINITY;
-    //int    bestNuc=-1;
-
-    //Determining most likely nucleotide
-    for(unsigned int nuc=0;nuc<4;nuc++){
-	// if(i==146){
-	//     cout<<nuc<<"\t"<<likeBaseNoindel[nuc]<<endl;
-	// }
-	if(likeBaseNoindel[nuc] > bestLike){
-	    bestLike=likeBaseNoindel[nuc];
-	    bestNuc=nuc;
-	}
-    }
-
-    //If there are more than one with equal likelihood (this is highly unlikely)
-    //take the one with the greatest coverage 
-    vector<int> bestNucs;
-
-    for(unsigned int nuc=0;nuc<4;nuc++){
-	if(likeBaseNoindel[nuc] == bestLike){
-	    bestNucs.push_back(nuc);
-	}
-    }
-	 
-    if(bestNucs.size() > 1){ // multiple equally likely nuc, use coverage to call best one
-	// cerr<<"size "<<bestNucs.size()<<endl;
-	// return 1;
-	int bestCov=-1;
-	int bestCovN=bestNucs[0];
-	     
-	for(unsigned int bc=0;bc<bestNucs.size();bc++){
-	    if(infoPPos[i].covPerBase[ bestNucs[bc] ] > bestCov){
-		bestCov  =infoPPos[i].covPerBase[ bestNucs[bc] ];
-		bestCovN =                        bestNucs[bc];		     
-	    }
-	}
-	     
-	bestNuc = bestCovN;
-    }
-    //end
-	 
-    
-    
-
-    //computing the probability of error
-    for(int nuc=0;nuc<4;nuc++){
-	// cout<<(i+1)<<"\tnuc\t"<<dnaAlphabet[nuc]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<infoPPos[i].likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<pow(10.0,infoPPos[i].likeBaseNoindel[nuc])<<endl;
-	     
-	for(int nuc2=0;nuc2<4;nuc2++){
-	    if(nuc!=nuc2){
-		
-		//sumLogForNucs[nuc]         += pow(10.0,likeBaseNoindel[nuc2]);
-		sumLogForNucs[nuc]  = oplusInit(sumLogForNucs[nuc] , likeBaseNoindel[nuc2]);
-
-	    }
-	}
-
-
-	//sumLogLikeAll              +=  pow(10.0,likeBaseNoindel[nuc]);
-	sumLogLikeAll =  oplusInit(sumLogLikeAll,likeBaseNoindel[nuc]);
-	
-	if(nuc==bestNuc){	    
-	    //sumLogLikeOnlyBest    +=  pow(10.0,likeBaseNoindel[nuc]);
-	    sumLogLikeOnlyBest   = oplusInit(sumLogLikeOnlyBest,likeBaseNoindel[nuc]);
-	}else{
-
-	    //sumLogLikeAllButBest  +=  pow(10.0,likeBaseNoindel[nuc]);
-	    sumLogLikeAllButBest  = oplusInit( sumLogLikeAllButBest,likeBaseNoindel[nuc]);
-
-	}		 	    
-    }//end for nuc
-
-    // for(int nuc=0;nuc<4;nuc++){	    
-    // 	sumLogForNucs[nuc]   = log(sumLogForNucs[nuc])/log(10);
-
-    // 	// if(i==146){
-    // 	//     cout<<nuc<<"\t"<<sumLogForNucs[nuc]<<endl;
-    // 	// }
-    // }
-
-    // sumLogLikeAll        = log(sumLogLikeAll)       /log(10);
-    // sumLogLikeOnlyBest   = log(sumLogLikeOnlyBest)  /log(10);
-    // sumLogLikeAllButBest = log(sumLogLikeAllButBest)/log(10);
-    
-}
-
 // typedef struct { 
 //     char ref;
 //     char alt;
@@ -432,930 +308,8 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 //  } positionInfo;
 
 
-//! A method that calls potential insertion in the sample/deletions in the reference
-/*!
-  This method is called by printLogAndGenome(). 
-  When we assume we have a single contaminant :
-     We use insertion2loglikeEndoCont to call both insertions in the contaminant and endogenous. We marginalize over each possible insertion (and no insertion) for the other and determine the most likely insert (or lack thereof) 
-  When we cannot assume we have a single contaminant:
-      Just use insertion2loglike to find the most likely insert (or lack thereof)
 
-  \param i : Position on the mitonchondria
-  \param genomeRef : The reference genome 
-  \param infoPPos: The vector of structure populated by the bam reader
-  \param singleCont: Boolean as to we assume that we have a single contaminant or not
-  \param genomeToPrint: String on which the endogenous genome will be printed
-  \param genomeToPrintC: String on which the contaminant genome will be printed
-  \param logToPrint:  Pointer to the string stream for the endogenous log
-  \param logToPrintC: Pointer to the string stream for the contaminant log
-*/
-void insertionInSample(const int i,
-		       const string & genomeRef,
-		       const vector<singlePosInfo> & infoPPos, 
-		       const bool singleCont,
-		       string & genomeToPrint,
-		       string & genomeToPrintC,
-		       stringstream * logToPrint,
-		       stringstream * logToPrintC){
 
-
-    if(infoPPos[i].allInserts.size() != 0){  // there are potential insertions
-
-
-	if(singleCont){
-	    //calling the endogenous
-	    string       bestInsertEndo       ="";
-	    long double  bestInsertLogLikeEndo;
-	    bool         initializeBEndo      =false;
-	    long double  sumLogLikeEndo       =0.0;
-
-	    //iterate for each endogenous insert
-	    for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
- 		it1 != infoPPos[i].allInserts.end(); 
- 		++it1) {
-
-		 long double sumLogLikeForThisIns=0.0;
-
-		 //marginalize over each possible contaminant
-		 for(set<string>::const_iterator it2 = infoPPos[i].allInserts.begin(); 
-		     it2 != infoPPos[i].allInserts.end(); 
-		     ++it2) {
-		     pair<string,string> keytouse (*it1,*it2);
-		     // infoPPos[i].insertion2loglikeEndoCont[ keytouse ] = 0.0;
-		     sumLogLikeForThisIns =  oplusInit(sumLogLikeForThisIns,
-						       infoPPos[i].insertion2loglikeEndoCont.at( keytouse ));
-		 }
-		 
-		 if(!initializeBEndo){
-		     bestInsertEndo            = *it1;
-		     bestInsertLogLikeEndo     = sumLogLikeForThisIns;
-		     initializeBEndo           = true;
-		 }else{
-		     if(bestInsertLogLikeEndo < sumLogLikeForThisIns){
-			 bestInsertEndo        = *it1;
-			 bestInsertLogLikeEndo = sumLogLikeForThisIns;
-		     }
-		 }
-		 sumLogLikeEndo = oplusInit(sumLogLikeEndo,sumLogLikeForThisIns);
-	     }//end for each endogenous insert
-	     
-	     string       bestInsertCont       ="";
-	     long double  bestInsertLogLikeCont;
-	     bool         initializeBCont      =false;
-	     long double  sumLogLikeCont       =0.0;
-
-	     //iterate for each contaminant insert
-	     for(set<string>::const_iterator it2 = infoPPos[i].allInserts.begin(); 
-		 it2 != infoPPos[i].allInserts.end(); 
-		 ++it2) {
-
-		 long double sumLogLikeForThisIns=0.0;
-
-		 //marginalize over each possible endegenous		
-		 for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
-		     it1 != infoPPos[i].allInserts.end(); 
-		     ++it1) {
-		     pair<string,string> keytouse (*it1,*it2);
-		     // infoPPos[i].insertion2loglikeEndoCont[ keytouse ] = 0.0;
-		     sumLogLikeForThisIns =  oplusInit(sumLogLikeForThisIns,
-						       infoPPos[i].insertion2loglikeEndoCont.at( keytouse ));
-		 }
-		 
-		 if(!initializeBCont){
-		     bestInsertCont            = *it2;
-		     bestInsertLogLikeCont     = sumLogLikeForThisIns;
-		     initializeBCont           = true;
-		 }else{
-		     if(bestInsertLogLikeCont < sumLogLikeForThisIns){
-			 bestInsertCont        = *it2;
-			 bestInsertLogLikeCont = sumLogLikeForThisIns;
-		     }
-		 }
-		 sumLogLikeCont = oplusInit(sumLogLikeCont,sumLogLikeForThisIns);
-	     }//end for each endogenous insert
-	     
-
-	     if(bestInsertEndo != ""){ //more likely there is an insert in the endogenous
-		long double  sumLogLikeButTheBestEndo=log( pow(10.0,sumLogLikeEndo) - pow(10.0,bestInsertLogLikeEndo) )/log(10);
-		
-		for(unsigned int k=0;k<(bestInsertEndo.size());k++){
-		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertEndo[k]<<"\t"<<-10.0*( sumLogLikeButTheBestEndo - sumLogLikeEndo)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertEndo)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		}
-
-		genomeToPrint+=bestInsertEndo;
-	    }
-
-
-	     if(bestInsertCont != ""){ //more likely there is an insert in the endogenous
-		long double  sumLogLikeButTheBestCont=log( pow(10.0,sumLogLikeCont) - pow(10.0,bestInsertLogLikeCont) )/log(10);
-
-		for(unsigned int k=0;k<(bestInsertCont.size());k++){
-		    (*logToPrintC)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertCont[k]<<"\t"<<-10.0*( sumLogLikeButTheBestCont - sumLogLikeCont)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertCont)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		}
-
-		genomeToPrintC+=bestInsertCont;
-	    }
-
-
-
-
-
-	    
-	}else{ //cannot assume we have a single contaminant
-	    //for each potential insert
-	    string       bestInsert       ="";
-	    long double  bestInsertLogLike;
-	    bool         initializeB      =false;
-	    long double  sumLogLike       =0.0;
-
-	    for(set<string>::const_iterator it1 = infoPPos[i].allInserts.begin(); 
-		it1 != infoPPos[i].allInserts.end(); 
-		++it1) {
-		if(!initializeB){
-		    bestInsertLogLike     = infoPPos[i].insertion2loglike.at(*it1);
-		    bestInsert            = *it1;		    
-		    initializeB = true;
-		}else{
-		    if( bestInsertLogLike < infoPPos[i].insertion2loglike.at(*it1) ){
-			bestInsertLogLike = infoPPos[i].insertion2loglike.at(*it1);
-			bestInsert        = *it1;		    
-		    }
-		}
-		sumLogLike = oplusInit(sumLogLike,infoPPos[i].insertion2loglike.at(*it1));
-	    }
-	    
-
-	    
-	    if(bestInsert != ""){ //more likely there is an insert
-		long double  sumLogLikeButTheBest=log( pow(10.0,sumLogLike) - pow(10.0,bestInsertLogLike) )/log(10);
-
-		for(unsigned int k=0;k<(bestInsert.size());k++){
-		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<-10.0*( sumLogLikeButTheBest - sumLogLike)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsert)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-		}
-	    }
-	    
-	}
-
-	
-	
-
-	
-    }
-
-
-
-    //old way
-    // if(infoPPos[i].insertionRight.size() != 0){
-
-    // 	map<string,int> insert2count;
-    // 	for(unsigned int k=0;k<infoPPos[i].insertionRight.size();k++){		 
-    // 	    insert2count[ infoPPos[i].insertionRight[k] ]++;
-    // 	}
-	     
-	     
-    // 	int     mostCommonInsCount=-1;
-    // 	string  mostCommonIns="";
-
-
-    // 	for (map<string,int>::iterator itdel=insert2count.begin(); 
-    // 	     itdel!=insert2count.end(); ++itdel){
-    // 	    //cout<<itdel->first<<"\t"<<itdel->second<<endl;
-    // 	    if( itdel->second > mostCommonInsCount){
-    // 		mostCommonInsCount = itdel->second;
-    // 		mostCommonIns      = itdel->first;
-    // 	    }		     
-    // 	}
-
-
-    // 	//if half of the reads support an insertions in reads (deletions in reference) 
-    // 	//TODO add contamination and endogenous split
-    // 	//add probability of correctness "Evaluation of genomic high-throughput sequencing data generated on Illumina HiSeq and Genome Analyzer systems" Minoche
-    // 	if( ((long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov)) >= 0.5){
-    // 	    //outSeqFP<<mostCommonIns;
-    // 	    //return 1;
-    // 	    //if( (-10.0*(log(1.0-double(mostCommonInsCount)/double(infoPPos[i].cov))/log(10.0)))>=minQual){
-    // 	    //min quality ? based on what ?
-    // 	    genomeToPrint+=mostCommonIns;
-    // 	    //}else{
-    // 	    //do not add insert
-    // 	    //}
-
-    // 	    //logToPrint<<string('!',mostCommonIns.size());
-    // 	    for(unsigned int k=0;k<(mostCommonIns.size());k++){
-    // 		(*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<mostCommonIns[k]<<"\t"<<-10.0*(log(1.0-(long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<mostCommonInsCount<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-    // 	    }
-		 
-    // 	}
-
-    // }//end insertions in the sample
-
-    
-
-}
-
-//! A method that calls potential deletion in the sample/insertion in the reference
-/*!
-  This method is called by printLogAndGenome(). 
-  When we assume we have a single contaminant :
-     We use llikDeletionBoth, llikDeletionEndo, llikDeletionEndo, llikDeletionCont, llikDeletionNone from infoPPos to find the most likely state for both the endogenous and the contaminant.
-  When we cannot assume we have a single contaminant:
-     Use llikDeletion llikNoDeletion to find out wether a deletion is more likely than the
-
-  \param i : Position on the mitonchondria
-  \param genomeRef : The reference genome 
-  \param infoPPos: The vector of structure populated by the bam reader
-  \param singleCont: Boolean as to we assume that we have a single contaminant or not
-  \param logToPrint:  Pointer to the string stream for the endogenous log
-  \param logToPrintC: Pointer to the string stream for the contaminant log
-  \param skipEndo:  Boolean set by the method for the endogenous sample, set to 1 if the sample has a deletion hence no need to call a base
-  \param skipCont:  Boolean set by the method for the contaminant, set to 1 if the contaminant has a deletion hence no need to call a base
-*/
-void deletionInSample(const int i,
-		      const string & genomeRef,
-		      const vector<singlePosInfo> & infoPPos,
-		      const bool singleCont,
-		      stringstream * logToPrint,
-		      stringstream * logToPrintC,
-		      bool & skipEndo,
-		      bool & skipCont){
-    
-    if(  infoPPos[i].numDel >= 0){
-
-	// cout<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(long double)(infoPPos[i].numDel)/(long double)(infoPPos[i].cov)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-	// cout<<infoPPos[i].llikDeletion<<endl;
-	// cout<<infoPPos[i].llikNoDeletion<<endl;
-
-	// // cout<<infoPPos[i].llikDeletionCont<<endl;
-	// // cout<<infoPPos[i].llikNoDeletionCont<<endl;
-	// cout<<"llik\t"<<infoPPos[i].llikDeletionBoth<<"\t"<<infoPPos[i].llikDeletionEndo<<"\t"<<infoPPos[i].llikDeletionCont<<"\t"<<infoPPos[i].llikDeletionNone<<endl;
-	    
-
-	if(singleCont){
-	    long double logLikeDel[] = { infoPPos[i].llikDeletionBoth,infoPPos[i].llikDeletionEndo,infoPPos[i].llikDeletionCont,infoPPos[i].llikDeletionNone };
-	    
-	    pair<long double,long double> maxAndSecondMax = firstAndSecondHighestArray( logLikeDel,4 );
-
-	    long double sumLogLikeAll=0.0;
-	    for(int n=0;n<4;n++){
-		sumLogLikeAll =  oplusInit(sumLogLikeAll,logLikeDel[n]);
-	    }
-
-	    // cout<<maxAndSecondMax.first<<"\t"<<maxAndSecondMax.second<<endl;
-
-	    // if(i==513){
-	    // 	cout<<"POSllik\t"<<infoPPos[i].llikDeletionBoth<<"\t"<<infoPPos[i].llikDeletionEndo<<"\t"<<infoPPos[i].llikDeletionCont<<"\t"<<infoPPos[i].llikDeletionNone<<endl;
-	    // }
-
-	    //both the contaminant and endegenous have a deletion wrt the reference, no need to call any base
-	    if( (infoPPos[i].llikDeletionBoth == maxAndSecondMax.first) &&
-		((infoPPos[i].llikDeletionBoth - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
-	
-		// cout<<"both"<<endl;
-		long double sumLogLikeCase=0.0;
-		for(int n=0;n<4;n++){
-		    if(n!=0)
-			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
-		}
-
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
-		PHREDgeno toadd;
-		
-		toadd.ref       = genomeRef[i];
-		toadd.consensus = 'D';
-		
-		pos2phredgeno[   (i+1)   ] = toadd;
-		
-		//continue;
-		skipEndo=true;
-		skipCont=true;
-	    }
-	    
-
-	    //deletion only in the endogenous, need to call the base for the contaminant
-	    if( (infoPPos[i].llikDeletionEndo == maxAndSecondMax.first) &&
-		((infoPPos[i].llikDeletionEndo - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
-
-		// cout<<"endo"<<endl;
-
-		long double sumLogLikeCase=0.0;
-		for(int n=0;n<4;n++){
-		    if(n!=1)
-			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
-		}
-
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		//(*logToPrintD)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
-		PHREDgeno toadd;
-		
-		toadd.ref       = genomeRef[i];
-		toadd.consensus = 'D';
-		
-		pos2phredgeno[   (i+1)   ] = toadd;
-		
-		//continue;
-		skipEndo=true;
-		skipCont=false;
-	    }
-
-
-
-	    //deletion only in the contaminant, need to call the base for the endogenous
-	    if( (infoPPos[i].llikDeletionCont == maxAndSecondMax.first) &&
-		((infoPPos[i].llikDeletionCont - maxAndSecondMax.second) > LOGRATIOFORINDEL)){
-		// cout<<"cont"<<endl;
-
-		long double sumLogLikeCase=0.0;
-		for(int n=0;n<4;n++){
-		    if(n!=2)
-			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
-		}
-
-		//(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
-		// PHREDgeno toadd;
-		
-		// toadd.ref       = genomeRef[i];
-		// toadd.consensus = 'D';
-		
-		// pos2phredgeno[   (i+1)   ] = toadd;
-
-		//continue;
-		skipEndo=false;
-		skipCont=true;
-	    }
-
-
-
-
-
-	}else{
-	
-	    // double llikDel  =0;
-	    // double llikNoDel=0;
-		
-	    if( infoPPos[i].llikDeletion - infoPPos[i].llikNoDeletion > LOGRATIOFORINDEL){
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<-10.0*( (infoPPos[i].llikNoDeletion - oplus(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-		PHREDgeno toadd;
-		
-		toadd.ref       = genomeRef[i];
-		toadd.consensus = 'D';
-		
-		pos2phredgeno[   (i+1)   ] = toadd;
-		
-		//continue;
-		skipEndo=true;
-		skipCont=true;
-
-	    }
-	}
-	//TODO add contamination detection
-	     
-    }
-
-}
-
-
-//! A method that prints the log for bases without any coverage
-/*!
-  This method is called by printLogAndGenome() and just prints a simple line saying there was no coverage.
-
-  \param i : Position on the mitonchondria
-  \param genomeRef : The reference genome 
-  \param infoPPos: The vector of structure populated by the bam reader
-  \param outLogCflag: Flag to say we print to the contaminant log as well.
-  \param genomeToPrint: String on which the endogenous genome will be printed
-  \param genomeToPrintC: String on which the contaminant genome will be printed
-  \param logToPrint:  Pointer to the string stream for the endogenous log
-  \param logToPrintC: Pointer to the string stream for the contaminant log
-  \param skipEndo:  Boolean if we skip the  endogenous sample, set to 1 if the endogenous sample has no coverage
-  \param skipCont:  Boolean set by the method for the contaminant, set to 1 if the contaminant has no coverage
-*/
-void noCoverage(const int i,
-		const string & genomeRef,
-		const vector<singlePosInfo> & infoPPos,
-		const bool outLogCflag,
-		string & genomeToPrint,
-		string & genomeToPrintC,
-		stringstream * logToPrint,
-		stringstream * logToPrintC,
-		bool & skipEndo,
-		bool & skipCont){
-
-
-    if(infoPPos[i].cov == 0){
-	genomeToPrint+="N";
-	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;
-	if(outLogCflag){
-	    genomeToPrintC+="N";
-	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\tN\t0\t0\t0\t0\t0.0\t0.0\t0.0\t0.0"<<endl;	    
-	}
-	
-	skipEndo=true;
-	skipCont=true;	
-    }
-
-}
-
-
-//! A method that computes the most likely single nucleotide
-/*!
-  This method is called by printLogAndGenome() and either computes:
-  When we assume we have a single contaminant :
-     use likeBaseNoindelCont to compute the most likely endogenous base and contaminant
-     we marginalize over each contaminant base to call the endogenous base and vice-versa
-  When we cannot assume we have a single contaminant:
-     use likeBaseNoindel for all four endogenous nucleotides
-  
-  It calls callBestNucleotideGivenLikelihood() for each possibility 
-  \param i : Position on the mitonchondria
-  \param genomeRef : The reference genome 
-  \param infoPPos: The vector of structure populated by the bam reader
-  \param singleCont: Boolean as to we assume that we have a single contaminant or not
-  \param minQual: PHRED quality threshold, beyong this we print N instead of the base
-  \param genomeToPrint: String on which the endogenous genome will be printed
-  \param genomeToPrintC: String on which the contaminant genome will be printed
-  \param logToPrint:  Pointer to the string stream for the endogenous log
-  \param logToPrintC: Pointer to the string stream for the contaminant log
-  \param skipEndo:  If there was a deletion, we do not print to the endogenous sample
-  \param skipCont:  If there was a deletion, we do not print to the contaminant
-*/
-void callSingleNucleotide(const int i,
-			  const string & genomeRef,
-			  const vector<singlePosInfo> & infoPPos,
-			  const bool singleCont,
-			  const int minQual,			  
-			  string & genomeToPrint,
-			  string & genomeToPrintC,
-			  stringstream * logToPrint,
-			  stringstream * logToPrintC,
-			  bool & skipEndo,
-			  bool & skipCont){
-    
-    int    bestNuc=-1;
-    int    bestNucC=-1;
-
-    long double sumLogLikeAll           = 0.0; // sum of all the logs
-    long double sumLogLikeOnlyBest      = 0.0; // sum of the logs for the best
-    long double sumLogLikeAllButBest    = 0.0; // sum of the logs for all but the best
-    long double sumLogLikeAllC          = 0.0; // sum of all the logs
-    long double sumLogLikeOnlyBestC     = 0.0; // sum of the logs for the best
-    long double sumLogLikeAllButBestC   = 0.0; // sum of the logs for all but the best
-
-    // bool sumLogLikeAllB           = true;
-    // bool sumLogLikeOnlyBestB      = true;
-    // bool sumLogLikeAllButBestB    = true;
-	 
-    // int nuc=0;
-    // sumLogLikeAll              =  infoPPos[i].likeBaseNoindel[nuc];  //oplus= log10( pow(10,x)+pow(10,y) )
-    // if(nuc==bestNuc)
-    //     sumLogLikeOnlyBest     =  infoPPos[i].likeBaseNoindel[nuc];
-    // else
-    //     sumLogLikeAllButBest   =  infoPPos[i].likeBaseNoindel[nuc];
-
-    long double sumLogForNucs[4];  //sum of the logs for all but the nucleotide itself
-    long double sumLogForNucsC[4]; //sum of the logs for all but the nucleotide itself
-
-    long double likeBaseNoindel[4];  //log likelihood for each possible endogenous base
-    long double likeBaseNoindelC[4]; //log likelihood for each possible endogenous base
-
-
-    for(unsigned int nuc=0;nuc<4;nuc++){ 
-	sumLogForNucs[nuc]     = 0.0;
-	sumLogForNucsC[nuc]  = 0.0;
-		  
-	likeBaseNoindel[nuc]  = 0.0;
-	likeBaseNoindelC[nuc] = 0.0;
-    }
-
-
-
-    if(singleCont){//if single contaminant need to marginalized over each contaminant
-	     
-	//Calling the endogenous base
-	for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base
-
-		 
-	    likeBaseNoindel[nuce]      = 0.0;
-
-		 
-	    for(unsigned int  nucc=0;nucc<4;nucc++){ //marginalize over each possible contaminant base A,C,G,T
-		     		     
-		//likeBaseNoindel[nuce]  +=  pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
-		likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce],
-						    infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		// if(i==146)
-		// 	 cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
-	    }
-	    // if(i==146)
-	    //     cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<likeBaseNoindel[nuce]<<endl;
-
-	    //likeBaseNoindel[nuce] = log(likeBaseNoindel[nuce])/log(10);
-	}
-
-	//Calling the contaminant base
-	for(unsigned int nucc=0;nucc<4;nucc++){ //iterate over each possible contaminant base
-		 
-	    likeBaseNoindelC[nucc]      = 0.0;
-
-	    for(unsigned int nuce=0;nuce<4;nuce++){ //iterate over each possible endogenous base A,C,G,T
-		     
-		//likeBaseNoindelC[nucc]  += pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
-		likeBaseNoindelC[nucc]  = oplusInit(likeBaseNoindelC[nucc], infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		     
-		// if(i==146)
-		// 	 cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindelC[nucc]<<endl;
-	    }
-	    // if(i==146)
-	    //     cout<<"C"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nucc]<<"\t"<<likeBaseNoindelC[nucc]<<endl;
-	    //likeBaseNoindelC[nucc] = log ( likeBaseNoindelC[nucc] )/log(10);
-	}	     
-
-
-	     
-	     
-
-    }else{
-
-	for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-	    likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
-	}
-
-    }
-
-
-    //Begin determining best endogenous nucleotide
-
-    callBestNucleotideGivenLikelihood( bestNuc,
-				       sumLogLikeAll,          // sum of all the logs
-				       sumLogLikeOnlyBest,     // sum of the logs for the best
-				       sumLogLikeAllButBest,   // sum of the logs for all but the best
-				       sumLogForNucs,
-				       likeBaseNoindel,
-				       infoPPos,
-				       i );
-
-    // if(i==146){
-    //     for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-    // 	 cout<<"E\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNuc]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
-    // 	 //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[nuc];
-    //     }		
-    // }
-
-    if(singleCont){//if single contaminant, call the contaminant
-
-	callBestNucleotideGivenLikelihood( bestNucC,
-					   sumLogLikeAllC,        // sum of all the logs
-					   sumLogLikeOnlyBestC,   // sum of the logs for the best
-					   sumLogLikeAllButBestC, // sum of the logs for all but the best
-					   sumLogForNucsC,
-					   likeBaseNoindelC,
-					   infoPPos,
-					   i );
-
-	// if(i==146){
-	// 	 for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
-	// 	     cout<<"C\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNucC]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
-	// 	     //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[PHREDgeno];
-	// 	 }		
-	// }
-
-    }
-
-    // if(i==513){
-    // 	cout<<"REF1 "<<pos2phredgeno[   (i+1)   ].ref<<"\t"<<pos2phredgeno[   (i+1)   ].consensus<<endl;
-    // }
-
-
-
-    
-    if(!skipEndo  && !skipCont){  //need to define both
-
-	PHREDgeno toadd;
-
-	if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
-	    genomeToPrint+=dnaAlphabet[bestNuc];
-	}else{
-	    genomeToPrint+="N";
-	}
-
-	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
-
-
-	for(int nuc=0;nuc<4;nuc++){
-	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
-	}
-	(*logToPrint)<<endl;
-	toadd.ref       = genomeRef[i];
-	toadd.consensus = dnaAlphabet[bestNuc];
-
-
-
-	if(singleCont){//if single contaminant, call the contaminant
-		
-	    if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
-		genomeToPrintC+=dnaAlphabet[bestNucC];
-	    }else{
-		genomeToPrintC+="N";
-	    }
-
-	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
-	 
-	    for(int nuc=0;nuc<4;nuc++){
-		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		toadd.phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		toadd.perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
-	    }
-	    (*logToPrintC)<<endl;
-	}
-	
-	pos2phredgeno[   (i+1)   ] = toadd;
-
-    }
-
-    
-    if(skipEndo  && !skipCont){  //need not to define contamination
-
-	if(singleCont){//if single contaminant, call the contaminant
-		
-	    if( (-10.0*(sumLogLikeAllButBestC-sumLogLikeAllC)) >= minQual){
-		genomeToPrintC+=dnaAlphabet[bestNucC];
-	    }else{
-		genomeToPrintC+="N";
-	    }
-
-	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNucC];//<<endl;
-	 
-	    for(int nuc=0;nuc<4;nuc++){
-		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		pos2phredgeno[   (i+1)   ].phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		pos2phredgeno[   (i+1)   ].perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
-	    }
-	    (*logToPrintC)<<endl;
-	}
-
-    }
-
-    
-    if(!skipEndo  && skipCont){  //need not to define endogenous
-	
-	PHREDgeno toadd;
-
-	if( (-10.0*(sumLogLikeAllButBest-sumLogLikeAll)) >= minQual){
-	    genomeToPrint+=dnaAlphabet[bestNuc];
-	}else{
-	    genomeToPrint+="N";
-	}
-
-	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].covPerBase[bestNuc];//<<endl;
-
-
-	for(int nuc=0;nuc<4;nuc++){
-	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
-	}
-	(*logToPrint)<<endl;
-	toadd.ref       = genomeRef[i];
-	toadd.consensus = dnaAlphabet[bestNuc];
-
-	pos2phredgeno[   (i+1)   ] = toadd;
-
-    }
-
-
-
-    // if(i==513){
-    // 	cout<<"REF2 "<<pos2phredgeno[   (i+1)   ].ref<<"\t"<<pos2phredgeno[   (i+1)   ].consensus<<endl;
-    // }
-
-
-
-    // cout<<(i+1)<<"\t"<<toadd.ref<<"\t"<<toadd.consensus<<endl;
-
-}
-
-
-//! A method that calls each subroutine for call the endogenous (and contaminant) after the BAM file was read
-/*!
-  This method is called by printLogAndGenome() and just prints a simple line saying there was no coverage.
-
-  \param sizeGenome: the actual (biological) size of the mitochondrial. The reference can be longer if the first base pairs were copied at the end
-  \param infoPPos: The vector of structure populated by the bam reader.
-  \param outSeq:  String containing the filename of the endogenous sequence
-  \param outLog:  String containing the filename of the endogenous log file
-  \param genomeRef : The reference genome 
-  \param minQual: PHRED quality threshold, beyong this we print N instead of the base for single nucleotides
-  \param nameMT: Name of the produced fasta record in the fasta file for the endogenous sample
-  \param singleCont: Boolean as to we assume that we have a single contaminant or not
-  \param outSeqC:  String containing the filename of the contaminant sequence
-  \param outLogC:  String containing the filename of the contaminat log file
-  \param outSeqCflag: Boolean flag to say whether we print to the contaminant fasta sequence or not
-  \param outLogCflag: Boolean flag to say whether we print to the contaminant log file or not
-  \param nameMTC:  Name of the produced fasta record in the fasta file for the endogenous sample
-*/				
-void  printLogAndGenome(const int sizeGenome,
-			const vector<singlePosInfo> & infoPPos,
-			const string outSeq,
-			const string outLog, 
-			const string genomeRef,
-			const int minQual,
-			const string nameMT,
-			const bool singleCont,
-			const string outSeqC,
-			const string outLogC,
-			const bool   outSeqCflag,
-			const bool   outLogCflag,
-			const string nameMTC){
-    // cerr<<outSeq<<"\t"<<outLog<<"\t#"<<outSeqC<<"#\t"<<outLogC<<"#\t"<<outSeqCflag<<"#\t"<<outLogCflag<<"#\t"<<endl;
-    // exit(1);
-    ofstream outSeqFP ;
-    ofstream outLogFP;
-
-    ofstream outSeqFPC;
-    ofstream outLogFPC;
-
-
-    outSeqFP.open(outSeq.c_str());
-
-    if (!outSeqFP.is_open()){
-	cerr << "Unable to write to seq file "<<outSeq<<endl;
-	exit(1);
-    }
-
-    outLogFP.open(outLog.c_str());
-
-    if (!outLogFP.is_open()){
-	cerr << "Unable to write to qual file "<<outLog<<endl;
-	exit(1);
-    }
-
-
-    if(outSeqCflag){
-	outSeqFPC.open(outSeqC.c_str());
-	
-	if (!outSeqFPC.is_open()){
-	    cerr << "Unable to write to seq file "<<outSeqC<<endl;
-	    exit(1);
-	}
-    }
-
-    if(outLogCflag){
-	outLogFPC.open(outLogC.c_str());
-
-	if (!outLogFPC.is_open()){
-	    cerr << "Unable to write to qual file "<<outLogC<<endl;
-	    exit(1);
-	}
-
-    }
-
-    string genomeToPrint="";
-    string genomeToPrintC="";
-
-    stringstream logToPrint;
-    stringstream logToPrintC;
-
-
-    logToPrint<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt\n";
-    if(outLogCflag){
-	logToPrintC<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt\n";
-    }
-
-    //genomeRef
-    for(int i=0;i<sizeGenome;i++){
-	bool skipEndo=false;
-	bool skipCont=false;
-
-	//There are 4 possibilities:
-	//1) There is a deletion in the sample (or insertion in the reference)
-	//2) There is no coverage
-	//3) There are no bases
-	//4) There is a insertion in the sample (or deletion in the reference)
-
-	
-
-
-	 /////////////////////////////////////////
-	 //                                     //
-	 //        Deletion in the sample       //
-	 //                                     //
-	 /////////////////////////////////////////
-	deletionInSample(i,
-			 genomeRef,
-			 infoPPos,
-			 singleCont,
-			 &logToPrint,
-			 &logToPrintC,
-			 skipEndo,
-			 skipCont);
-	    
-	if(skipCont && skipEndo)
-	    continue;
-
-	/////////////////////////////////////////
-	//                                     //
-	//            No coverage              //
-	//                                     //
-	/////////////////////////////////////////
-
-	noCoverage(i,
-		   genomeRef,
-		   infoPPos,
-		   outLogCflag,	
-		   genomeToPrint,
-		   genomeToPrintC,
-		   &logToPrint,
-		   &logToPrintC,
-		   skipEndo,
-		   skipCont);
-	if(skipCont && skipEndo)
-	    continue;
-	     
-
-	 /////////////////////////////////////////
-	 //                                     //
-	 //      Calling single nucleotides     //
-	 //                                     //
-	 /////////////////////////////////////////
-
-	callSingleNucleotide(i,
-			     genomeRef,
-			     infoPPos,
-			     singleCont,
-			     minQual,
-			     genomeToPrint,
-			     genomeToPrintC,
-			     &logToPrint,
-			     &logToPrintC,
-			     skipEndo,
-			     skipCont);
-
-
-
-
-
-	 /////////////////////////////////////////
-	 //                                     //
-	 //      Insertions in the sample       //
-	 //                                     //
-	 /////////////////////////////////////////
-
-	insertionInSample(i,
-			  genomeRef,
-			  infoPPos,
-			  singleCont,
-			  genomeToPrint,
-			  genomeToPrintC,
-			  &logToPrint,
-			  &logToPrintC);
-
-
-    }//end for each position in the genome
-
-
-     string genomeToPrintCopy="";
-     for(unsigned int i=1;i<(genomeToPrint.size()+1);i++){
-	 genomeToPrintCopy+=genomeToPrint[i-1];
-	 if(i!=0 && (i%80 == 0))
-	     genomeToPrintCopy+="\n";
-     }
-
-     string genomeToPrintCopyC="";
-     for(unsigned int i=1;i<(genomeToPrintC.size()+1);i++){
-	 genomeToPrintCopyC+=genomeToPrintC[i-1];
-	 if(i!=0 && (i%80 == 0))
-	     genomeToPrintCopyC+="\n";
-     }
-
-
-
-     outSeqFP<<nameMT+"\n"+genomeToPrintCopy+"\n";
-     outSeqFP.close() ;
-
-     if(outSeqCflag)
-     if(singleCont){//if single contaminant need to marginalized over each contaminant
-	 outSeqFPC<<nameMTC+"\n"+genomeToPrintCopyC+"\n";
-	 outSeqFPC.close() ;
-     }
-
-     outLogFP<<logToPrint.str()<<endl;
-     outLogFP.close();
-
-     if(outLogCflag)
-     if(singleCont){//if single contaminant need to marginalized over each contaminant
-	 outLogFPC<<logToPrintC.str()<<endl;
-	 outLogFPC.close();
-     }
-}
 
 
 
@@ -1382,16 +336,20 @@ public:
 		  const int sizeGenome,
 		  const bool ignoreMQ,
 		  const long double contaminationPrior,
-		  const bool singleCont)
+		  const bool singleCont,
+		  const bool specifiedReference)
     : PileupVisitor()
     , m_references(references)
-    , m_fastaReference(fastaReference)
     , m_infoPPos(infoPPos)
     , sizeGenome(sizeGenome)
     , ignoreMQ(ignoreMQ)
     , contaminationPrior(contaminationPrior)
     , singleCont(singleCont)
+    , specifiedReference(specifiedReference)
   { 
+      
+      if(specifiedReference)
+	  m_fastaReference=fastaReference;
 
   }
   ~MyPileupVisitor(void) { }
@@ -1432,9 +390,9 @@ public:
        
     
   */				  
-  void Visit(const PileupPosition& pileupData) {
-    //cout<<"visit"<<endl;
-    char referenceBase = 'N';
+    void Visit(const PileupPosition& pileupData) {
+      //cout<<"visit"<<endl;
+      char referenceBase = 'N';
 	    
     unsigned int posAlign = pileupData.Position+1;
     int posVector=int(pileupData.Position)%sizeGenome;
@@ -1447,15 +405,16 @@ public:
 	    
 
     //for some reason, we have to do -1 on the .Position
-    if ( !m_fastaReference->GetBase(pileupData.RefId, posAlign-1, referenceBase ) ) {
-      cerr << "bamtools convert ERROR: pileup conversion - could not read reference base from FASTA file at chr "<<pileupData.RefId<<" position "<<(posAlign-1) << endl;
-      exit(1);
+    if(specifiedReference){
+	if ( !m_fastaReference->GetBase(pileupData.RefId, posAlign-1, referenceBase ) ) {
+	    cerr << "bamtools convert ERROR: pileup conversion - could not read reference base from FASTA file at chr "<<pileupData.RefId<<" position "<<(posAlign-1) << endl;
+	    exit(1);
+	}
     }
-
 
     //cout<<"\t"<<referenceBase<<"\t"<<endl;
 
-
+    
     for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){
       m_infoPPos->at(posVector).cov++;
 
@@ -1853,8 +812,8 @@ public:
       }
 		    
       //we have substitution probabilities for both... take the closest
-      if(dist5p <= (sub5p.size() -1) &&
-	 dist3p <= (sub3p.size() -1) ){
+      if(dist5p <= (int(sub5p.size()) -1) &&
+	 dist3p <= (int(sub3p.size()) -1) ){
 		    
 	if(dist5p < dist3p){
 	  probSubMatchToUseEndo = &sub5p[ dist5p ];
@@ -2083,14 +1042,14 @@ public:
   }//end visit()
         
 private:
-  RefVector m_references;
-  Fasta * m_fastaReference;
-  vector<singlePosInfo> * m_infoPPos;
-  int sizeGenome;
-  bool ignoreMQ;
-  long double contaminationPrior;
-  bool singleCont;
-
+    RefVector m_references;
+    Fasta * m_fastaReference;
+    vector<singlePosInfo> * m_infoPPos;
+    int sizeGenome;
+    bool ignoreMQ;
+    long double contaminationPrior;
+    bool singleCont;
+    bool specifiedReference ;
   //        ostream*  m_out;
 };
 
@@ -2117,125 +1076,126 @@ private:
 
 
 
-//! A method calls the BAM reader and populates infoPPos
-/*!
-  This method is called by the main. It initializes infoPPos and builds an instance of MyPileupVisitor which will fill the slots of the infoPPos vector
+// //! A method calls the BAM reader and populates infoPPos
+// /*!
+//   This method is called by the main. It initializes infoPPos and builds an instance of MyPileupVisitor which will fill the slots of the infoPPos vector
 
-  \param fastaFile : The string of the filename of the fasta file for the reference
-  \param bamfiletopen : The string for the filename for the BAM file
-  \param infoPPos: The vector of structure populated by the bam reader, needed to get the coverage to break ties in likelihood, unlikely to be used
-  \param sizeGenome: the actual (biological) size of the mitochondrial. The reference can be longer if the first base pairs were copied at the end
-  \param ignoreMQ : Boolean flag if the user chooses to ignore mapping quality and assume all reads are correctly mapped
-  \param contaminationPrior: Prior on the contamination rate
-  \param singleCont: Boolean as to we assume that we have a single contaminant or not
-*/
+//   \param fastaFile : The string of the filename of the fasta file for the reference
+//   \param bamfiletopen : The string for the filename for the BAM file
+//   \param infoPPos: The vector of structure populated by the bam reader, needed to get the coverage to break ties in likelihood, unlikely to be used
+//   \param sizeGenome: the actual (biological) size of the mitochondrial. The reference can be longer if the first base pairs were copied at the end
+//   \param ignoreMQ : Boolean flag if the user chooses to ignore mapping quality and assume all reads are correctly mapped
+//   \param contaminationPrior: Prior on the contamination rate
+//   \param singleCont: Boolean as to we assume that we have a single contaminant or not
+// */
 
-void iterateOverReads(const string fastaFile,
-		      const string bamfiletopen,
-		      vector<singlePosInfo>  * infoPPos,
-		      const int sizeGenome,
-		      const bool ignoreMQ ,
-		      const long double contaminationPrior,
-		      const bool singleCont){
+// void iterateOverReads(const string fastaFile,
+// 		      const string bamfiletopen,
+// 		      vector<singlePosInfo>  * infoPPos,
+// 		      const int sizeGenome,
+// 		      const bool ignoreMQ ,
+// 		      const long double contaminationPrior,
+// 		      const bool singleCont,
+// 		      const bool specifiedReference){
 
-  infoPPos->clear(); //clear previous data
+//   infoPPos->clear(); //clear previous data
 
-  cerr<<"Reading genome file ..."<<endl;
-  for(int i=0;i<sizeGenome;i++){
-    singlePosInfo toadd;
-    toadd.numDel              = 0;
+//   cerr<<"Reading genome file ..."<<endl;
+//   for(int i=0;i<sizeGenome;i++){
+//     singlePosInfo toadd;
+//     toadd.numDel              = 0;
     
-    toadd.cov                 = 0;
-    toadd.mapqAvg             = 0.0;
+//     toadd.cov                 = 0;
+//     toadd.mapqAvg             = 0.0;
 
-    toadd.llikDeletion        = 0.0;
-    toadd.llikNoDeletion      = 0.0;
-    // toadd.llikDeletionCont    = 0.0;
-    // toadd.llikNoDeletionCont  = 0.0;
+//     toadd.llikDeletion        = 0.0;
+//     toadd.llikNoDeletion      = 0.0;
+//     // toadd.llikDeletionCont    = 0.0;
+//     // toadd.llikNoDeletionCont  = 0.0;
 
-    toadd.llikDeletionBoth=0;
-    toadd.llikDeletionCont=0;
-    toadd.llikDeletionEndo=0;
-    toadd.llikDeletionNone=0;
+//     toadd.llikDeletionBoth=0;
+//     toadd.llikDeletionCont=0;
+//     toadd.llikDeletionEndo=0;
+//     toadd.llikDeletionNone=0;
     
-    for(unsigned int nuc=0;nuc<4;nuc++){
-      toadd.likeBaseNoindel[nuc] = 0;
-      toadd.covPerBase[nuc]      = 0;
-      for(unsigned int nuc2=0;nuc2<4;nuc2++){
-	toadd.likeBaseNoindelCont[nuc][nuc2] = 0;
-      }
-    }
+//     for(unsigned int nuc=0;nuc<4;nuc++){
+//       toadd.likeBaseNoindel[nuc] = 0;
+//       toadd.covPerBase[nuc]      = 0;
+//       for(unsigned int nuc2=0;nuc2<4;nuc2++){
+// 	toadd.likeBaseNoindelCont[nuc][nuc2] = 0;
+//       }
+//     }
     
-    infoPPos->push_back(toadd);
-  }
-  cerr<<"... done"<<endl;
+//     infoPPos->push_back(toadd);
+//   }
+//   cerr<<"... done"<<endl;
 
-    // cout<<fastaFile<<"\t"<<bamfiletopen<<"\t"<<infoPPos->size()<<"\t"<<sizeGenome<<"\t"<<ignoreMQ<<endl;
-
-
-    Fasta fastaReference;
-    if ( !fastaReference.Open(fastaFile , fastaFile+".fai") ){ 
-	cerr << "ERROR: failed to open fasta file " <<fastaFile<<" and index " << fastaFile<<".fai"<<endl;
-	exit(1);
-    }
+//     // cout<<fastaFile<<"\t"<<bamfiletopen<<"\t"<<infoPPos->size()<<"\t"<<sizeGenome<<"\t"<<ignoreMQ<<endl;
+//     Fasta fastaReference;
+//     if(specifiedReference)
+// 	if ( !fastaReference.Open(fastaFile , fastaFile+".fai") ){ 
+// 	    cerr << "ERROR: failed to open fasta file " <<fastaFile<<" and index " << fastaFile<<".fai"<<endl;
+// 	    exit(1);
+// 	}
 	
 	
-    BamReader reader;
+//     BamReader reader;
 
-    if ( !reader.Open(bamfiletopen) ) {
-	cerr << "Could not open input BAM files " <<bamfiletopen<< endl;
-	exit(1);
-    }
+//     if ( !reader.Open(bamfiletopen) ) {
+// 	cerr << "Could not open input BAM files " <<bamfiletopen<< endl;
+// 	exit(1);
+//     }
 
-    if ( !reader.OpenIndex(bamfiletopen+".bai") ) {
-	cerr << "Could not open input index for BAM files " <<bamfiletopen+".bai"<< endl;
-	exit(1);
-    }
+//     if ( !reader.OpenIndex(bamfiletopen+".bai") ) {
+// 	cerr << "Could not open input index for BAM files " <<bamfiletopen+".bai"<< endl;
+// 	exit(1);
+//     }
 	
-    //  // retrieve reference data
-    const RefVector  references = reader.GetReferenceData();
+//     //  // retrieve reference data
+//     const RefVector  references = reader.GetReferenceData();
 
 
 
-    MyPileupVisitor* cv = new MyPileupVisitor(references,&fastaReference,infoPPos,sizeGenome,ignoreMQ,contaminationPrior,singleCont);
-    PileupEngine pileup;
-    pileup.AddVisitor(cv);
+//     MyPileupVisitor* cv = new MyPileupVisitor(references,&fastaReference,infoPPos,sizeGenome,ignoreMQ,contaminationPrior,singleCont,specifiedReference);
+//     PileupEngine pileup;
+//     pileup.AddVisitor(cv);
 
 
-    BamAlignment al;
-    unsigned int numReads=0;
-    cerr<<"Reading BAM file ..."<<endl;
+//     BamAlignment al;
+//     unsigned int numReads=0;
+//     cerr<<"Reading BAM file ..."<<endl;
 
-    while ( reader.GetNextAlignment(al) ) {
-	//cerr<<al.Name<<endl;
-	numReads++;
-	if(numReads !=0 && (numReads%100000)==0){
-	    cerr<<"Read "<<thousandSeparator(numReads)<<" reads"<<endl;
-	}
+//     while ( reader.GetNextAlignment(al) ) {
+// 	//cerr<<al.Name<<endl;
+// 	numReads++;
+// 	if(numReads !=0 && (numReads%100000)==0){
+// 	    cerr<<"Read "<<thousandSeparator(numReads)<<" reads"<<endl;
+// 	}
 
-	if(al.IsMapped() && 
-	   !al.IsFailedQC()){
-	    // cerr<<al.Name<<endl;
-	    pileup.AddAlignment(al);
-	}
+// 	if(al.IsMapped() && 
+// 	   !al.IsFailedQC()){
+// 	    // cerr<<al.Name<<endl;
+// 	    pileup.AddAlignment(al);
+// 	}
 	    
-    }
-    cerr<<"...  done"<<endl;
+//     }
+//     cerr<<"...  done"<<endl;
     
     
 
     
 
-    //clean up
-    pileup.Flush();
+//     //clean up
+//     pileup.Flush();
 
-    reader.Close();
-    fastaReference.Close();
-    delete cv;
+//     reader.Close();
+//     if(specifiedReference)
+// 	fastaReference.Close();
+//     delete cv;
 
 
 
-}
+// }
 
 
 #ifdef CONTPRIORBEFORE
@@ -2631,8 +1591,8 @@ void computePriorOnReads(const string bamfiletopen,
 	    }
 		    
 	    //we have substitution probabilities for both... take the closest
-	    if(dist5p <= (sub5p.size() -1) &&
-	       dist3p <= (sub3p.size() -1) ){
+	    if(dist5p <= (int(sub5p.size()) -1) &&
+	       dist3p <= (int(sub3p.size()) -1) ){
 	      
 	      if(dist5p < dist3p){
 		probSubMatchDeam = &sub5p[ dist5p ];			
@@ -2900,13 +1860,15 @@ int main (int argc, char *argv[]) {
     //bool specifiedContPrior=false;
     bool specifiedLoce   = false;
     bool specifiedLocc   = false;
-    bool specifiedScalee = false;
     bool specifiedScalec = false;
+    bool specifiedScalee = false;
 
+    string fastaFile="";
+    bool specifiedReference = false;
 
     const string usage=string("\nThis program takes an aligned BAM file for a mitonchondria and calls a\nconsensus for the endogenous material\n\n\t"+
 			      string(argv[0])+			      
-			      " [options]  [reference fasta] [bam file] "+"\n\n"+
+			      " [options]  [bam file] "+"\n\n"+
 
 			      "\n\tOutput options:\n"+	
 			      // "\t\t"+"-seq  [fasta file]" +"\t\t"+"Output fasta file (default: stdout)"+"\n"+
@@ -2941,8 +1903,8 @@ int main (int argc, char *argv[]) {
 			      // "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
 			      // "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      
-			      // "\n\tReference options:\n"+	
-			      // "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
+			       "\n\tReference options:\n"+	
+			      "\t\t"+"-r [fasta]" +"\t\t\t"+"Fasta reference genome used for mapping (optional)"+"\n"+
 			      // "\t\t"+"  " +"\t\t\t\t"+"the reference as been wrapped around"+"\n"+
 			      // "\t\t"+"  " +"\t\t\t\t"+"by default, the length of the genome will be used "+"\n"+
 			      
@@ -2957,11 +1919,18 @@ int main (int argc, char *argv[]) {
     }
 
     string bamfiletopen = string(argv[argc-1]);//bam file
-    string fastaFile    = string(argv[argc-2]);//fasta file
+    // string fastaFile    = string(argv[argc-2]);//fasta file
 
-    for(int i=1;i<(argc-2);i++){ //all but the last 3 args
+    for(int i=1;i<(argc-1);i++){ //all but the last args
 
 	
+	if(strcmp(argv[i],"-r") == 0 ){
+	    fastaFile = string(argv[i+1]);
+	    i++;
+	    specifiedReference=true;
+	    continue;
+	}
+
 	if(strcmp(argv[i],"--loce") == 0 ){
 	    locatione =destringify<long double>(argv[i+1]);
 	    i++;
@@ -3295,9 +2264,9 @@ int main (int argc, char *argv[]) {
 
 
 
-     
+    
     vector<singlePosInfo> infoPPos;
-
+    if(	    specifiedReference){
     if(isDos(fastaFile) || isMac(fastaFile) ){
 	cerr << "File  "<<fastaFile<<" must be unix formatted, exiting"<<endl;
 	return 1;
@@ -3339,7 +2308,7 @@ int main (int argc, char *argv[]) {
     if(sizeGenome == 0){
 	sizeGenome=genomeRef.size();//use the one from the fasta
     }
-
+    }
     // double ** likelihoodPBasePPos = new double * [genome.size()];
     // for(unsigned int i = 0; i< genome.size(); i++) {
     // 	likelihoodPBasePPos[i] = new double  [4];
