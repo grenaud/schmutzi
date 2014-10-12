@@ -25,7 +25,7 @@ using namespace std;
 int main (int argc, char *argv[]) {
 
 
-    const string usage=string("\nThis program takes an multiple sequence alignment (msa) and outputs the allee frequency for each sequence in the freqs/ directory which must be created.\n\n\t"+
+    const string usage=string("\nThis program takes an multiple sequence alignment (msa) and outputs the allele frequency for each sequence in the freqs/ directory which must be created.\n\n\t"+
 			      string(argv[0])+                        
                               "  [msa]  [name of human reference]"+"\n\n");
 
