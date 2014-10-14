@@ -19,6 +19,7 @@
 
 //GLOBAL CONSTANTS
 #define IGNOREINDELBOUND 5  //ignore INDEL if there are within this amount of bp of the. 5 is good since it offsets the cost of a gap in a standard SW scoring scheme
+#define IGNOREINDELLENGTH 35  //ignore reads of length less than this fpr INDEL calling, this cutoffs was decided because of presence of noise before 35bp
 
 #define MAXCOV    5000
 #define INDELERRORPROB 1.0e-5 // http://genomebiology.com/2011/12/11/R112
@@ -650,8 +651,9 @@ void insertionInSample(const int i,
 
 		for(unsigned int k=0;k<(bestInsert.size());k++){
 		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsert)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
 		}
+		//adding in fasta file
+		genomeToPrint+=bestInsert;
 	    }
 	    
 	}
