@@ -178,7 +178,11 @@ void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec
 }
 
 
-void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome){
+void readMTConsensus(const string consensusFile,
+		     map<int, PHREDgeno> & pos2phredgeno,
+		     int & sizeGenome,
+		     vector<int> & posOfIndels){
+
     string line;
     igzstream consensusFD;
     consensusFD.open(consensusFile.c_str());
@@ -200,12 +204,15 @@ void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredg
 	    }
 	    
 
-	    if(fields[0][fields[0].size()-1] == 'i') //skip insertion
+	    if(fields[0][fields[0].size()-1] == 'i'){ //skip insertion
+		posOfIndels.push_back( destringify<int>( fields[0]) );
 		continue;
+	    }
 
-	    if(fields[2] == "D") //skip deletions
+	    if(fields[2] == "D"){ //skip deletions
+		posOfIndels.push_back( destringify<int>( fields[0]) );
 		continue;
-	    
+	    }	    
 
 	    toadd.consensus = fields[2][0];
 	    for(int nuc=0;nuc<4;nuc++){		

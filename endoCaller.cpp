@@ -18,16 +18,18 @@
 //#define DEBUGPRIORENDO
 
 //GLOBAL CONSTANTS
-#define IGNOREINDELBOUND 5  //ignore INDEL if there are within this amount of bp of the. 5 is good since it offsets the cost of a gap in a standard SW scoring scheme
-#define IGNOREINDELLENGTH 35  //ignore reads of length less than this fpr INDEL calling, this cutoffs was decided because of presence of noise before 35bp
 
 #define MAXCOV    5000
 #define INDELERRORPROB 1.0e-5 // http://genomebiology.com/2011/12/11/R112
 #define LOGRATIOFORINDEL 50  //beyond that difference in log, a indel will be called
+
+#define IGNOREINDELBOUND 5  //ignore INDEL if there are within this amount of bp of the. 5 is good since it offsets the cost of a gap in a standard SW scoring scheme
+
+#ifdef	IGNOREINDELBOUND
+#define IGNOREINDELLENGTH 35  //ignore reads of length less than this fpr INDEL calling, this cutoffs was decided because of presence of noise before 35bp
+#endif
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
-
-
-
 
 // CODE ORGANIZATION
 //
@@ -1698,7 +1700,7 @@ public:
 
 
     /////////////////////////////////////////////////////
-    //insertion in the reads/deletion in the reference
+    //1) insertion in the reads/deletion in the reference
     ///////////////////////////////////////////////////
     //detecting to find all possible insertions
     // set<string> allInsert;
@@ -1709,6 +1711,7 @@ public:
 
 
 #ifdef	IGNOREINDELBOUND
+
 	//make sure the read is not too close to the boundary, otherwise skip
 	if( !(
 	      ( (                                                           pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
@@ -1718,6 +1721,14 @@ public:
 	    ){
 	    continue;
 	}
+	
+	//make sure the read is long enough
+	if( pileupData.PileupAlignments[i].Alignment.QueryBases.size() < IGNOREINDELLENGTH ){
+	    //cout<<pileupData.PileupAlignments[i].Alignment.Name<<endl;
+	    continue;
+	}
+
+	
 #endif
 
 
@@ -1793,6 +1804,13 @@ public:
 	    ){
 	    continue;
 	}
+
+	
+	//make sure the read is long enough
+	if( pileupData.PileupAlignments[i].Alignment.QueryBases.size() < IGNOREINDELLENGTH ){
+	    continue;
+	}
+
 #endif
 
       int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
@@ -2032,13 +2050,36 @@ public:
 
 
     /////////////////////////////////////////////////////
-    //deletion in the reads/insertion in the reference
+    //2) deletion in the reads/insertion in the reference
     /////////////////////////////////////////////////////
     for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		
       int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
       long double probEndogenous=1.0-contaminationPrior;
-      string rg;
-      pileupData.PileupAlignments[i].Alignment.GetTag("RG",rg);//REMOVE ME
+      // string rg;
+      // pileupData.PileupAlignments[i].Alignment.GetTag("RG",rg);//REMOVE ME
+
+#ifdef	IGNOREINDELBOUND
+
+	//make sure the read is not too close to the boundary, otherwise skip
+	if( !(
+	      ( (                                                           pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
+	     &&
+	      ( (pileupData.PileupAlignments[i].Alignment.QueryBases.size()-pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
+	      ) 
+	    ){
+	    continue;
+	}
+	
+	//make sure the read is long enough
+	if( pileupData.PileupAlignments[i].Alignment.QueryBases.size() < IGNOREINDELLENGTH ){
+	    //cout<<pileupData.PileupAlignments[i].Alignment.Name<<endl;
+	    continue;
+	}
+
+	
+#endif
+
+
       if(read2endoProbInit){ //include probability of endogenous
 		    
 	map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
@@ -2122,7 +2163,7 @@ public:
 
 
     /////////////////////////////////////////////////////
-    //       Variations of a single nucleotide         //
+    // 3)    Variations of a single nucleotide         //
     /////////////////////////////////////////////////////
     for(unsigned int i=0;i<pileupData.PileupAlignments.size();i++){		 //for each alignment
    
@@ -2137,6 +2178,12 @@ public:
 	      ( (pileupData.PileupAlignments[i].Alignment.QueryBases.size()-pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
 	      ) 
 	    ){
+	    closeToEnds=true;
+	}
+
+	
+	//make sure the read is long enough
+	if( pileupData.PileupAlignments[i].Alignment.QueryBases.size() < IGNOREINDELLENGTH ){
 	    closeToEnds=true;
 	}
 #endif

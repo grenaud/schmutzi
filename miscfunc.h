@@ -131,7 +131,7 @@ typedef struct {
 
 void readNucSubstitionFreq(const string filename,vector<probSubstition> & subVec);
 void readIlluminaError(const string errFile,probSubstition & illuminaErrorsProb);
-void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome);
+void readMTConsensus(const string consensusFile,map<int, PHREDgeno> & pos2phredgeno,int & sizeGenome,vector<int> & posOfIndels);
 void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2allelefreq);
 
 

@@ -15,6 +15,7 @@
 #define MAXCOV 5000            // beyond that coverage, we stop computing
 #define MINPRIOR 0.001         // below that prior for contamination at a given base, we give up
 #define MAXMAPPINGQUAL 257     // maximal mapping quality, should be sufficient as mapping qualities are encoded using 8 bits
+#define MINDISTFROMINDEL 5     // ignore positions that are within X bp of an indel
 
 
 //TODO 
@@ -125,12 +126,13 @@ pthread_mutex_t  mutexCounter = PTHREAD_MUTEX_INITIALIZER;
 
 
 //GLOBALLY accessed
-int sizeGenome=0;
-vector<positionInformation> infoPPos;
-map<int, PHREDgeno> pos2phredgeno;
-map<unsigned int, int> threadID2Rank;
+int sizeGenome               =0;
+vector<positionInformation>  infoPPos;
+map<int, PHREDgeno>          pos2phredgeno;
+vector<int>                  posOfIndels;
+map<unsigned int, int>       threadID2Rank;
 
-bool             doneReading;
+bool                         doneReading;
 
 
 //! 
@@ -941,9 +943,9 @@ int main (int argc, char *argv[]) {
     }
     
 
-    string consensusFile    = string(argv[lastOpt+0]);//fasta file
-    string fastaFile        = string(argv[lastOpt+1]);//fasta file
-    string bamfiletopen     = string(argv[lastOpt+2]);//bam file
+    string consensusFile    = string(argv[lastOpt+0]); //consensus file
+    string fastaFile        = string(argv[lastOpt+1]); //fasta file
+    string bamfiletopen     = string(argv[lastOpt+2]); //bam file
 
     for(int i=(lastOpt+3);i<(argc);i++){ //all but the last 3 args
 	//cout<<"cont "<<string(argv[i])<<endl;
@@ -1057,8 +1059,15 @@ int main (int argc, char *argv[]) {
     // BEGIN ENDOGENOUS PROFILE
     //
     ////////////////////////////////////////////////////////////////////////
-    
-    readMTConsensus(consensusFile,pos2phredgeno,sizeGenome);
+
+    readMTConsensus(consensusFile,pos2phredgeno,sizeGenome,posOfIndels);
+
+#ifdef MINDISTFROMINDEL //delete records in pos2phredgeno found near indels
+
+    // map<int, PHREDgeno>          pos2phredgeno;
+    // vector<int>                  posOfIndels;    
+#endif
+
 
     ////////////////////////////////////////////////////////////////////////
     //
