@@ -318,7 +318,7 @@ if ($mock != 1) {
   open(FILECONFIGOUT,">".$outputPrefix.".config") or die "cannot write to ".$outputPrefix.".config";
   print FILECONFIGOUT "library\t$library\n";
   print FILECONFIGOUT "outputPrefix\t$outputPrefix\n";
-  print FILECONFIGOUT "inbam\t$inbam\n";
+  #print FILECONFIGOUT "inbam\t$inbam\n";
   print FILECONFIGOUT "referenceFasta\t$referenceFasta\n";
   print FILECONFIGOUT "contPriorKnow\t$contPriorKnow\n";
   print FILECONFIGOUT "textGraph\t$textGraph\n";

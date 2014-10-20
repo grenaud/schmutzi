@@ -65,33 +65,45 @@ my $lengthDeam=2;
 sub usage
 {
   print "Unknown option: @_\n" if ( @_ );
-  print "\n\nThis script is a wrapper to produce the endogenous mitochondrial genome and a contamination estimate given aligned mitochondrial data and a set of putative contaminants. This script takes the ouput of the contDeam.pl script and calls iteratively the module that produces an endogenous consensus and the one that estimates contamination.\nFor non-hominin samples without risk of human contamination where the mitochondrial consensus is needed, call endoCaller directly (see README.md).
-\n\nusage:\t".$0." <options> [output prefix from contDeam.pl] [directory with *freq file] [reference *fasta] [input.bam]\n\n".
+  print "\n\n
+This script is a wrapper to produce the endogenous mitochondrial
+consensus genome and a contamination estimate given aligned
+mitochondrial data and a set of putative contaminants. This script
+takes the ouput of the contDeam.pl script and calls iteratively
+the module that produces an endogenous consensus and the one that
+estimates contamination. For non-hominin samples without risk of
+human contamination where the mitochondrial consensus is needed,
+call endoCaller directly (see README.md).
 
-"Mandatory parameters:\n".
-"\t[output prefix from contDeam]\tThis is the prefix of the output of contDeam.pl (option --out)\n".
-"\t[directory with *freq file]\tDirectory with all the *freq file containing the putative contaminants\n".
-"\t[reference *fasta]\tFasta file of the reference used for by aligner\n".
-"\t[input.bam]\tAligned BAM file\n\n".
+\n\nusage:\t".$0." <options> [output prefix from contDeam.pl] [directory with *freq file] input.bam\n\n".
 
+#"Mandatory parameters:\n".
+#"\t[output prefix from contDeam]\tThis is the prefix of the output of contDeam.pl (option --out)\n".
+#"\t[directory with *freq file]\tDirectory with all the *freq file containing the putative contaminants\n".
+#"\t[reference *fasta]\tFasta file of the reference used for by aligner\n".
+#"\t[input.bam]\tAligned BAM file\n\n".
+#
 "Options:\n".
-"\n\t--library (single|double)\tType of library used".
-"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
+"\n\t--estdeam\tRe-estimate deamination parameters using newly computed segregating positions".
+"\n\t\tThis setting is recommended if the contamination is deaminated".
+"\n\t\t".
+
+#"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
 "\n\t--uselength\t\t\t\tUse length of the molecules as well\n\n".
 "\n\t--lengthDeam (bp)\t\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
-
-"Output Options:\n".
-"\t--out (output prefix)\t\tAll output files will share this prefix\n".
-"\t--title (title)\t\t\tTitle for the graph of the posterior distribution\n".
-"\t--cont (cont)\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\trate, enter it here [0-1]\n".
-"\nInput options:\n".
-"\t--split (file)\t\t\tSplit endogenous/contaminant according to diagnostic positions\n".
-"\t\t\t\t\tThe file must have the following format:\n".
-"\t\t\t\t\t\t[coord]tab[nucleotide]tab[endo or cont]\n".
-"\t\t\t\t\tWhere the coordinate is on the reference genome\n".
-"\t\t\t\t\tex:\t385\tA\tendo\n".
-"\nMandatory:\n".
-"\t--ref (reference genome)\tThe fasta file used for alignment\n".
+#
+#"Output Options:\n".
+#"\t--out (output prefix)\t\tAll output files will share this prefix\n".
+#"\t--title (title)\t\t\tTitle for the graph of the posterior distribution\n".
+#"\t--cont (cont)\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\trate, enter it here [0-1]\n".
+#"\nInput options:\n".
+#"\t--split (file)\t\t\tSplit endogenous/contaminant according to diagnostic positions\n".
+#"\t\t\t\t\tThe file must have the following format:\n".
+#"\t\t\t\t\t\t[coord]tab[nucleotide]tab[endo or cont]\n".
+#"\t\t\t\t\tWhere the coordinate is on the reference genome\n".
+#"\t\t\t\t\tex:\t385\tA\tendo\n".
+#"\nMandatory:\n".
+#"\t--ref (reference genome)\tThe fasta file used for alignment\n".
 
 #"\t--help|-?".
 "\n\n";
@@ -101,21 +113,40 @@ sub usage
 my $help;
 my $library        = "none";
 my $outputPrefix   = "outputdeam";
-my $inbam          = "none";
+
 my $referenceFasta = "none";
 my $contPriorKnow  = -1;
 my $textGraph      = "Posterior probability for contamination\\nusing deamination patterns";
 my $splitPos       = "";
 my $useLength      = 0;
 
+my $estdeam = 0 ;
+
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength,'lengthDeam' => \$lengthDeam )
+	     ! GetOptions('help|?' => \$help, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'lengthDeam' => \$lengthDeam )
           or defined $help );
 
+my $configfiledeam = $ARGV[ $#ARGV -2 ];
+my $freqDir        = $ARGV[ $#ARGV -1 ];
+my $inbam          = $ARGV[ $#ARGV -0 ];
 
-#die $contPriorKnow;
-#print $data."\n";
-#run deam
+open(FILEcontdeam, $configfiledeam) or die "cannot open ".$configfiledeam;
+
+while (my $line = <FILEcontdeam>) {
+
+  if($line =~ /^library\s(\S+)$/){        $library=$1;}
+  if($line =~ /^outputPrefix\s(\S+)$/){   $outputPrefix=$1;}
+  #if($line =~ /^inbam\s(\S+)$/){ $inbam=$1;}
+  if($line =~ /^referenceFasta\s(\S+)$/){ $referenceFasta=$1;}
+  if($line =~ /^contPriorKnow\s(\S+)$/){  $contPriorKnow=$1;}
+  if($line =~ /^textGraph\s(\S+)$/){      $textGraph=$1;}
+  if($line =~ /^splitPos\s(\S+)$/){       $splitPos=$1;}
+  #if($line =~ /^useLength\s(\S+)$/){      $useLength=$1;}
+  #if($line =~ /^splitDeam\s(\S+)$/){      $splitDeam=$1;}
+}
+
+close(FILEcontdeam);
+
 
 if($library ne "single" &&
    $library ne "double" ){
@@ -126,7 +157,52 @@ if($referenceFasta eq "none" ){
   die "Please enter the fasta reference used for mapping\n";
 }
 
-$inbam = $ARGV[ $#ARGV ];
+#read all files in $freqDir
+
+# begin loop
+my $numberIteration=1;
+my $maxIterations  =100;
+
+while(1){
+# do an initial endoCaller
+
+# estimate cont
+
+# if likelihood stable, break loop
+  if($numberIteration >= $maxIterations ){
+    last;
+  }
+
+  
+  # split
+  
+  # measure deam params + length
+  
+  $numberIteration++;
+}
+# go to begin loop
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 my $scaleLocSpecified=0;
 my $locE=1;
