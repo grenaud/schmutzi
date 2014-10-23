@@ -3318,7 +3318,6 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
 			      "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
 			      "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
-			      // "\t\t"+"-cont" +"\t\t"+"Contamination allele frequency"+"\n"+
 
 			      "\n\tContamination options:\n"+				      
 			      "\t\t"+"-deam5p [.prof file]" +"\t\t"+"5p deamination frequency (default: "+deam5pfreq+")"+"\n"+
@@ -3326,7 +3325,7 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
 			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
 
-			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n"+
+			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n\n"+
 
 			      "\t\tIf the -single option is used, the following are available:\n"+
 			      "\t\t\t"+"-seqc  [fasta file]" +"\t\t"+"Output contaminant as fasta file (default: none)"+"\n"+
@@ -3367,6 +3366,7 @@ int main (int argc, char *argv[]) {
     for(int i=1;i<(argc-2);i++){ //all but the last 3 args
 
 	
+
 	if(strcmp(argv[i],"--loce") == 0 ){
 	    locatione =destringify<long double>(argv[i+1]);
 	    i++;

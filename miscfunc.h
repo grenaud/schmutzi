@@ -65,7 +65,22 @@ typedef struct {
 
     char ref;
     char consensus; //for the endogenous
- } PHREDgeno;
+} PHREDgeno;
+
+
+typedef struct { 
+
+    char ref;
+    char base; //for the endogenous
+    int  pos;
+    double q;
+
+    double aprob;
+    double cprob;
+    double gprob;
+    double tprob;
+
+} logRecord;
 
 //To store a single read
 typedef struct { 

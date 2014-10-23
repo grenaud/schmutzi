@@ -339,5 +339,6 @@ runcmd($cmdPlot);
 
 print "Program finished succesfully\n\nFiles created:".
   "The plot of the posterior probability is ".$outputPrefix.".cont.pdf\n".
-  "The contamination estimate is here ".$outputPrefix.".cont.est\n";
+  "The contamination estimate is here ".$outputPrefix.".cont.est\n".
+  "The configuration file is here ".$outputPrefix.".config\n";
 

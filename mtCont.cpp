@@ -845,12 +845,13 @@ int main (int argc, char *argv[]) {
     string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
     string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
     string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
+    bool verbose      = false;
 
     const string usage=string("\t"+string(argv[0])+
 			      " [options]  [endogenous consensus file] [reference fasta file] [bam file] [cont file1] [cont file2] ..."+"\n\n"+
 			      
 			      "\n\tOutput options:\n"+	
-
+			      "\t\t"+"-v" +"\t\t"+"Verbose output, print the MAP value for each contaminant in increasing order of likelihood"+"\n"+
 			      "\t\t"+"-o  [output log]" +"\t\t"+"Output log (default: stdout)"+"\n"+
 			      //"\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
 			      // "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
@@ -889,6 +890,11 @@ int main (int argc, char *argv[]) {
 
     int lastOpt=1;
     for(int i=1;i<(argc-3);i++){ //all but the last 3 args
+
+	if(strcmp(argv[i],"-v") == 0 ){
+	    verbose=true;
+	    continue;
+	}
 
 	if(string(argv[i])[0] != '-'  ){
 	    //cout<<"end"<<i<<endl;
@@ -1229,25 +1235,23 @@ int main (int argc, char *argv[]) {
     // 	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
     // }
     // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
-    sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
-    // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
-    outLogFP<<"################################################"<<endl<<"Sources of contamination (sorted by log likelihood)"<<endl<<"################################################"<<endl;
+    if(verbose){
+	sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
+	// outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
+	outLogFP<<"################################################"<<endl<<"Sources of contamination (sorted by log likelihood)"<<endl<<"################################################"<<endl;
 
-    for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
-	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
+	for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
+	    outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
+	}
+
+	// cout<<s<<endl;
+
+
+	// string genomeToPrint="";
+	// outLogFP<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\n";
+	// //genomeRef
+	outLogFP.close();
     }
-
-    // cout<<s<<endl;
-
-
-    // string genomeToPrint="";
-    // outLogFP<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\n";
-    // //genomeRef
-
-
-
-
-    outLogFP.close();
 
     delete cv;
 
