@@ -13,11 +13,27 @@ use File::Copy;
 my $mock =0;
 my $lengthDeam=2;
 
+sub log10 {
+  my $n = shift;
+  return log($n)/log(10);
+}
+
+sub writeContToLogFile{
+  my ($cont,$contOutFile) = @_;
+
+  print "Writing contamination estimate $cont to file $contOutFile\n";
+  if ($mock != 1) {
+
+    open(FILEoutcont, ">".$contOutFile) or die "cannot write to  ".$contOutFile."\n";
+    print FILEoutcont $cont."\t".$cont."\t".$cont."\n";
+    close(FILEoutcont);
+  }
+}
 
 sub readMTCONToutlogfile{
   my ($mtcontOutputLog) = @_;
 
-  print "reading the log file ".$mtcontOutputLog;
+  print "reading the log file ".$mtcontOutputLog."\n";
 
   my $sourceFile="###";
   my $contMaxS    = -1;
@@ -28,7 +44,7 @@ sub readMTCONToutlogfile{
 
   if ($mock != 1) {
 
-    open(FILEoutlogmtcont, $mtcontOutputLog) or die "cannot open ".$mtcontOutputLog;
+    open(FILEoutlogmtcont, $mtcontOutputLog) or die "cannot open ".$mtcontOutputLog."\n";
 
     while(my $line = <FILEoutlogmtcont>){
       my @arrayTemp = split("\t",$line);
@@ -75,14 +91,16 @@ sub readMTCONToutlogfile{
     }
     close(FILEoutlogmtcont);
 
+    if ( $contMaxSALL == -1) {
+      die "Cannot parse the contamination output file = ".$mtcontOutputLog."\n";
+    }
 
+    return $contMaxSALL;
+
+  } else {
+    return 0.5;
   }
 
-  if( $contMaxSALL == -1){
-    die "Cannot parse the contamination output file = ".$mtcontOutputLog."\n";
-  }
-
-  return $contMaxSALL;
 }
 
 sub copycmd{
@@ -234,6 +252,8 @@ my $lengthMT=16569;
 
 my $multipleC=0;
 my $numthreads=1;
+my $maxIterations      = 100;
+my $iterationSameCont  = 3;
 
 sub usage
 {
@@ -258,24 +278,26 @@ call endoCaller directly (see README.md).
 #
 
 "Options:\n".
+"\n\t--iterations (# it.)\t\t\tMaximum number of iterations (Default : $maxIterations)\n\n".
+
 "\n\t--t (threads #)\t\t\t\tUse this amount of threads (Default : $numthreads)\n\n".
 "\n\t--lengthMT (bp)\t\t\t\tConsider that the real length of the MT genome is this (Default : $lengthMT)\n\n".
 
-"\n\t--estdeam\tRe-estimate deamination parameters using newly computed segregating positions".
-"\n\t\tThis setting is recommended if the contamination is deaminated".
+"\n\t--estdeam\t\t\t\tRe-estimate deamination parameters using newly computed segregating positions".
+"\n\t\t\t\t\t\tThis setting is recommended if the contamination is deaminated".
 "\n\t\t".
 
-"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
+"\n\t--mock\t\t\t\t\tDo nothing, just print the commands used\n\n".
 "\n\t--uselength\t\t\t\tUse length of the molecules as well\n\n".
-"\n\t--lengthDeam (bp)\t\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
-"\n\t--multipleC\tDo not assume that there is a single contaminant".
-"\n\t\t\tThis might lead to worse results".
-
+"\n\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
+"\n\t--multipleC\t\t\t\tDo not assume that there is a single contaminant".
+"\n\t\t\t\t\t\tThis might lead to worse results".
+"\n\n".
 #
-"Output Options:\n".
-"\t--name (name)\t\tName of the endogenous MT genome\n".
-"\t--namec (name)\t\tName of the contaminant MT genome\n".
-"\t--qual (qual)\t\tMinimum quality for a base in the  MT consensus (PHRED scale)\n".
+"  Output Options:\n".
+"\t--name (name)\t\t\t\tName of the endogenous MT genome\n".
+"\t--namec (name)\t\t\t\tName of the contaminant MT genome\n".
+"\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (PHRED scale)\n".
 
 
 #"\t--out (output prefix)\t\tAll output files will share this prefix\n".
@@ -310,7 +332,7 @@ my $useLengthContDEAM      = 0; #from contdeam
 my $estdeam = 0 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,  't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 my $prefixcontDeam = $ARGV[ $#ARGV -2 ];
@@ -378,7 +400,6 @@ print "------------------\n";
 #die;
 # begin loop
 my $numberIteration=1;
-my $maxIterations  =100;
 
 ########################
 #DEAMINATION PARAMETERS#
@@ -417,7 +438,32 @@ if($useLength){#
 }
 
 
+
+print "\n\n\n############################\n\n\n";
+
+my $previousCurrentContEst=-1;
+my $previousCurrentContEstItSameVal=0;
+
+
 while(1){
+  my $currentContEst=readcont( $prefixcontDeam."_".$numberIteration."_cont.est" );
+
+  my $stringToPrint1= "############################";
+  my $stringToPrint2="#    ITERATION #".sprintf("%".(log10($maxIterations)+1)."s",$numberIteration)."";
+
+  while((length($stringToPrint2)+1)<length($stringToPrint1)){
+    $stringToPrint2.=" ";
+  }
+  $stringToPrint2.="#";
+  print "\n\n\n".$stringToPrint1."\n";
+  print $stringToPrint2."\n";
+
+        #\n";
+  print "#                          #\n";
+  print "# Contamination rate: ".sprintf("%.2f",$currentContEst)." #\n";
+
+  print "############################\n";
+
 
   # call endoCaller
   my $cmdEndoCaller = $endoCaller." ";
@@ -433,7 +479,6 @@ while(1){
   $cmdEndoCaller .= " -deam3p ".$prefixcontDeam."_".$numberIteration."_endo.3p.prof ";
   #TODO put contamination deamination
 
-  my $currentContEst=readcont( $prefixcontDeam."_".$numberIteration."_cont.est" );
   $cmdEndoCaller .= " -cont ".$currentContEst." ";
 
   if(!$multipleC){ #we can assume a single contaminant
@@ -502,6 +547,7 @@ while(1){
 
   # if likelihood stable, break loop
   if($numberIteration >= $maxIterations ){
+    print "Reached the maximum number of iterations $numberIteration, exiting\n";
     last;
   }
 
@@ -511,6 +557,7 @@ while(1){
   my $mtcontOutputLog = $prefixcontDeam."_".$numberIteration."_mtcont.out";
 
   my $contFROMmtcont =  readMTCONToutlogfile($mtcontOutputLog);
+  writeContToLogFile($contFROMmtcont,$prefixcontDeam."_".($numberIteration+1)."_cont.est");
 
   #END   read new cont esti. log
 
@@ -568,10 +615,32 @@ while(1){
   }
 
   # measure deam params + length
-  
+
 
   if($mock == 1){
     die;
+  }
+
+
+  if($previousCurrentContEst == -1){
+
+    $previousCurrentContEst=$currentContEst;
+    $previousCurrentContEstItSameVal=1;
+
+  }else{
+    if($previousCurrentContEst==$currentContEst){
+      $previousCurrentContEstItSameVal++;
+    }else{
+      $previousCurrentContEstItSameVal=1;
+    }
+    $previousCurrentContEst=$currentContEst;
+
+
+    if( $previousCurrentContEstItSameVal >= $iterationSameCont ){
+      print "Reached the maximum number of iterations ($iterationSameCont) with stable contamination rate at iteration # $numberIteration, exiting\n";
+      last;
+    }
+
   }
 
   $numberIteration++;
