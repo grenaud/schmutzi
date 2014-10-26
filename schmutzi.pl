@@ -30,6 +30,78 @@ sub writeContToLogFile{
   }
 }
 
+
+sub computeIntervalCont{
+  my ($mtcontOutputLog) = @_;
+
+  print "reading the contamination log ".$mtcontOutputLog."\n";
+
+  if ($mock != 1) {
+    open(FILE,$mtcontOutputLog) or die "cannot open ".$mtcontOutputLog."";
+    my $maxL=10;
+    my $maxLi=0;
+
+    my @arrayOfValues;
+    while (my $line = <FILE>) {
+      chomp($line);
+      #print $line;
+      my @array = split("\t",$line);
+      if ($maxL == 10) {
+	$maxL = $array[2];
+      }
+
+      if ($maxL < $array[2]) {
+	$maxL = $array[2];
+	$maxLi = ($#arrayOfValues+1);
+      }
+      my $hashVal =  { 'cont'   => $array[1],
+		       'logL'   => $array[2]};
+
+      push(@arrayOfValues,$hashVal);
+    }
+    close(FILE);
+
+
+    my $sum=0;
+    foreach my $hashVal (@arrayOfValues) {
+
+      $hashVal->{'logLS'}=$hashVal->{'logL'}-$maxL;
+      # print "".($hashVal->{'logLS'})."\t".(10**($hashVal->{'logLS'}))."\t".$sum."\n";
+      $sum+=(10**($hashVal->{'logLS'}));
+    }
+    #print $sum;
+    my $targetSum = 0.95 * $sum;
+
+
+    my $il=$maxLi;
+    my $ih=$maxLi;
+
+    while (1) {
+      $il=max($il-1,              0);
+      $ih=min($ih+1, $#arrayOfValues+1 );
+      #print "i ".$il."\t".$ih."\n";
+      my $subsum = 0;
+      for (my $i=$il;$i<=$ih;$i++) {
+	$subsum += (10**($arrayOfValues[$i]->{'logLS'}));
+      }
+      #print $targetSum."\t".$subsum."\t".$il."\t".$ih."\n";
+
+      if ($subsum>$targetSum) {
+	last;
+      }
+
+    }
+
+    return ($arrayOfValues[$maxLi]->{'cont'},$arrayOfValues[$il]->{'cont'},$arrayOfValues[$ih]->{'cont'});
+
+  }else{
+    #mock, nothing to do
+    return (-1,-1,-1);
+  }
+
+}
+
+
 sub readMTCONToutlogfile{
   my ($mtcontOutputLog) = @_;
 
@@ -102,6 +174,79 @@ sub readMTCONToutlogfile{
   }
 
 }
+
+sub readMTCONTRetainMostlikely{
+  my ($mtcontOutputLog,$outputToWrite) = @_;
+
+  print "reading the log file ".$mtcontOutputLog." and print most likely source to ".$outputToWrite."\n";
+
+
+  my $sourceALL   = -1;
+  my $contMaxSALL = -1;
+  my $llikMaxSALL = -1;
+  my $firstRecord = 1;
+  if ($mock != 1) {
+
+    open(FILEoutlogmtcont, $mtcontOutputLog) or die "cannot open ".$mtcontOutputLog."\n";
+
+    while(my $line = <FILEoutlogmtcont>){
+      my @arrayTemp = split("\t",$line);
+      if($#arrayTemp != 2){
+	die "Error line $line in $mtcontOutputLog does not have 3 fields";
+      }
+
+
+      if( $firstRecord == 1 ){#first record
+	$sourceALL   = $arrayTemp[0];
+	$contMaxSALL = $arrayTemp[1];
+	$llikMaxSALL = $arrayTemp[2];
+	$firstRecord = 0;
+      }else{
+
+	if($llikMaxSALL < $llikMaxS){
+	  $sourceALL   = $arrayTemp[0];
+	  $contMaxSALL = $arrayTemp[1];
+	  $llikMaxSALL = $arrayTemp[2];
+	}
+
+      }
+
+    }
+
+    close(FILEoutlogmtcont);
+
+    if ( $contMaxSALL == -1) {
+      die "Cannot parse the contamination output file = ".$mtcontOutputLog."\n";
+    }
+
+
+    open(FILEoutlogmtcont,      $mtcontOutputLog) or die "cannot open ".$mtcontOutputLog."\n";
+    open(FILEoutlogmtcontOUT, ">".$outputToWrite) or die "cannot write to ".$outputToWrite."\n";
+
+    while(my $line = <FILEoutlogmtcont>){
+      my @arrayTemp = split("\t",$line);
+      if($#arrayTemp != 2){
+	die "Error line $line in $mtcontOutputLog does not have 3 fields";
+      }
+
+      if($sourceALL eq $arrayTemp[0]){
+	print FILEoutlogmtcontOUT $line;
+      }
+
+    }
+
+    close(FILEoutlogmtcont);
+    close(FILEoutlogmtcontOUT);
+
+
+
+  } else {
+    #nothing to do
+  }
+
+}
+
+
 
 sub copycmd{
   my ($source,$destination) = @_;
@@ -278,11 +423,12 @@ call endoCaller directly (see README.md).
 #
 
 "Options:\n".
+
+
 "\n\t--iterations (# it.)\t\t\tMaximum number of iterations (Default : $maxIterations)\n\n".
 
 "\n\t--t (threads #)\t\t\t\tUse this amount of threads (Default : $numthreads)\n\n".
 "\n\t--lengthMT (bp)\t\t\t\tConsider that the real length of the MT genome is this (Default : $lengthMT)\n\n".
-
 "\n\t--estdeam\t\t\t\tRe-estimate deamination parameters using newly computed segregating positions".
 "\n\t\t\t\t\t\tThis setting is recommended if the contamination is deaminated".
 "\n\t\t".
@@ -297,8 +443,12 @@ call endoCaller directly (see README.md).
 "  Output Options:\n".
 "\t--name (name)\t\t\t\tName of the endogenous MT genome\n".
 "\t--namec (name)\t\t\t\tName of the contaminant MT genome\n".
-"\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (PHRED scale)\n".
+"\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (on a PHRED scale, e.g. 50 = 1/100,000)\n".
+"\t--contknown (cont)\t\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\trate, enter it here [0-1]\n".
+"\t--title (title)\t\t\tTitle for the graph of the posterior distribution\n".
 
+"  Input Options:\n".
+"\t--contprior (rate)\t\t\t\tIgnore the contamination rate prior found by contDeam.pl, use this rate instead\n".
 
 #"\t--out (output prefix)\t\tAll output files will share this prefix\n".
 
@@ -323,17 +473,24 @@ my $library        = "none";
 my $outputPrefix   = "outputdeam";
 
 my $referenceFasta = "none";
-my $contPriorKnow  = -1;
-my $textGraph      = "Posterior probability for contamination\\nusing deamination patterns";
+my $contPriorKnow         = -1;
+my $contPriorKnowCMDLine  = -1;
+
+my $textGraph      = "Posterior probability for contamination\\nusing mitochondrial positions";
+
 my $splitPos       = "";
 my $useLength      = 0;
 my $useLengthContDEAM      = 0; #from contdeam
 
 my $estdeam = 0 ;
+#my $contPriorSpecified = 0 ;
+my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,  't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,  't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
+
+
 
 my $prefixcontDeam = $ARGV[ $#ARGV -2 ];
 my $configfiledeam = $prefixcontDeam.".config";
@@ -349,7 +506,7 @@ while (my $line = <FILEcontdeam>) {
   #if($line =~ /^inbam\s(\S+)$/){ $inbam=$1;}
   if($line =~ /^referenceFasta\s(\S+)$/){ $referenceFasta=$1;}
   if($line =~ /^contPriorKnow\s(\S+)$/){  $contPriorKnow=$1;}
-  if($line =~ /^textGraph\s(\S+)$/){      $textGraph=$1;}
+  #if($line =~ /^textGraph\s(\S+)$/){      $textGraph=$1;}
   if($line =~ /^splitPos\s(\S+)$/){       $splitPos=$1;}
   if($line =~ /^useLength\s(\S+)$/){      $useLengthContDEAM=$1;}
   if($line =~ /^splitDeam\s(\S+)$/){      $splitDeam=$1;}
@@ -357,6 +514,15 @@ while (my $line = <FILEcontdeam>) {
 
 close(FILEcontdeam);
 
+if($contPriorKnowCMDLine != -1){
+  $contPriorKnow = $contPriorKnowCMDLine;
+}
+
+if($contPriorUser != -1){
+  if($contPriorUser<0 || $contPriorUser>1){
+    die "ERROR: The contamination prior specified via --contprior should be between 0 and 1.\n";
+  }
+}
 
 if($numthreads <= 0){
   die "The number of threads must be greater than 1\n";
@@ -447,6 +613,12 @@ my $previousCurrentContEstItSameVal=0;
 
 while(1){
   my $currentContEst=readcont( $prefixcontDeam."_".$numberIteration."_cont.est" );
+
+  if($numberIteration == 1 ){ #first iteration
+    if($contPriorUser != -1){ #user specified a prior contamination rate
+      $currentContEst=$contPriorUser;
+    }
+  }
 
   my $stringToPrint1= "############################";
   my $stringToPrint2="#    ITERATION #".sprintf("%".(log10($maxIterations)+1)."s",$numberIteration)."";
@@ -644,9 +816,26 @@ while(1){
   }
 
   $numberIteration++;
-}
-# go to begin loop
+} # go to begin loop
 
+
+#copy files
+copycmd($prefixcontDeam."_".$numberIteration."_mtcont.out",     $prefixcontDeam."_final_mtcont.out");
+copycmd($prefixcontDeam."_".$numberIteration."_endo.fa",        $prefixcontDeam."_final_endo.fa");
+copycmd($prefixcontDeam."_".$numberIteration."_cont.fa",        $prefixcontDeam."_final_cont.fa");
+readMTCONTRetainMostlikely($prefixcontDeam."_final_mtcont.out", $prefixcontDeam."_final.cont");
+
+#Print graph
+my $cmdPlot = $contDeamR." ".$outputPrefix.".cont.deam ".$outputPrefix.".cont.pdf  \"$textGraph\" ";
+if($contPriorKnow != -1){
+  $cmdPlot =  $cmdPlot." ".$contPriorKnow;
+}
+runcmd($cmdPlot);
+
+
+#report final iteration
+
+my ($contfinal,$contfinall,$contfinalh) =  computeIntervalCont($prefixcontDeam."_final_mtcont.out");
 
 
 
