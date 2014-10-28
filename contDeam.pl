@@ -79,7 +79,7 @@ sub usage
 "\t\t\t\t\tex:\t385\tA\tendo\n".
 "\t--splitdeam\t\t\tEstimate the deamination rates using the reads split into endogenous/contaminant\n".
 "\n\t--uselength\t\t\tUse length of the molecules as well\n\n".
-"\Other options:\n".
+  "\nOther options:\n".
 "\t--ref (reference genome)\tThe fasta file used for alignment\n".
 
 #"\t--help|-?".
@@ -315,7 +315,7 @@ if ($mock != 1) {
   print FILEOUT $arrayOfValues[$maxLi]->{'cont'}."\t".$arrayOfValues[$il]->{'cont'}."\t".$arrayOfValues[$ih]->{'cont'}."\n";
   close(FILEOUT);
 
-  open(FILECONFIGOUT,">".$outputPrefix.".config") or die "cannot write to ".$outputPrefix.".config";
+  open(FILECONFIGOUT,">".$outputPrefix.".deam.config") or die "cannot write to ".$outputPrefix.".deam.config";
   print FILECONFIGOUT "library\t$library\n";
   print FILECONFIGOUT "outputPrefix\t$outputPrefix\n";
   #print FILECONFIGOUT "inbam\t$inbam\n";

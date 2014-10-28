@@ -500,7 +500,7 @@ usage() if ( @ARGV < 1 or
 
 
 my $prefixcontDeam = $ARGV[ $#ARGV -2 ];
-my $configfiledeam = $prefixcontDeam.".config";
+my $configfiledeam = $prefixcontDeam.".deam.config";
 my $freqDir        = $ARGV[ $#ARGV -1 ];
 my $inbam          = $ARGV[ $#ARGV -0 ];
 my $splitDeam =-1;
@@ -663,7 +663,11 @@ while(1){
   $cmdEndoCaller .= " -deamread ";
   $cmdEndoCaller .= " -deam5p ".$prefixcontDeam."_".$numberIteration."_endo.5p.prof ";
   $cmdEndoCaller .= " -deam3p ".$prefixcontDeam."_".$numberIteration."_endo.3p.prof ";
-  #TODO put contamination deamination
+
+  $cmdEndoCaller .= " -deam5pc ".$prefixcontDeam."_".$numberIteration."_cont.5p.prof ";
+  $cmdEndoCaller .= " -deam3pc ".$prefixcontDeam."_".$numberIteration."_cont.3p.prof ";
+
+
 
   $cmdEndoCaller .= " -cont ".$currentContEst." ";
 
@@ -785,8 +789,8 @@ while(1){
 
       copycmd(  $prefixcontDeam."_".$numberIteration."_endo.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.5p.prof" );
       copycmd(  $prefixcontDeam."_".$numberIteration."_endo.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.3p.prof" );
-      #copycmd(  $prefixcontDeam."_".$numberIteration."_cont.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof" );
-      #copycmd(  $prefixcontDeam."_".$numberIteration."_cont.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof" );
+      copycmd(  $prefixcontDeam."_".$numberIteration."_cont.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof" );
+      copycmd(  $prefixcontDeam."_".$numberIteration."_cont.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof" );
 
     }
 
@@ -807,6 +811,8 @@ while(1){
 
     copycmd(  $prefixcontDeam."_".$numberIteration."_endo.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.5p.prof" );
     copycmd(  $prefixcontDeam."_".$numberIteration."_endo.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.3p.prof" );
+    copycmd(  $prefixcontDeam."_".$numberIteration."_cont.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof" );
+    copycmd(  $prefixcontDeam."_".$numberIteration."_cont.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof" );
 
 
   }
@@ -892,7 +898,37 @@ print "\tContaminant consensus log                      : ".    $prefixcontDeam.
 
 }
 
-buchhalter
+
+
+if ($mock != 1) {
+
+  open(FILECONFIGOUT,">".$outputPrefix.".diag.config") or die "cannot write to ".$outputPrefix.".diag.config";
+  print FILECONFIGOUT "lengthDeam\t$lengthDeam\n";
+  print FILECONFIGOUT "nameMT\t$nameMT\n";
+  print FILECONFIGOUT "nameMTc\t$nameMTc\n";
+  print FILECONFIGOUT "qualmin\t$qualmin\n";
+  print FILECONFIGOUT "lengthMT\t$lengthMT\n";
+  print FILECONFIGOUT "multipleC\t$multipleC\n";
+  print FILECONFIGOUT "numthreads\t$numthreads\n";
+  print FILECONFIGOUT "maxIterations\t$maxIterations\n";
+  print FILECONFIGOUT "iterationSameCont\t$iterationSameCont\n";
+  print FILECONFIGOUT "library\t$library\n";
+  print FILECONFIGOUT "outputPrefix\t$outputPrefix\n";
+  print FILECONFIGOUT "contPriorKnow\t$contPriorKnow\n";
+  print FILECONFIGOUT "contPriorKnowCMDLine\t$contPriorKnowCMDLine\n";
+  print FILECONFIGOUT "textGraph\t$textGraph\n";
+  print FILECONFIGOUT "referenceFasta\t$referenceFasta\n";
+  print FILECONFIGOUT "referenceFastaCMDL\t$referenceFastaCMDL\n";
+  print FILECONFIGOUT "splitPos\t$splitPos\n";
+  print FILECONFIGOUT "useLength\t$useLength\n";
+  print FILECONFIGOUT "useLengthContDEAM\t$useLengthContDEAM\n";
+  print FILECONFIGOUT "estdeam\t$estdeam\n";
+  print FILECONFIGOUT "contPriorUser\t$contPriorUser\n";
+  close(FILECONFIGOUT);
+
+}
+print "\tConfig file                                     : ".    $prefixcontDeam.".diag.config\n";
+
 
 
 

@@ -10,7 +10,7 @@
 // #define DEBUGPOS 174 //position to debug
 //#define DEBUGPOS 14250
 // #define DEBUGPOSEACHREAD //to debug each read
-// #define DEBUGCONTPOS //print pos that are potential contaminants
+//#define DEBUGCONTPOS //print pos that are potential contaminants
 
 #define MAXCOV 5000            // beyond that coverage, we stop computing
 #define MINPRIOR 0.001         // below that prior for contamination at a given base, we give up
@@ -1072,6 +1072,21 @@ int main (int argc, char *argv[]) {
 
     // map<int, PHREDgeno>          pos2phredgeno;
     // vector<int>                  posOfIndels;    
+    for(unsigned int idxindel=0;idxindel<posOfIndels.size();idxindel++){
+	//cout<<posOfIndels[idxindel]<<endl;
+	for(int indelPos=(int(posOfIndels[idxindel])-MINDISTFROMINDEL);
+	    indelPos<=(int(posOfIndels[idxindel])+MINDISTFROMINDEL);
+	    indelPos++){
+
+	    map<int,PHREDgeno>::iterator itposgeno = pos2phredgeno.find(indelPos);
+
+		if(itposgeno != pos2phredgeno.end()){ //present, erase it
+		    //cout<<"Removing "<<indelPos<<endl;
+		    pos2phredgeno.erase(itposgeno);
+		}
+	}
+    }
+    
 #endif
 
 

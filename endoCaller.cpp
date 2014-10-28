@@ -183,6 +183,9 @@ double probLengthEndo[1000];
 probSubstition illuminaErrorsProb;
 vector<probSubstition> sub5p;
 vector<probSubstition> sub3p;
+vector<probSubstition> sub5pC;
+vector<probSubstition> sub3pC;
+
 probSubstition defaultSubMatch;
 
 string dnaAlphabet="ACGT";
@@ -2230,19 +2233,15 @@ public:
       probSubstition * probSubMatchToUseEndo = &defaultSubMatch ;
       probSubstition * probSubMatchToUseCont = &defaultSubMatch ;
 
-      // for(int jas=0;jas<16;jas++){
-      // 	cout<<jas<<"\t"<<probSubMatchToUse->s[jas]<<endl;
-      // }
-      // cout<<"sub\t"<<dist5p<<"\t"<<dist3p<<"\t"<<int(sub5p.size())<< "\t"<<int(sub3p.size()) <<endl;
 
       if(dist5p <= (int(sub5p.size()) -1)){
-	probSubMatchToUseEndo = &sub5p[ dist5p ];			
-	// cout<<"5p sub"<<endl;
+	probSubMatchToUseEndo = &sub5p[  dist5p ];			
+	probSubMatchToUseCont = &sub5pC[ dist5p ];
       }
 		    
       if(dist3p <= (int(sub3p.size()) -1)){
-	probSubMatchToUseEndo = &sub3p[ dist3p ];
-	// cout<<"3p sub"<<endl;
+	probSubMatchToUseEndo = &sub3p[  dist3p ];
+	probSubMatchToUseCont = &sub3pC[ dist3p ];
       }
 		    
       //we have substitution probabilities for both... take the closest
@@ -2250,11 +2249,11 @@ public:
 	 dist3p <= (int(sub3p.size()) -1) ){
 		    
 	if(dist5p < dist3p){
-	  probSubMatchToUseEndo = &sub5p[ dist5p ];
-	  // cout<<"5p sub"<<endl;
+	  probSubMatchToUseEndo = &sub5p[  dist5p ];
+	  probSubMatchToUseCont = &sub5pC[ dist5p ];
 	}else{
-	  probSubMatchToUseEndo = &sub3p[ dist3p ];
-	  // cout<<"3p sub"<<endl;
+	  probSubMatchToUseEndo = &sub3p[  dist3p ];
+	  probSubMatchToUseCont = &sub3pC[ dist3p ];
 	}
 		    
       }
@@ -2779,11 +2778,13 @@ void computePriorOnReads(const string bamfiletopen,
 	    probSubstition * probSubMatchNull = &defaultSubMatch ;
 
 	    if(dist5p <= (int(sub5p.size()) -1)){
-	      probSubMatchDeam = &sub5p[ dist5p ];			
+	      probSubMatchDeam = &sub5p[  dist5p ];
+	      probSubMatchNull = &sub5pC[ dist5p ];
 	    }
 		    
 	    if(dist3p <= (int(sub3p.size()) -1)){
-	      probSubMatchDeam = &sub3p[ dist3p ];
+	      probSubMatchDeam = &sub3p[  dist3p ];
+	      probSubMatchNull = &sub3pC[ dist3p ];
 	    }
 		    
 	    //we have substitution probabilities for both... take the closest
@@ -2791,9 +2792,11 @@ void computePriorOnReads(const string bamfiletopen,
 	       dist3p <= (int(sub3p.size()) -1) ){
 	      
 	      if(dist5p < dist3p){
-		probSubMatchDeam = &sub5p[ dist5p ];			
+		probSubMatchDeam = &sub5p[  dist5p ];			
+		probSubMatchNull = &sub5pC[ dist5p ];
 	      }else{
-		probSubMatchDeam = &sub3p[ dist3p ];
+		probSubMatchDeam = &sub3p[  dist3p ];
+		probSubMatchNull = &sub3pC[ dist3p ];
 	      }
 			
 	    }
@@ -2845,14 +2848,6 @@ void computePriorOnReads(const string bamfiletopen,
 	    nullLogLike+=log(probBaseNull)/log(10);
 
 	
-	    //m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
-	    // double probFinal;
-	    
-	    // if(ignoreMQ){ //ignore MQ
-	    //     probFinal = (               probBase                          );
-	    // }else{
-	    //     probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
-	    // }
 		    
 
 	    //null model
@@ -3265,10 +3260,10 @@ int main (int argc, char *argv[]) {
 
 
     string nameMTC  = "MTc";
-    bool userWantsContProduced=false;
+    bool userWantsContProduced = false;
   
-    int minQual=0;
-    bool ignoreMQ=false;
+    int minQual                = 0;
+    bool ignoreMQ              = false;
 
 
     ////////////////////////////////////
@@ -3293,20 +3288,26 @@ int main (int argc, char *argv[]) {
 
     //    return 1;
     string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
-    string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
-    string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string deam5pfreqE = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string deam3pfreqE = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string deam5pfreqC = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string deam3pfreqC = getCWD(argv[0])+"deaminationProfile/none.prof";
+
     // substitutionRates freqIlluminaError;
-    vector<substitutionRates>    deam5Psub;
-    vector<substitutionRates>    deam3Psub;
-    bool deamread=false;
-    bool useLengthPrior  = false;
-    long double contaminationPrior=0.5;
-    bool singleCont=false;
-    bool specifiedContPrior=false;
-    bool specifiedLoce   = false;
-    bool specifiedLocc   = false;
-    bool specifiedScalee = false;
-    bool specifiedScalec = false;
+    vector<substitutionRates>    deam5PsubE;
+    vector<substitutionRates>    deam3PsubE;
+    vector<substitutionRates>    deam5PsubC;
+    vector<substitutionRates>    deam3PsubC;
+
+    bool deamread                  = false;
+    bool useLengthPrior            = false;
+    long double contaminationPrior = 0.5;
+    bool singleCont                = false;
+    bool specifiedContPrior        = false;
+    bool specifiedLoce             = false;
+    bool specifiedLocc             = false;
+    bool specifiedScalee           = false;
+    bool specifiedScalec           = false;
 
 
     const string usage=string("\nThis program takes an aligned BAM file for a mitonchondria and calls a\nconsensus for the endogenous material\n\n\t"+
@@ -3320,17 +3321,21 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
 
 			      "\n\tContamination options:\n"+				      
-			      "\t\t"+"-deam5p [.prof file]" +"\t\t"+"5p deamination frequency (default: "+deam5pfreq+")"+"\n"+
-			      "\t\t"+"-deam3p [.prof file]" +"\t\t"+"3p deamination frequency (default: "+deam3pfreq+")"+"\n"+
+			      "\t\t"+"-deam5p  [.prof file]" +"\t\t"+"5p deamination frequency for the endogenous  (default: "+deam5pfreqE+")"+"\n"+
+			      "\t\t"+"-deam3p  [.prof file]" +"\t\t"+"3p deamination frequency for the endogenous  (default: "+deam3pfreqE+")"+"\n"+
+			      "\t\t"+"-deam5pc [.prof file]" +"\t\t"+"5p deamination frequency for the contaminant (default: "+deam5pfreqC+")"+"\n"+
+			      "\t\t"+"-deam3pc [.prof file]" +"\t\t"+"3p deamination frequency for the contaminant (default: "+deam3pfreqC+")"+"\n"+
+
+
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
 			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
 
-			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n\n"+
+			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n\n"+
 
 			      "\t\tIf the -single option is used, the following are available:\n"+
-			      "\t\t\t"+"-seqc  [fasta file]" +"\t\t"+"Output contaminant as fasta file (default: none)"+"\n"+
-			      "\t\t\t"+"-logc  [log file]" +"\t\t"+"Output contaminant as log  (default: none)"+"\n"+
-			      "\t\t\t"+"-namec [name]" +"\t\t\t"  +"Name of contaminant sequence (default "+nameMTC+") "+"\n"+
+			      "\t\t\t"+"-seqc  [fasta file]" +"\t"+"Output contaminant as fasta file (default: none)"+"\n"+
+			      "\t\t\t"+"-logc  [log file]" +"\t"+"Output contaminant as log  (default: none)"+"\n"+
+			      "\t\t\t"+"-namec [name]" +"\t\t"  +"Name of contaminant sequence (default "+nameMTC+") "+"\n"+
 
 
 
@@ -3402,13 +3407,25 @@ int main (int argc, char *argv[]) {
 	}
 
 	if(string(argv[i]) == "-deam5p"  ){
-	    deam5pfreq=string(argv[i+1]);
+	    deam5pfreqE=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
 
 	if(string(argv[i]) == "-deam3p"  ){
-	    deam3pfreq=string(argv[i+1]);
+	    deam3pfreqE=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-deam5pc"  ){
+	    deam5pfreqC=string(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-deam3pc"  ){
+	    deam3pfreqC=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
@@ -3629,8 +3646,12 @@ int main (int argc, char *argv[]) {
     // BEGIN DEAMINATION PROFILE
     //
     ////////////////////////////////////////////////////////////////////////
-    readNucSubstitionFreq(deam5pfreq,sub5p);
-    readNucSubstitionFreq(deam3pfreq,sub3p);
+    readNucSubstitionFreq(deam5pfreqE,sub5p);
+    readNucSubstitionFreq(deam3pfreqE,sub3p);
+    readNucSubstitionFreq(deam5pfreqC,sub5pC);
+    readNucSubstitionFreq(deam3pfreqC,sub3pC);
+
+
 
     // cout<<sub5p.size()<<endl;
     // cout<<sub3p.size()<<endl;

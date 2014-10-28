@@ -1,0 +1,31 @@
+
+
+to program:
+done - fix coverage around indels
+done - schmutzi.pl wrapper
+done add 5bp away from indel for mtCont
+done- Add deamination from contaminant
+
+
+
+read data:
+- check Denisovans from Susanna
+- run cont check
+- what was Matthias' criteria for diag. pos ?
+
+Take Denisova genome and check reads that span:
+- take sites where nean+denis+chimp share, all 1000G derived
+- take sites where nean+denis share, all 1000G all ancestral
+- check for length difference
+- do a mixture model fit and estimate endo deamination based on that ?
+
+
+simulations:
+- do it once with double strand
+- We have neandertal, Ust-Ishim and do Denisova
+- make all latex figures
+
+
+
+
+
