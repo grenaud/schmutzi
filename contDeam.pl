@@ -63,9 +63,9 @@ sub usage
   print "\n\nThis script is a wrapper to call the core program and allows for the estimation of endogenous\ndeamination andsubsequent contamination estimate. By default it will condition on seeing a \ndeaminated base on the 5' end to measure endogenous deamination rates on the 3' end and\nvice-versa. Users have also the possibility of conditioning on diagnostic positions to \nmeasure endogenous deamination.\n\nusage:\t".$0." <options> input.bam\n\n".
 "Options:\n".
 "\n\t--library (single|double)\tType of library used".
-"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n\n".
+"\n\t--mock\t\t\t\tDo nothing, just print the commands used\n".
 
-"\n\t--lengthDeam (bp)\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
+"\t--lengthDeam (bp)\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
 
 "Output Options:\n".
 "\t--out (output prefix)\t\tAll output files will share this prefix\n".
@@ -79,7 +79,7 @@ sub usage
 "\t\t\t\t\tex:\t385\tA\tendo\n".
 "\t--splitdeam\t\t\tEstimate the deamination rates using the reads split into endogenous/contaminant\n".
 "\n\t--uselength\t\t\tUse length of the molecules as well\n\n".
-"\nMandatory:\n".
+"\Other options:\n".
 "\t--ref (reference genome)\tThe fasta file used for alignment\n".
 
 #"\t--help|-?".

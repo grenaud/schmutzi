@@ -203,7 +203,7 @@ sub readMTCONTRetainMostlikely{
 	$firstRecord = 0;
       }else{
 
-	if($llikMaxSALL < $llikMaxS){
+	if($llikMaxSALL < $arrayTemp[2]){
 	  $sourceALL   = $arrayTemp[0];
 	  $contMaxSALL = $arrayTemp[1];
 	  $llikMaxSALL = $arrayTemp[2];
@@ -282,9 +282,9 @@ sub makeEmptyProfFile{
 
 sub readcont{
   my ($filename) = @_;
-  #if ($mock != 1) {
+  #
   print "reading the contamination estimate file: $filename\n";
-
+  #if ($mock != 1) {
   open(FILEcont, $filename) or die "cannot open ".$filename;
 
   my $line = <FILEcont>;
@@ -292,43 +292,48 @@ sub readcont{
   close(FILEcont);
 
   return $arrayTemp[0];
- # } else {
- #   print "reading the contamination estimate file: $filename\n";
- #   return 'X';
- # }
+  #} else {
+    #print "reading the contamination estimate file: $filename\n";
+   # return 0.5;
+  #}
 }
 
 
 sub readSizeParam{
   my ($filename) = @_;
+  print "reading the insert size parameter file: $filename\n";
+  if ($mock != 1) {
+    open(FILEparamEndo,$filename) or die "cannot open ".$filename."\n";
+    my @linesEndo = <FILEparamEndo>;
+    close(FILEparamEndo);
 
-  open(FILEparamEndo,$filename) or die "cannot open ".$filename."\n";
-  my @linesEndo = <FILEparamEndo>;
-  close(FILEparamEndo);
+    if ($#linesEndo != 2) {
+      die "ERROR: Parameter file from the log normal distribution does not have 3 lines, it has ".$#linesEndo." lines check the size distribution of the endogenous and contaminant molecules";
+    }
 
-  if ($#linesEndo != 2) {
-    die "ERROR: Parameter file from the log normal distribution does not have 3 lines, it has ".$#linesEndo." lines check the size distribution of the endogenous and contaminant molecules";
+    my $lineParamEndo= $linesEndo[1];
+    chomp($lineParamEndo);
+    $lineParamEndo =~ s/^\s+//;
+    $lineParamEndo =~ s/\s+$//;
+
+    my @arrayEndo = split(/\s+/,$lineParamEndo);
+
+    if (!looks_like_number( $arrayEndo[0] )) {
+      die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
+    }
+    if (!looks_like_number( $arrayEndo[1] )) {
+      die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
+    }
+
+    my $loc=$arrayEndo[0];
+    my $sca=$arrayEndo[1];
+
+    return ($loc,$sca);
+  } else {
+    return (1,1);
   }
-
-  my $lineParamEndo= $linesEndo[1];
-  chomp($lineParamEndo);
-  $lineParamEndo =~ s/^\s+//;
-  $lineParamEndo =~ s/\s+$//;
-
-  my @arrayEndo = split(/\s+/,$lineParamEndo);
-
-  if (!looks_like_number( $arrayEndo[0] )) {
-    die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
-  }
-  if (!looks_like_number( $arrayEndo[1] )) {
-    die "ERROR: Parameter file from the log normal distribution contains a line that does not have the expected numerical parameters: ".$lineParamEndo."\n";
-  }
-
-  my $loc=$arrayEndo[0];
-  my $sca=$arrayEndo[1];
-
-  return ($loc,$sca);
 }
+
 
 
 sub runcmd{
@@ -425,18 +430,18 @@ call endoCaller directly (see README.md).
 "Options:\n".
 
 
-"\n\t--iterations (# it.)\t\t\tMaximum number of iterations (Default : $maxIterations)\n\n".
+"\n\t--iterations (# it.)\t\t\tMaximum number of iterations (Default : $maxIterations)\n".
 
-"\n\t--t (threads #)\t\t\t\tUse this amount of threads (Default : $numthreads)\n\n".
-"\n\t--lengthMT (bp)\t\t\t\tConsider that the real length of the MT genome is this (Default : $lengthMT)\n\n".
-"\n\t--estdeam\t\t\t\tRe-estimate deamination parameters using newly computed segregating positions".
+"\t--t (threads #)\t\t\t\tUse this amount of threads (Default : $numthreads)\n".
+"\t--lengthMT (bp)\t\t\t\tConsider that the real length of the MT genome is this (Default : $lengthMT)\n".
+"\t--estdeam\t\t\t\tRe-estimate deamination parameters using newly computed segregating positions".
 "\n\t\t\t\t\t\tThis setting is recommended if the contamination is deaminated".
-"\n\t\t".
+"\n".
 
-"\n\t--mock\t\t\t\t\tDo nothing, just print the commands used\n\n".
-"\n\t--uselength\t\t\t\tUse length of the molecules as well\n\n".
-"\n\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n\n".
-"\n\t--multipleC\t\t\t\tDo not assume that there is a single contaminant".
+"\t--mock\t\t\t\t\tDo nothing, just print the commands used\n".
+"\t--uselength\t\t\t\tUse length of the molecules as well\n".
+"\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n".
+"\t--multipleC\t\t\t\tDo not assume that there is a single contaminant".
 "\n\t\t\t\t\t\tThis might lead to worse results".
 "\n\n".
 #
@@ -444,11 +449,12 @@ call endoCaller directly (see README.md).
 "\t--name (name)\t\t\t\tName of the endogenous MT genome\n".
 "\t--namec (name)\t\t\t\tName of the contaminant MT genome\n".
 "\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (on a PHRED scale, e.g. 50 = 1/100,000)\n".
-"\t--contknown (cont)\t\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\trate, enter it here [0-1]\n".
-"\t--title (title)\t\t\tTitle for the graph of the posterior distribution\n".
-
+"\t--contknown (cont)\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\t\trate, enter it here [0-1] and it will be plotted\n".
+"\t--title (title)\t\t\t\tTitle for the graph of the posterior distribution\n".
+"\n".
 "  Input Options:\n".
-"\t--contprior (rate)\t\t\t\tIgnore the contamination rate prior found by contDeam.pl, use this rate instead\n".
+"\t--contprior (rate)\t\t\tIgnore the contamination rate prior found by contDeam.pl, use this rate instead\n".
+"\t--ref (reference genome)\t\tThe fasta file used for alignment if not specified when calling contDeam.pl\n".
 
 #"\t--out (output prefix)\t\tAll output files will share this prefix\n".
 
@@ -472,12 +478,13 @@ my $help;
 my $library        = "none";
 my $outputPrefix   = "outputdeam";
 
-my $referenceFasta = "none";
+
 my $contPriorKnow         = -1;
 my $contPriorKnowCMDLine  = -1;
 
 my $textGraph      = "Posterior probability for contamination\\nusing mitochondrial positions";
-
+my $referenceFasta = "none";
+my $referenceFastaCMDL = "none";
 my $splitPos       = "";
 my $useLength      = 0;
 my $useLengthContDEAM      = 0; #from contdeam
@@ -487,7 +494,7 @@ my $estdeam = 0 ;
 my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,  't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 
@@ -507,12 +514,20 @@ while (my $line = <FILEcontdeam>) {
   if($line =~ /^referenceFasta\s(\S+)$/){ $referenceFasta=$1;}
   if($line =~ /^contPriorKnow\s(\S+)$/){  $contPriorKnow=$1;}
   #if($line =~ /^textGraph\s(\S+)$/){      $textGraph=$1;}
-  if($line =~ /^splitPos\s(\S+)$/){       $splitPos=$1;}
+  if($line =~ /^splitPos\s(\S+)$/){       $splitPos=$1;} #file containing positions, empty if not used
   if($line =~ /^useLength\s(\S+)$/){      $useLengthContDEAM=$1;}
   if($line =~ /^splitDeam\s(\S+)$/){      $splitDeam=$1;}
 }
 
 close(FILEcontdeam);
+
+if($referenceFastaCMDL  ne "none"){
+  if($referenceFasta    ne "none" &&
+    $referenceFastaCMDL ne $referenceFasta){
+    print "WARNING: you are specifying the reference via the command line despite the fact that there is already one specified.\n";
+  }
+  $referenceFasta = $referenceFastaCMDL;
+}
 
 if($contPriorKnowCMDLine != -1){
   $contPriorKnow = $contPriorKnowCMDLine;
@@ -592,14 +607,13 @@ if(! $estdeam  ){ #do not re-estimate at each iteration
 ########################
 #  LENGTH PARAMETERS   #
 ########################
-if($useLength){#
+if($useLength){#we use the length of the molecules in the endoCaller
+
   if($useLengthContDEAM){ #if previously computed
-
-    copycmd( $prefixcontDeam."_endo.size.param" , $prefixcontDeam."_".$numberIteration."_endo.size.param" );
-    copycmd( $prefixcontDeam."_cont.size.param" , $prefixcontDeam."_".$numberIteration."_cont.size.param" );
-
+    copycmd( $prefixcontDeam."_endo.size.param" , $prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
+    copycmd( $prefixcontDeam."_cont.size.param" , $prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
   }else{
-    #
+    #otherwise, the length will not be used for the first iteration
   }
 }
 
@@ -666,27 +680,38 @@ while(1){
 
   # mol. length
   if ($useLength) {		#
-
+    my $notDefined=0;
     my $locE=1;
     my $scaE=1;
     my $locC=1;
     my $scaC=1;
+
     if($numberIteration == 1){ #first iteration
       if($useLengthContDEAM){ #if previously computed
 
-	($locE,$scaE)=   readSizeParam($prefixcontDeam."_".$numberIteration."_endo.size.param" );
-	($locC,$scaC)=   readSizeParam($prefixcontDeam."_".$numberIteration."_cont.size.param" );
+	($locE,$scaE)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
+	($locC,$scaC)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
 
       }else{
-	#leave dummy values
+	#do not use length for the first iteration
+	$notDefined=1;
       }
 
     }else{
 
-      ($locE,$scaE)=   readSizeParam($prefixcontDeam."_".$numberIteration."_endo.size.param" );
-      ($locC,$scaC)=   readSizeParam($prefixcontDeam."_".$numberIteration."_cont.size.param" );
+      ($locE,$scaE)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
+      ($locC,$scaC)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
 
     }
+
+    if(!$notDefined){
+        $cmdEndoCaller .= " --loce   ".$locE." ";
+        $cmdEndoCaller .= " --scalee ".$scaE." ";
+
+        $cmdEndoCaller .= " --locc   ".$locC." ";
+        $cmdEndoCaller .= " --scalec ".$scaC." ";
+    }
+
   }
 
 
@@ -767,15 +792,15 @@ while(1){
 
 
     #measure insert size
-    my $cmdBam2InsertsizeEndo = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_endo.bam |gzip  > ".$prefixcontDeam."_".($numberIteration)."_split_endo.size.gz";
+    my $cmdBam2InsertsizeEndo = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_endo.bam |gzip   > ".$prefixcontDeam."_".($numberIteration)."_split_endo.size.gz";
     runcmd($cmdBam2InsertsizeEndo);
-    my $cmdBam2InsertsizeCont = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_cont.size.gz";
+    my $cmdBam2InsertsizeCont = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_cont.bam  |gzip  > ".$prefixcontDeam."_".($numberIteration)."_split_cont.size.gz";
     runcmd($cmdBam2InsertsizeCont);
 
-    #Log normal fit
-    my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_endo.size.gz >  ".$outputPrefix."_endo.size.param";
+    #Log normal fit, copying parameters for next iteration
+    my $cmdinsertsize2LognormEndo = $approxDist."  ".$prefixcontDeam."_".($numberIteration)."_split_endo.size.gz >  ".$prefixcontDeam."_".($numberIteration+1)."_split_endo.size.param";
     runcmd($cmdinsertsize2LognormEndo);
-    my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_cont.size.gz >  ".$outputPrefix."_cont.size.param";
+    my $cmdinsertsize2LognormCont = $approxDist."  ".$prefixcontDeam."_".($numberIteration)."_split_cont.size.gz >  ".$prefixcontDeam."_".($numberIteration+1)."_split_cont.size.param";
     runcmd($cmdinsertsize2LognormCont);
 
   }else{ #must use the previous deamination profiles from the previous iteration for the new one
@@ -817,16 +842,24 @@ while(1){
 
   $numberIteration++;
 } # go to begin loop
+print "############################\n";
+print "Iterations done\n\n";
 
 
 #copy files
 copycmd($prefixcontDeam."_".$numberIteration."_mtcont.out",     $prefixcontDeam."_final_mtcont.out");
 copycmd($prefixcontDeam."_".$numberIteration."_endo.fa",        $prefixcontDeam."_final_endo.fa");
-copycmd($prefixcontDeam."_".$numberIteration."_cont.fa",        $prefixcontDeam."_final_cont.fa");
+copycmd($prefixcontDeam."_".$numberIteration."_endo.log",       $prefixcontDeam."_final_endo.log");
+
+
+if(!$multipleC){ #we can assume a single contaminant
+  copycmd($prefixcontDeam."_".$numberIteration."_cont.fa",      $prefixcontDeam."_final_cont.fa");
+  copycmd($prefixcontDeam."_".$numberIteration."_cont.log",     $prefixcontDeam."_final_cont.log");
+}
 readMTCONTRetainMostlikely($prefixcontDeam."_final_mtcont.out", $prefixcontDeam."_final.cont");
 
 #Print graph
-my $cmdPlot = $contDeamR." ".$outputPrefix.".cont.deam ".$outputPrefix.".cont.pdf  \"$textGraph\" ";
+my $cmdPlot = $contDeamR." ".$prefixcontDeam."_final.cont ".$prefixcontDeam."_final.cont.pdf  \"$textGraph\" ";
 if($contPriorKnow != -1){
   $cmdPlot =  $cmdPlot." ".$contPriorKnow;
 }
@@ -835,8 +868,31 @@ runcmd($cmdPlot);
 
 #report final iteration
 
-my ($contfinal,$contfinall,$contfinalh) =  computeIntervalCont($prefixcontDeam."_final_mtcont.out");
+my ($contfinal,$contfinall,$contfinalh) =  computeIntervalCont($prefixcontDeam."_final.cont");
 
+open(FILEOUTCF,">".$prefixcontDeam."_final.cont.est") or die "cannot write to ".$prefixcontDeam."_final.cont.est\n";
+print FILEOUTCF $contfinal."\t".$contfinall."\t".$contfinalh."\n";
+close(FILEOUTCF);
+
+
+print "############################\n";
+print "Results:\n";
+print "\tContamination estimates for all samples        : ".    $prefixcontDeam."_final_mtcont.out\n";
+print "\tContamination estimates for most likely sample : ".    $prefixcontDeam."_final.cont\n";
+print "\tContamination estimates with conf. intervals   : ".    $prefixcontDeam."_final.cont.est\n";
+
+print "\tPosterior probability for most likely sample   : ".    $prefixcontDeam."_final.cont.pdf\n";
+
+print "\tEndogenous consensus call                      : ".    $prefixcontDeam."_final_endo.fa\n";
+print "\tEndogenous consensus log                       : ".    $prefixcontDeam."_final_endo.log\n";
+
+if(!$multipleC){ #we can assume a single contaminant
+print "\tContaminant consensus call                     : ".    $prefixcontDeam."_final_cont.fa\n";
+print "\tContaminant consensus log                      : ".    $prefixcontDeam."_final_cont.log\n";
+
+}
+
+buchhalter
 
 
 

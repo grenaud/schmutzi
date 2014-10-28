@@ -2246,8 +2246,8 @@ public:
       }
 		    
       //we have substitution probabilities for both... take the closest
-      if(dist5p <= (sub5p.size() -1) &&
-	 dist3p <= (sub3p.size() -1) ){
+      if(dist5p <= (int(sub5p.size()) -1) &&
+	 dist3p <= (int(sub3p.size()) -1) ){
 		    
 	if(dist5p < dist3p){
 	  probSubMatchToUseEndo = &sub5p[ dist5p ];
@@ -2787,8 +2787,8 @@ void computePriorOnReads(const string bamfiletopen,
 	    }
 		    
 	    //we have substitution probabilities for both... take the closest
-	    if(dist5p <= (sub5p.size() -1) &&
-	       dist3p <= (sub3p.size() -1) ){
+	    if(dist5p <= (int(sub5p.size()) -1) &&
+	       dist3p <= (int(sub3p.size()) -1) ){
 	      
 	      if(dist5p < dist3p){
 		probSubMatchDeam = &sub5p[ dist5p ];			

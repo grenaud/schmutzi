@@ -1525,7 +1525,7 @@ void computePriorOnReads(const string bamfiletopen,
 	    char q        = al.Qualities[i]-offsetQual;
 
 
-	    int pos       = reconstructedReference.second[i]+1;
+	    //int pos       = reconstructedReference.second[i]+1;
 	    // cout<<i<<"\t"<<reconstructedReference.second[i]<<endl;
 	    transformRef(&refeBase,&readBase);
 
