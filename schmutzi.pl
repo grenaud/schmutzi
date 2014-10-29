@@ -831,7 +831,7 @@ while(1){
     $previousCurrentContEstItSameVal=1;
 
   }else{
-    if($previousCurrentContEst==$currentContEst){
+    if(abs($previousCurrentContEst-$currentContEst)<=1){
       $previousCurrentContEstItSameVal++;
     }else{
       $previousCurrentContEstItSameVal=1;

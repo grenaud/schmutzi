@@ -233,21 +233,23 @@ void *mainContaminationThread(void * argc){
     vector<         diNucleotideProb * >      priorDiNucVec;
     vector< vector< diNucleotideProb * > * >  probEndoVec;
     vector< vector< diNucleotideProb * > * >  probContVec;
-    vector<bool> * definedSite = new vector<bool>(sizeGenome+1,false);
 
     priorDiNucVec.resize(sizeGenome+1);
     probEndoVec.resize(sizeGenome+1);
     probContVec.resize(sizeGenome+1);
 
+    vector<bool>  * definedSite      = new vector<bool>(sizeGenome+1,false); // if there is data
+    vector<bool>  * skipPositions    = new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
+
     // cout<<probEndoVec.size()<<endl;
     // exit(1);
 
-    // cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test1"<<endl;
+    //    cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test1"<<endl;
 
 
     for(int i=0;i<sizeGenome;i++){
 	//for(int i=261;i<=262;i++){
-	// cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test2"<<endl;
+	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test2 "<<i<<endl;
 
 	 // cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 	// cout<<infoPPos[i].cov<<endl;
@@ -260,8 +262,14 @@ void *mainContaminationThread(void * argc){
 	definedSite->at(i)     = true;
 
 	//cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
-	diNucleotideProb * priorDiNuc = new diNucleotideProb;
-
+	
+	diNucleotideProb * priorDiNuc = 0;
+	try{
+	    priorDiNuc = new diNucleotideProb;
+	}catch( char * str ) {
+	    cout << "Exception raised: " << str << endl;
+	}
+	//cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3 "<<i<<endl;
 	bool hasPriorAboveThreshold=false;
 	//computing prior
 	//                 p(nuc1) is the prob. of endogenous                  *  p(contaminant)
@@ -295,7 +303,7 @@ void *mainContaminationThread(void * argc){
 	    }
 	}
 
-
+	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4 "<<i<<endl;
 #ifdef DEBUGCONTPOS
 	if(hasPriorAboveThreshold)
 	    cout<<endl;
@@ -303,7 +311,7 @@ void *mainContaminationThread(void * argc){
 
 	priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
-	infoPPos[i].skipPosition = (!hasPriorAboveThreshold);
+	skipPositions->at(i) = (!hasPriorAboveThreshold);
 
 
 
@@ -313,9 +321,17 @@ void *mainContaminationThread(void * argc){
 
 	// continue;
 	for(unsigned int k=0;k<infoPPos[i].readsVec.size();k++){ //for every read at that position
-	    diNucleotideProb * probEndoDinuc= new diNucleotideProb;
-	    diNucleotideProb * probContDinuc= new diNucleotideProb;
-	   
+	    //cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test5\t"<<i<<"\t"<<k<<endl;
+	    diNucleotideProb * probEndoDinuc=0;
+	    diNucleotideProb * probContDinuc=0;
+	    try {
+		probEndoDinuc = new diNucleotideProb;
+		probContDinuc = new diNucleotideProb;
+	    }catch( char * str ) {
+		cout << "Exception raised: " << str << endl;
+	    }
+
+	    //cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test6\t"<<i<<"\t"<<k<<endl;
 	    int baseIndex = baseResolved2int(infoPPos[i].readsVec[k].base);
 	    int qual      = infoPPos[i].readsVec[k].qual;
 	    int dist5p    = infoPPos[i].readsVec[k].dist5p;
@@ -389,12 +405,12 @@ void *mainContaminationThread(void * argc){
 	    
 	} //end for each read at that position
 	
-	//	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3\t"<<probEndoVec.size()<<"\t"<<probContVec.size()<<endl;
+	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3\t"<<probEndoVec.size()<<"\t"<<probContVec.size()<<endl;
 	//cout<<"adding vector at pos "<<i<<endl;
 	probEndoVec[i] = probEndoVecToAdd;
 	probContVec[i] = probContVecToAdd;
 
-	//	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4"<<endl;
+	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4"<<endl;
 
     } //end for each position in the genome
     cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" is done with  pre-computations"<<endl;
@@ -424,7 +440,7 @@ void *mainContaminationThread(void * argc){
 	    
 	    if( (infoPPos[i].cov == 0) || //no coverage
 		(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end()) ||   //not found in endogenous, could be due to deletion 
-		infoPPos[i].skipPosition ){ //position has a tiny prior on contamination and can be safely skipped
+		skipPositions->at(i) ){ //position has a tiny prior on contamination and can be safely skipped
 		continue;
 	    }
 
