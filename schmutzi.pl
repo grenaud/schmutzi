@@ -648,6 +648,7 @@ while(1){
   print "#                          #\n";
   print "# Contamination rate: ".sprintf("%.2f",$currentContEst)." #\n";
 
+
   print "############################\n";
 
 
@@ -827,11 +828,13 @@ while(1){
 
   if($previousCurrentContEst == -1){
 
-    $previousCurrentContEst=$currentContEst;
-    $previousCurrentContEstItSameVal=1;
+    $previousCurrentContEst          = $currentContEst;
+    $previousCurrentContEstItSameVal = 1;
 
   }else{
-    if(abs($previousCurrentContEst-$currentContEst)<=1){
+
+
+    if(abs($previousCurrentContEst-$currentContEst)<=0.01){
       $previousCurrentContEstItSameVal++;
     }else{
       $previousCurrentContEstItSameVal=1;

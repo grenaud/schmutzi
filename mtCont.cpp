@@ -1207,7 +1207,11 @@ int main (int argc, char *argv[]) {
 
 
 
-
+    //init mutex
+    // pthread_mutex_t  mutexQueue   = PTHREAD_MUTEX_INITIALIZER;
+    // pthread_mutex_t  mutexCounter = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_init(&mutexQueue,   NULL);
+    pthread_mutex_init(&mutexCounter, NULL);
 
     pthread_t             thread[numberOfThreads];
     int                   rc=0;
@@ -1228,6 +1232,9 @@ int main (int argc, char *argv[]) {
 	rc = pthread_join(thread[i], NULL);
 	checkResults("pthread_join()\n", rc);
     }
+
+    pthread_mutex_destroy(&mutexQueue);
+    pthread_mutex_destroy(&mutexCounter);
 
     // cout<<counter<<"\t"<<total<<endl;
     //outLogFP<<vectorToString(outputToPrint,"\n")<<endl;
@@ -1286,6 +1293,7 @@ int main (int argc, char *argv[]) {
 
     delete cv;
 
+    pthread_exit(NULL);
 
 
     return 0;
