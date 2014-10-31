@@ -446,6 +446,7 @@ call endoCaller directly (see README.md).
 "\n\n".
 #
 "  Output Options:\n".
+"\t--out (out prefix)\t\t\tOutput prefix, otherwise use the same used by contDeam.pl\n".
 "\t--name (name)\t\t\t\tName of the endogenous MT genome\n".
 "\t--namec (name)\t\t\t\tName of the contaminant MT genome\n".
 "\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (on a PHRED scale, e.g. 50 = 1/100,000)\n".
@@ -488,13 +489,13 @@ my $referenceFastaCMDL = "none";
 my $splitPos       = "";
 my $useLength      = 0;
 my $useLengthContDEAM      = 0; #from contdeam
-
+my $outputPrefixCMDLINE = "none";
 my $estdeam = 0 ;
 #my $contPriorSpecified = 0 ;
 my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 
@@ -520,6 +521,10 @@ while (my $line = <FILEcontdeam>) {
 }
 
 close(FILEcontdeam);
+
+if($outputPrefixCMDLINE  ne "none"){
+  $outputPrefix=$outputPrefixCMDLINE;
+}
 
 if($referenceFastaCMDL  ne "none"){
   if($referenceFasta    ne "none" &&
@@ -588,18 +593,18 @@ my $numberIteration=1;
 if(! $estdeam  ){ #do not re-estimate at each iteration
 
 
-  copycmd( $prefixcontDeam.".endo.5p.prof" , $prefixcontDeam."_".$numberIteration."_endo.5p.prof" );
-  copycmd( $prefixcontDeam.".endo.3p.prof" , $prefixcontDeam."_".$numberIteration."_endo.3p.prof" );
+  copycmd( $prefixcontDeam.".endo.5p.prof" , $outputPrefix."_".$numberIteration."_endo.5p.prof" );
+  copycmd( $prefixcontDeam.".endo.3p.prof" , $outputPrefix."_".$numberIteration."_endo.3p.prof" );
 
   if($splitDeam){
-    copycmd( $prefixcontDeam.".cont.5p.prof" , $prefixcontDeam."_".$numberIteration."_cont.5p.prof" );
-    copycmd( $prefixcontDeam.".cont.3p.prof" , $prefixcontDeam."_".$numberIteration."_cont.3p.prof" );
+    copycmd( $prefixcontDeam.".cont.5p.prof" , $outputPrefix."_".$numberIteration."_cont.5p.prof" );
+    copycmd( $prefixcontDeam.".cont.3p.prof" , $outputPrefix."_".$numberIteration."_cont.3p.prof" );
   }else{#put dummy values for cont, the split was not done by contDeam and we will do it after the first iteration
-    makeEmptyProfFile($prefixcontDeam."_".$numberIteration."_cont.5p.prof" );
-    makeEmptyProfFile($prefixcontDeam."_".$numberIteration."_cont.3p.prof" );
+    makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.5p.prof" );
+    makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.3p.prof" );
   }
 
-  copycmd( $prefixcontDeam.".cont.est" , $prefixcontDeam."_".$numberIteration."_cont.est" );
+  copycmd( $prefixcontDeam.".cont.est" , $outputPrefix."_".$numberIteration."_cont.est" );
 
 }
 
@@ -610,8 +615,8 @@ if(! $estdeam  ){ #do not re-estimate at each iteration
 if($useLength){#we use the length of the molecules in the endoCaller
 
   if($useLengthContDEAM){ #if previously computed
-    copycmd( $prefixcontDeam."_endo.size.param" , $prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
-    copycmd( $prefixcontDeam."_cont.size.param" , $prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
+    copycmd( $prefixcontDeam."_endo.size.param" , $outputPrefix."_".($numberIteration)."_split_endo.size.param" );
+    copycmd( $prefixcontDeam."_cont.size.param" , $outputPrefix."_".($numberIteration)."_split_cont.size.param" );
   }else{
     #otherwise, the length will not be used for the first iteration
   }
@@ -626,7 +631,7 @@ my $previousCurrentContEstItSameVal=0;
 
 
 while(1){
-  my $currentContEst=readcont( $prefixcontDeam."_".$numberIteration."_cont.est" );
+  my $currentContEst=readcont( $outputPrefix."_".$numberIteration."_cont.est" );
 
   if($numberIteration == 1 ){ #first iteration
     if($contPriorUser != -1){ #user specified a prior contamination rate
@@ -655,18 +660,18 @@ while(1){
   # call endoCaller
   my $cmdEndoCaller = $endoCaller." ";
 
-  $cmdEndoCaller .= " -seq ".$prefixcontDeam."_".$numberIteration."_endo.fa  ";
-  $cmdEndoCaller .= " -log ".$prefixcontDeam."_".$numberIteration."_endo.log ";
+  $cmdEndoCaller .= " -seq ".$outputPrefix."_".$numberIteration."_endo.fa  ";
+  $cmdEndoCaller .= " -log ".$outputPrefix."_".$numberIteration."_endo.log ";
 
   $cmdEndoCaller .= " -name ".$nameMT." ";
   $cmdEndoCaller .= " -qual ".$qualmin." ";
 
   $cmdEndoCaller .= " -deamread ";
-  $cmdEndoCaller .= " -deam5p ".$prefixcontDeam."_".$numberIteration."_endo.5p.prof ";
-  $cmdEndoCaller .= " -deam3p ".$prefixcontDeam."_".$numberIteration."_endo.3p.prof ";
+  $cmdEndoCaller .= " -deam5p ".$outputPrefix."_".$numberIteration."_endo.5p.prof ";
+  $cmdEndoCaller .= " -deam3p ".$outputPrefix."_".$numberIteration."_endo.3p.prof ";
 
-  $cmdEndoCaller .= " -deam5pc ".$prefixcontDeam."_".$numberIteration."_cont.5p.prof ";
-  $cmdEndoCaller .= " -deam3pc ".$prefixcontDeam."_".$numberIteration."_cont.3p.prof ";
+  $cmdEndoCaller .= " -deam5pc ".$outputPrefix."_".$numberIteration."_cont.5p.prof ";
+  $cmdEndoCaller .= " -deam3pc ".$outputPrefix."_".$numberIteration."_cont.3p.prof ";
 
 
 
@@ -675,8 +680,8 @@ while(1){
   if(!$multipleC){ #we can assume a single contaminant
     $cmdEndoCaller .= " -single  ";
 
-    $cmdEndoCaller .= " -seqc ".$prefixcontDeam."_".$numberIteration."_cont.fa  ";
-    $cmdEndoCaller .= " -logc ".$prefixcontDeam."_".$numberIteration."_cont.log ";
+    $cmdEndoCaller .= " -seqc ".$outputPrefix."_".$numberIteration."_cont.fa  ";
+    $cmdEndoCaller .= " -logc ".$outputPrefix."_".$numberIteration."_cont.log ";
     $cmdEndoCaller .= " -namec ".$nameMTc." ";
 
   }
@@ -694,8 +699,8 @@ while(1){
     if($numberIteration == 1){ #first iteration
       if($useLengthContDEAM){ #if previously computed
 
-	($locE,$scaE)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
-	($locC,$scaC)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
+	($locE,$scaE)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_endo.size.param" );
+	($locC,$scaC)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_cont.size.param" );
 
       }else{
 	#do not use length for the first iteration
@@ -704,8 +709,8 @@ while(1){
 
     }else{
 
-      ($locE,$scaE)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_endo.size.param" );
-      ($locC,$scaC)=   readSizeParam($prefixcontDeam."_".($numberIteration)."_split_cont.size.param" );
+      ($locE,$scaE)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_endo.size.param" );
+      ($locC,$scaC)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_cont.size.param" );
 
     }
 
@@ -729,18 +734,18 @@ while(1){
   #convert log to freq
   if(!$multipleC){ #we can assume a single contaminant
 
-    my $cmdLog2Freq =  $log2freq." ".$prefixcontDeam."_".$numberIteration."_cont.log >  ".$prefixcontDeam."_".$numberIteration."_cont.freq";
+    my $cmdLog2Freq =  $log2freq." ".$outputPrefix."_".$numberIteration."_cont.log >  ".$outputPrefix."_".$numberIteration."_cont.freq";
     runcmd($cmdLog2Freq);
-    push(@listOfFreqFiles, $prefixcontDeam."_".$numberIteration."_cont.freq");
+    push(@listOfFreqFiles, $outputPrefix."_".$numberIteration."_cont.freq");
   }
 
   # estimate cont
-  my $cmdmtcont =   $mtCont. " -o ".$prefixcontDeam."_".$numberIteration."_mtcont.out ";
+  my $cmdmtcont =   $mtCont. " -o ".$outputPrefix."_".$numberIteration."_mtcont.out ";
   #$cmdmtcont =   " -deam5p "
-  $cmdmtcont .= " -deam5p ".$prefixcontDeam."_".$numberIteration."_endo.5p.prof ";
-  $cmdmtcont .= " -deam3p ".$prefixcontDeam."_".$numberIteration."_endo.3p.prof ";
+  $cmdmtcont .= " -deam5p ".$outputPrefix."_".$numberIteration."_endo.5p.prof ";
+  $cmdmtcont .= " -deam3p ".$outputPrefix."_".$numberIteration."_endo.3p.prof ";
   $cmdmtcont .= " -t ".$numthreads." ";
-  $cmdmtcont .= " ".$prefixcontDeam."_".$numberIteration."_endo.log ";
+  $cmdmtcont .= " ".$outputPrefix."_".$numberIteration."_endo.log ";
   $cmdmtcont .= " $referenceFasta $inbam ";
   $cmdmtcont .= " ".join(" ",@listOfFreqFiles). " ";
   runcmd($cmdmtcont);
@@ -756,10 +761,10 @@ while(1){
 
 
   #BEGIN read new cont esti. log
-  my $mtcontOutputLog = $prefixcontDeam."_".$numberIteration."_mtcont.out";
+  my $mtcontOutputLog = $outputPrefix."_".$numberIteration."_mtcont.out";
 
   my $contFROMmtcont =  readMTCONToutlogfile($mtcontOutputLog);
-  writeContToLogFile($contFROMmtcont,$prefixcontDeam."_".($numberIteration+1)."_cont.est");
+  writeContToLogFile($contFROMmtcont,$outputPrefix."_".($numberIteration+1)."_cont.est");
 
   #END   read new cont esti. log
 
@@ -767,53 +772,53 @@ while(1){
   if (!$multipleC) {		#we can assume a single contaminant
 
     #print seg. sites
-    my $cmdLogs2Pos = $logs2pos."  ".$prefixcontDeam."_".$numberIteration."_endo.log ".$prefixcontDeam."_".$numberIteration."_cont.log  > ".$prefixcontDeam."_".$numberIteration."_split.pos";
+    my $cmdLogs2Pos = $logs2pos."  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log  > ".$outputPrefix."_".$numberIteration."_split.pos";
     runcmd($cmdLogs2Pos);
 
     # split according to seg sites
-    my $cmdBamSplit = $splitEndo."  ".$prefixcontDeam."_".$numberIteration."_split.pos  $inbam ".$prefixcontDeam."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
+    my $cmdBamSplit = $splitEndo."  ".$outputPrefix."_".$numberIteration."_split.pos  $inbam ".$outputPrefix."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
     runcmd($cmdBamSplit);
 
 
     #re-measure deam rateS
     if( $estdeam  ){ # re-estimate deamination at each iteration
 
-      my $cmdBam2ProfEndo = $bam2prof." -length $lengthDeam -".$library." -5p ".$prefixcontDeam."_".($numberIteration+1)."_endo.5p.prof   -3p ".$prefixcontDeam."_".($numberIteration+1)."_endo.3p.prof  ".$prefixcontDeam."_".($numberIteration)."_split_endo.bam";
+      my $cmdBam2ProfEndo = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_endo.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_endo.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
       runcmd($cmdBam2ProfEndo);
 
-      my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof   -3p ".$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof  ".$prefixcontDeam."_".($numberIteration)."_split_cont.bam";
+      my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_cont.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_cont.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
       runcmd($cmdBam2ProfCont);
 
       #my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
       #runcmd($cmdBam2ProfCont);
     }else{
 
-      copycmd(  $prefixcontDeam."_".$numberIteration."_endo.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.5p.prof" );
-      copycmd(  $prefixcontDeam."_".$numberIteration."_endo.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.3p.prof" );
-      copycmd(  $prefixcontDeam."_".$numberIteration."_cont.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof" );
-      copycmd(  $prefixcontDeam."_".$numberIteration."_cont.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof" );
+      copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
+      copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
+      copycmd(  $outputPrefix."_".$numberIteration."_cont.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.5p.prof" );
+      copycmd(  $outputPrefix."_".$numberIteration."_cont.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.3p.prof" );
 
     }
 
 
     #measure insert size
-    my $cmdBam2InsertsizeEndo = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_endo.bam |gzip   > ".$prefixcontDeam."_".($numberIteration)."_split_endo.size.gz";
+    my $cmdBam2InsertsizeEndo = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_endo.bam |gzip   > ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz";
     runcmd($cmdBam2InsertsizeEndo);
-    my $cmdBam2InsertsizeCont = $insertSize."   ".$prefixcontDeam."_".($numberIteration)."_split_cont.bam  |gzip  > ".$prefixcontDeam."_".($numberIteration)."_split_cont.size.gz";
+    my $cmdBam2InsertsizeCont = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz";
     runcmd($cmdBam2InsertsizeCont);
 
     #Log normal fit, copying parameters for next iteration
-    my $cmdinsertsize2LognormEndo = $approxDist."  ".$prefixcontDeam."_".($numberIteration)."_split_endo.size.gz >  ".$prefixcontDeam."_".($numberIteration+1)."_split_endo.size.param";
+    my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_endo.size.param";
     runcmd($cmdinsertsize2LognormEndo);
-    my $cmdinsertsize2LognormCont = $approxDist."  ".$prefixcontDeam."_".($numberIteration)."_split_cont.size.gz >  ".$prefixcontDeam."_".($numberIteration+1)."_split_cont.size.param";
+    my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_cont.size.param";
     runcmd($cmdinsertsize2LognormCont);
 
   }else{ #must use the previous deamination profiles from the previous iteration for the new one
 
-    copycmd(  $prefixcontDeam."_".$numberIteration."_endo.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.5p.prof" );
-    copycmd(  $prefixcontDeam."_".$numberIteration."_endo.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_endo.3p.prof" );
-    copycmd(  $prefixcontDeam."_".$numberIteration."_cont.5p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.5p.prof" );
-    copycmd(  $prefixcontDeam."_".$numberIteration."_cont.3p.prof" ,$prefixcontDeam."_".($numberIteration+1)."_cont.3p.prof" );
+    copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
+    copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
+    copycmd(  $outputPrefix."_".$numberIteration."_cont.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.5p.prof" );
+    copycmd(  $outputPrefix."_".$numberIteration."_cont.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.3p.prof" );
 
 
   }
@@ -856,19 +861,19 @@ print "Iterations done\n\n";
 
 
 #copy files
-copycmd($prefixcontDeam."_".$numberIteration."_mtcont.out",     $prefixcontDeam."_final_mtcont.out");
-copycmd($prefixcontDeam."_".$numberIteration."_endo.fa",        $prefixcontDeam."_final_endo.fa");
-copycmd($prefixcontDeam."_".$numberIteration."_endo.log",       $prefixcontDeam."_final_endo.log");
+copycmd($outputPrefix."_".$numberIteration."_mtcont.out",     $outputPrefix."_final_mtcont.out");
+copycmd($outputPrefix."_".$numberIteration."_endo.fa",        $outputPrefix."_final_endo.fa");
+copycmd($outputPrefix."_".$numberIteration."_endo.log",       $outputPrefix."_final_endo.log");
 
 
 if(!$multipleC){ #we can assume a single contaminant
-  copycmd($prefixcontDeam."_".$numberIteration."_cont.fa",      $prefixcontDeam."_final_cont.fa");
-  copycmd($prefixcontDeam."_".$numberIteration."_cont.log",     $prefixcontDeam."_final_cont.log");
+  copycmd($outputPrefix."_".$numberIteration."_cont.fa",      $outputPrefix."_final_cont.fa");
+  copycmd($outputPrefix."_".$numberIteration."_cont.log",     $outputPrefix."_final_cont.log");
 }
-readMTCONTRetainMostlikely($prefixcontDeam."_final_mtcont.out", $prefixcontDeam."_final.cont");
+readMTCONTRetainMostlikely($outputPrefix."_final_mtcont.out", $outputPrefix."_final.cont");
 
 #Print graph
-my $cmdPlot = $contDeamR." ".$prefixcontDeam."_final.cont ".$prefixcontDeam."_final.cont.pdf  \"$textGraph\" ";
+my $cmdPlot = $contDeamR." ".$outputPrefix."_final.cont ".$outputPrefix."_final.cont.pdf  \"$textGraph\" ";
 if($contPriorKnow != -1){
   $cmdPlot =  $cmdPlot." ".$contPriorKnow;
 }
@@ -877,27 +882,27 @@ runcmd($cmdPlot);
 
 #report final iteration
 
-my ($contfinal,$contfinall,$contfinalh) =  computeIntervalCont($prefixcontDeam."_final.cont");
+my ($contfinal,$contfinall,$contfinalh) =  computeIntervalCont($outputPrefix."_final.cont");
 
-open(FILEOUTCF,">".$prefixcontDeam."_final.cont.est") or die "cannot write to ".$prefixcontDeam."_final.cont.est\n";
+open(FILEOUTCF,">".$outputPrefix."_final.cont.est") or die "cannot write to ".$outputPrefix."_final.cont.est\n";
 print FILEOUTCF $contfinal."\t".$contfinall."\t".$contfinalh."\n";
 close(FILEOUTCF);
 
 
 print "############################\n";
 print "Results:\n";
-print "\tContamination estimates for all samples        : ".    $prefixcontDeam."_final_mtcont.out\n";
-print "\tContamination estimates for most likely sample : ".    $prefixcontDeam."_final.cont\n";
-print "\tContamination estimates with conf. intervals   : ".    $prefixcontDeam."_final.cont.est\n";
+print "\tContamination estimates for all samples        : ".    $outputPrefix."_final_mtcont.out\n";
+print "\tContamination estimates for most likely sample : ".    $outputPrefix."_final.cont\n";
+print "\tContamination estimates with conf. intervals   : ".    $outputPrefix."_final.cont.est\n";
 
-print "\tPosterior probability for most likely sample   : ".    $prefixcontDeam."_final.cont.pdf\n";
+print "\tPosterior probability for most likely sample   : ".    $outputPrefix."_final.cont.pdf\n";
 
-print "\tEndogenous consensus call                      : ".    $prefixcontDeam."_final_endo.fa\n";
-print "\tEndogenous consensus log                       : ".    $prefixcontDeam."_final_endo.log\n";
+print "\tEndogenous consensus call                      : ".    $outputPrefix."_final_endo.fa\n";
+print "\tEndogenous consensus log                       : ".    $outputPrefix."_final_endo.log\n";
 
 if(!$multipleC){ #we can assume a single contaminant
-print "\tContaminant consensus call                     : ".    $prefixcontDeam."_final_cont.fa\n";
-print "\tContaminant consensus log                      : ".    $prefixcontDeam."_final_cont.log\n";
+print "\tContaminant consensus call                     : ".    $outputPrefix."_final_cont.fa\n";
+print "\tContaminant consensus log                      : ".    $outputPrefix."_final_cont.log\n";
 
 }
 
@@ -930,7 +935,7 @@ if ($mock != 1) {
   close(FILECONFIGOUT);
 
 }
-print "\tConfig file                                     : ".    $prefixcontDeam.".diag.config\n";
+print "\tConfig file                                     : ".    $outputPrefix.".diag.config\n";
 
 
 

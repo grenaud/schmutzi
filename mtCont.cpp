@@ -132,7 +132,7 @@ map<int, PHREDgeno>          pos2phredgeno;
 vector<int>                  posOfIndels;
 map<unsigned int, int>       threadID2Rank;
 
-bool                         doneReading;
+// bool                         doneReading;
 
 
 //! 
@@ -196,13 +196,13 @@ void *mainContaminationThread(void * argc){
 
 
     if(!foundData){
- 	if(doneReading){
- 	    cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()]<<" is done"<<endl;
- 	    return NULL;	
- 	}else{
- 	    sleep(1);
- 	    goto checkqueue;	   
- 	}
+ 	//if(doneReading){
+	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()]<<" is done"<<endl;
+	return NULL;	
+ 	// }else{
+ 	//     sleep(1);
+ 	//     goto checkqueue;	   
+ 	// }
     }
 
 
@@ -1217,7 +1217,7 @@ int main (int argc, char *argv[]) {
     int                   rc=0;
 
 
-    doneReading=true;    
+    // doneReading=true;    
 
     for(int i=0;i<numberOfThreads;i++){
 	rc = pthread_create(&thread[i], NULL, mainContaminationThread, NULL);

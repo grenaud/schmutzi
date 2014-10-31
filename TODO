@@ -5,7 +5,7 @@ done - fix coverage around indels
 done - schmutzi.pl wrapper
 done add 5bp away from indel for mtCont
 done- Add deamination from contaminant
-
+try to fix bug on laptop where it crashes.
 
 
 read data:
