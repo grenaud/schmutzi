@@ -598,24 +598,27 @@ my $numberIteration=1;
 ########################
 #DEAMINATION PARAMETERS#
 ########################
-if(! $estdeam  ){ #do not re-estimate at each iteration
+#if(! $estdeam  ){ #do not re-estimate at each iteration
 
 
-  copycmd( $prefixcontDeam.".endo.5p.prof" , $outputPrefix."_".$numberIteration."_endo.5p.prof" );
-  copycmd( $prefixcontDeam.".endo.3p.prof" , $outputPrefix."_".$numberIteration."_endo.3p.prof" );
+copycmd( $prefixcontDeam.".endo.5p.prof" , $outputPrefix."_".$numberIteration."_endo.5p.prof" );
+copycmd( $prefixcontDeam.".endo.3p.prof" , $outputPrefix."_".$numberIteration."_endo.3p.prof" );
 
-  if($splitDeam){
-    copycmd( $prefixcontDeam.".cont.5p.prof" , $outputPrefix."_".$numberIteration."_cont.5p.prof" );
-    copycmd( $prefixcontDeam.".cont.3p.prof" , $outputPrefix."_".$numberIteration."_cont.3p.prof" );
-  }else{#put dummy values for cont, the split was not done by contDeam and we will do it after the first iteration
-    makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.5p.prof" );
-    makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.3p.prof" );
-  }
-
-  copycmd( $prefixcontDeam.".cont.est" , $outputPrefix."_".$numberIteration."_cont.est" );
-
+if($splitDeam){
+  copycmd( $prefixcontDeam.".cont.5p.prof" , $outputPrefix."_".$numberIteration."_cont.5p.prof" );
+  copycmd( $prefixcontDeam.".cont.3p.prof" , $outputPrefix."_".$numberIteration."_cont.3p.prof" );
+}else{#put dummy values for cont, the split was not done by contDeam and we will do it after the first iteration
+  makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.5p.prof" );
+  makeEmptyProfFile($outputPrefix."_".$numberIteration."_cont.3p.prof" );
 }
 
+
+#}else{
+#  #we re-estimate at each iteration the deamination
+  
+#}
+
+copycmd( $prefixcontDeam.".cont.est" , $outputPrefix."_".$numberIteration."_cont.est" );
 
 ########################
 #  LENGTH PARAMETERS   #
