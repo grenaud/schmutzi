@@ -166,19 +166,24 @@ void *mainContaminationThread(void * argc){
     int   rc;
     // int   stackIndex;
     string freqFileNameToUse;
+    int rankThread=0;
+    cerr<<"Thread #"<<rankThread <<" started "<<endl;
 
-    
  checkqueue:    
     // stackIndex=-1;
     //check stack
-    bool foundData=false;
+
+    
     rc = pthread_mutex_lock(&mutexQueue);
     checkResults("pthread_mutex_lock()\n", rc);
 
+
+    bool foundData=false;
+
     threadID2Rank[(unsigned int)pthread_self()]  = threadID2Rank.size()+1;
+    rankThread = threadID2Rank[(unsigned int)pthread_self()];
 
     //cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
-    cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" started "<<endl;
 
 	
     // cout<<"Thread "<<(unsigned int)pthread_self()<<" taking mutex queue "<<endl;
@@ -186,26 +191,30 @@ void *mainContaminationThread(void * argc){
  	foundData=true;
  	freqFileNameToUse = queueFilesToprocess.front();
  	queueFilesToprocess.pop();
- 	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()]<<" is reading "<<freqFileNameToUse<<endl;
+ 	cerr<<"Thread #"<<rankThread<<" is reading "<<freqFileNameToUse<<endl;
     }
 
     
-    //release stack
-    rc = pthread_mutex_unlock(&mutexQueue);
-    checkResults("pthread_mutex_unlock()\n", rc);
-
+  
 
     if(!foundData){
  	//if(doneReading){
-	cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()]<<" is done"<<endl;
+
+	rc = pthread_mutex_unlock(&mutexQueue);
+	checkResults("pthread_mutex_unlock()\n", rc);
+
+	cerr<<"Thread #"<<rankThread<<" is done"<<endl;
 	return NULL;	
  	// }else{
  	//     sleep(1);
  	//     goto checkqueue;	   
  	// }
+    }else{
+
+    //release stack
+	rc = pthread_mutex_unlock(&mutexQueue);
+	checkResults("pthread_mutex_unlock()\n", rc);
     }
-
-
     //////////////////////////////////////////////////////////////
     //                BEGIN COMPUTATION                         //
     //////////////////////////////////////////////////////////////
@@ -223,7 +232,7 @@ void *mainContaminationThread(void * argc){
     //pre-computations ///
     //////////////////////
 
-    cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" started  pre-computations"<<endl;
+    cerr<<"Thread #"<<rankThread <<" started  pre-computations"<<endl;
 
     // map<int, diNucleotideProb> priorDiNucVec;
     // map<int, vector<diNucleotideProb> > probConsVec;
@@ -244,12 +253,12 @@ void *mainContaminationThread(void * argc){
     // cout<<probEndoVec.size()<<endl;
     // exit(1);
 
-    //    cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test1"<<endl;
+    //    cout<<"Thread #"<<rankThread <<" test1"<<endl;
 
 
     for(int i=0;i<sizeGenome;i++){
 	//for(int i=261;i<=262;i++){
-	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test2 "<<i<<endl;
+	//	cout<<"Thread #"<<rankThread <<" test2 "<<i<<endl;
 
 	 // cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 	// cout<<infoPPos[i].cov<<endl;
@@ -269,7 +278,7 @@ void *mainContaminationThread(void * argc){
 	}catch( char * str ) {
 	    cout << "Exception raised: " << str << endl;
 	}
-	//cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3 "<<i<<endl;
+	//cout<<"Thread #"<<rankThread <<" test3 "<<i<<endl;
 	bool hasPriorAboveThreshold=false;
 	//computing prior
 	//                 p(nuc1) is the prob. of endogenous                  *  p(contaminant)
@@ -303,7 +312,7 @@ void *mainContaminationThread(void * argc){
 	    }
 	}
 
-	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4 "<<i<<endl;
+	//	cout<<"Thread #"<<rankThread <<" test4 "<<i<<endl;
 #ifdef DEBUGCONTPOS
 	if(hasPriorAboveThreshold)
 	    cout<<endl;
@@ -321,7 +330,7 @@ void *mainContaminationThread(void * argc){
 
 	// continue;
 	for(unsigned int k=0;k<infoPPos[i].readsVec.size();k++){ //for every read at that position
-	    //cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test5\t"<<i<<"\t"<<k<<endl;
+	    //cout<<"Thread #"<<rankThread <<" test5\t"<<i<<"\t"<<k<<endl;
 	    diNucleotideProb * probEndoDinuc=0;
 	    diNucleotideProb * probContDinuc=0;
 	    try {
@@ -331,7 +340,7 @@ void *mainContaminationThread(void * argc){
 		cout << "Exception raised: " << str << endl;
 	    }
 
-	    //cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test6\t"<<i<<"\t"<<k<<endl;
+	    //cout<<"Thread #"<<rankThread <<" test6\t"<<i<<"\t"<<k<<endl;
 	    int baseIndex = baseResolved2int(infoPPos[i].readsVec[k].base);
 	    int qual      = infoPPos[i].readsVec[k].qual;
 	    int dist5p    = infoPPos[i].readsVec[k].dist5p;
@@ -405,15 +414,15 @@ void *mainContaminationThread(void * argc){
 	    
 	} //end for each read at that position
 	
-	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test3\t"<<probEndoVec.size()<<"\t"<<probContVec.size()<<endl;
+	//	cout<<"Thread #"<<rankThread <<" test3\t"<<probEndoVec.size()<<"\t"<<probContVec.size()<<endl;
 	//cout<<"adding vector at pos "<<i<<endl;
 	probEndoVec[i] = probEndoVecToAdd;
 	probContVec[i] = probContVecToAdd;
 
-	//	cout<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" test4"<<endl;
+	//	cout<<"Thread #"<<rankThread <<" test4"<<endl;
 
     } //end for each position in the genome
-    cerr<<"Thread #"<<threadID2Rank[(unsigned int)pthread_self()] <<" is done with  pre-computations"<<endl;
+    cerr<<"Thread #"<<rankThread <<" is done with  pre-computations"<<endl;
 
     // if(probEndoVec.size() != sizeGenome){
     // 	cerr<<"Error difference in size for vectors "<<probEndoVec.size()<<"\t"<<sizeGenome<<endl;
@@ -539,6 +548,7 @@ void *mainContaminationThread(void * argc){
 	
 
 
+    cerr<<"Thread #"<<rankThread <<" is done with computations"<<endl;
 
     //////////////////////////////////////////////////////////////
     //                END   COMPUTATION                         //
@@ -598,6 +608,7 @@ void *mainContaminationThread(void * argc){
     rc = pthread_mutex_unlock(&mutexCounter);
     checkResults("pthread_mutex_unlock()\n", rc);
 
+    cerr<<"Thread #"<<rankThread <<" is re-starting"<<endl;
 
     goto checkqueue;	   
 
@@ -605,7 +616,7 @@ void *mainContaminationThread(void * argc){
     
 
     
-    cerr<<"Thread "<<threadID2Rank[(unsigned int)pthread_self()]<<" ended "<<endl;
+    cerr<<"Thread "<<rankThread<<" ended "<<endl;
     return NULL;
 
 }
