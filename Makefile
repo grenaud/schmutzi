@@ -1,4 +1,4 @@
-CXX      = g++ -g -pg
+CXX      = g++ #-g -pg
 BAMTOOLS= bamtools/
 LIBGAB   = libgab/
 
@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 #all: libgab/utils.o mitochondrialDeam  mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle  mtCont damage2profile log2freq contDeam msa2freq
 
-all: libgab/utils.o endoCaller  mtCont damage2profile log2freq contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos
+all: libgab/utils.o endoCaller  mtCont damage2profile log2freq contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -22,6 +22,12 @@ insertSize.o:	libgab/utils.o insertSize.cpp
 	${CXX} ${CXXFLAGS} insertSize.cpp
 
 insertSize: insertSize.o  ${LIBGAB}utils.o
+	${CXX} -o $@ $^ $(LDLIBS) 
+
+countRecords.o:	libgab/utils.o countRecords.cpp 
+	${CXX} ${CXXFLAGS} countRecords.cpp
+
+countRecords: countRecords.o  ${LIBGAB}utils.o
 	${CXX} -o $@ $^ $(LDLIBS) 
 
 mtCont.o:	libgab/utils.o mtCont.cpp 
@@ -100,7 +106,7 @@ damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstr
 
 
 clean :
-	rm -f mtCont.o mtCont contDeam.o contDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam insertSize logs2pos
+	rm -f mtCont.o mtCont contDeam.o contDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam insertSize countRecords logs2pos
 	make -C splitEndoVsCont/ clean
 #	rm -f mtCont.o mtCont contDeam.o contDeam mitochondrialDeamCorrection mitochondrialDeamCorrectionSingle.o mitochondrialDeamCorrectionSingle mitochondrialDeamCorrection.o mitochondrialDeam mitochondrialDeam.o damage2profile.o damage2profile miscfunc.o log2freq msa2freq contDeam
 

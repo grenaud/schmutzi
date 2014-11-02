@@ -353,6 +353,11 @@ sub runcmd{
 
 
 
+sub runcmdReturnOutput {
+  my $command = join ' ', @_;
+  reverse ($_ = qx{$command 2>&1}, $? >> 8);
+}
+
 
 sub fileExists{
   my ($exeFile) = @_;
@@ -369,6 +374,8 @@ my $pathdir = join("/",@arraycwd);
 my $mtCont     = $pathdir."/mtCont";
 my $endoCaller = $pathdir."/endoCaller";
 my $insertSize = $pathdir."/insertSize";
+my $countRec   = $pathdir."/countRecords";
+
 my $approxDist = $pathdir."/approxDist.R";
 my $bam2prof   = $pathdir."/bam2prof";
 my $log2freq   = $pathdir."/log2freq";
@@ -381,6 +388,7 @@ my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
 fileExists($mtCont);
 fileExists($endoCaller);
 fileExists($insertSize);
+fileExists($countRec);
 fileExists($approxDist);
 fileExists($bam2prof);
 fileExists($log2freq);
@@ -628,6 +636,7 @@ print "\n\n\n############################\n\n\n";
 
 my $previousCurrentContEst=-1;
 my $previousCurrentContEstItSameVal=0;
+my $notEnoughDataSize=0;
 
 
 while(1){
@@ -698,7 +707,6 @@ while(1){
 
     if($numberIteration == 1){ #first iteration
       if($useLengthContDEAM){ #if previously computed
-
 	($locE,$scaE)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_endo.size.param" );
 	($locC,$scaC)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_cont.size.param" );
 
@@ -709,9 +717,12 @@ while(1){
 
     }else{
 
-      ($locE,$scaE)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_endo.size.param" );
-      ($locC,$scaC)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_cont.size.param" );
-
+      if($notEnoughDataSize){#there was not enough data in the previous iteration
+	$notDefined=1;
+      }else{
+	($locE,$scaE)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_endo.size.param" );
+	($locC,$scaC)=   readSizeParam($outputPrefix."_".($numberIteration)."_split_cont.size.param" );
+      }
     }
 
     if(!$notDefined){
@@ -801,17 +812,45 @@ while(1){
     }
 
 
-    #measure insert size
-    my $cmdBam2InsertsizeEndo = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_endo.bam |gzip   > ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz";
-    runcmd($cmdBam2InsertsizeEndo);
-    my $cmdBam2InsertsizeCont = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz";
-    runcmd($cmdBam2InsertsizeCont);
+    #check if enough data to measure insert size
+    my ($returnCE, $readCountE) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_endo.bam");
+    my ($returnCC, $readCountC) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_cont.bam");
 
-    #Log normal fit, copying parameters for next iteration
-    my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_endo.size.param";
-    runcmd($cmdinsertsize2LognormEndo);
-    my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_cont.size.param";
-    runcmd($cmdinsertsize2LognormCont);
+    if($returnCE !=0){
+      die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
+    }
+
+    if($returnCC !=0){
+      die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
+    }
+
+    if($readCountE < 50){
+      warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam, we will not use insert sizes for this iteration";
+    }
+
+    if($readCountC < 50){
+      warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam, we will not use insert sizes for this iteration";
+    }
+
+
+    if ($readCountE >= 50 &&
+	$readCountC >= 50 ) {
+
+      #measure insert size
+      my $cmdBam2InsertsizeEndo = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_endo.bam |gzip   > ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz";
+      runcmd($cmdBam2InsertsizeEndo);
+      my $cmdBam2InsertsizeCont = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz";
+      runcmd($cmdBam2InsertsizeCont);
+
+      #Log normal fit, copying parameters for next iteration
+      my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_endo.size.param";
+      runcmd($cmdinsertsize2LognormEndo);
+      my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_cont.size.param";
+      runcmd($cmdinsertsize2LognormCont);
+      $notEnoughDataSize=0;
+    }else{
+      $notEnoughDataSize=1;
+    }
 
   }else{ #must use the previous deamination profiles from the previous iteration for the new one
 

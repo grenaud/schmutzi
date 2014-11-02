@@ -151,8 +151,101 @@ map<unsigned int, int>       threadID2Rank;
 // }
 
 
+vector<bool>  * definedSite;      //= new vector<bool>(sizeGenome+1,false); // if there is data
+vector<bool>  * skipPositions;    //= new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
 
 
+
+//! Method to find positions to use where there is potential for contamination
+/*!
+  
+
+*/				
+void findPosToSkip(){
+    queue<string>  queueFilesToRead = queueFilesToprocess;
+    vector< map<int, alleleFrequency> > freqsFromFile;
+    cerr<<"Finding positions to skip"<<endl;
+
+    while(!queueFilesToRead.empty()){    
+ 	string freqFileNameToread = queueFilesToRead.front();
+ 	queueFilesToRead.pop();
+	// cerr<<"file="<<freqFileNameToread<<"\t"<<queueFilesToproc.empty()<<endl;	
+
+	map<int, alleleFrequency> freqToAdd;
+	readMTAlleleFreq(freqFileNameToread,   freqToAdd);
+
+	// cerr<<"file2="<<freqFileNameToread<<endl;	
+
+	freqsFromFile.push_back(freqToAdd);
+	// cerr<<"file3="<<freqFileNameToread<<"\t"<<queueFilesToprocess.empty()<<endl;	
+    }
+
+    // cout<<sizeGenome<<endl;
+    
+    for(int i=0;i<sizeGenome;i++){
+	//for(int i=261;i<=262;i++){
+	//	cout<<"Thread #"<<rankThread <<" test2 "<<i<<endl;
+
+	//cout<<"pre i"<<i<<"\t"<<endl;
+	// cout<<infoPPos[i].cov<<endl;
+	// cout<<(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())<<endl;
+	if( (infoPPos[i].cov == 0) || //no coverage
+	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
+	    definedSite->at(i) = false;
+	    continue;
+	}
+	definedSite->at(i)     = true;
+
+	
+	//cout<<"Thread #"<<rankThread <<" test3 "<<i<<endl;
+	bool hasPriorAboveThreshold=false;
+	//computing prior
+	//                 p(nuc1) is the prob. of endogenous                  *  p(contaminant)
+	for(unsigned int fileFreq=0;fileFreq<freqsFromFile.size();fileFreq++){ //   each frequency file found
+	    for(unsigned int nuc1=0;nuc1<4;nuc1++){ //     b = endogenous
+		for(unsigned int nuc2=0;nuc2<4;nuc2++){//  c = contaminant
+		    long double priortemp = (1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1]) * freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2];
+		    //		    priorDiNuc->p[nuc1][nuc2] = priortemp;
+		
+#ifdef DEBUGPOS
+		    if(i==DEBUGPOS){
+			cout<<"MIN i"<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+		    }
+#endif
+		    if( (nuc1 != nuc2) && //){
+			(priortemp > MINPRIOR) ){ //this is to speed up computation and only look at sites that are likely to be contaminated
+
+			// #ifdef DEBUGPOS
+			// 		    cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+			// #endif
+
+#ifdef DEBUGCONTPOS
+			cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+#endif
+			hasPriorAboveThreshold=true;
+		    
+		    }
+
+		}
+	    }
+	}
+
+	//	cout<<"Thread #"<<rankThread <<" test4 "<<i<<endl;
+#ifdef DEBUGCONTPOS
+	if(hasPriorAboveThreshold)
+	    cout<<endl;
+#endif
+
+	//priorDiNucVec[ i ] = priorDiNuc;
+	// if(i==3105){ exit(1); }
+	skipPositions->at(i) = (!hasPriorAboveThreshold);
+	//cout<<i<<"\t"<<skipPositions->at(i)<<endl;
+    }//end for each pos in the genome
+
+    cerr<<"done"<<endl;
+
+
+}
 
 
 //! Method called for each thread to compute contamination likelihood
@@ -167,7 +260,6 @@ void *mainContaminationThread(void * argc){
     // int   stackIndex;
     string freqFileNameToUse;
     int rankThread=0;
-    cerr<<"Thread #"<<rankThread <<" started "<<endl;
 
  checkqueue:    
     // stackIndex=-1;
@@ -181,6 +273,8 @@ void *mainContaminationThread(void * argc){
     bool foundData=false;
 
     threadID2Rank[(unsigned int)pthread_self()]  = threadID2Rank.size()+1;
+    cerr<<"Thread #"<<rankThread <<" started and is requesting data"<<endl;
+
     rankThread = threadID2Rank[(unsigned int)pthread_self()];
 
     //cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
@@ -247,8 +341,8 @@ void *mainContaminationThread(void * argc){
     probEndoVec.resize(sizeGenome+1);
     probContVec.resize(sizeGenome+1);
 
-    vector<bool>  * definedSite      = new vector<bool>(sizeGenome+1,false); // if there is data
-    vector<bool>  * skipPositions    = new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
+    // vector<bool>  * definedSite      = new vector<bool>(sizeGenome+1,false); // if there is data
+    // vector<bool>  * skipPositions    = new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
 
     // cout<<probEndoVec.size()<<endl;
     // exit(1);
@@ -263,14 +357,21 @@ void *mainContaminationThread(void * argc){
 	 // cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 	// cout<<infoPPos[i].cov<<endl;
 	// cout<<(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())<<endl;
-	if( (infoPPos[i].cov == 0) || //no coverage
-	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
-	    definedSite->at(i) = false;
+	// if( (infoPPos[i].cov == 0) || //no coverage
+	//     (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
+	//     definedSite->at(i) = false;
+	//     continue;
+	// }
+	// definedSite->at(i)     = true;
+	
+	//cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
+
+	if(    !definedSite->at(i) ){
 	    continue;
 	}
-	definedSite->at(i)     = true;
-
-	//cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
+	if(    skipPositions->at(i) ){
+	    continue;
+	}
 	
 	diNucleotideProb * priorDiNuc = 0;
 	try{
@@ -279,7 +380,7 @@ void *mainContaminationThread(void * argc){
 	    cout << "Exception raised: " << str << endl;
 	}
 	//cout<<"Thread #"<<rankThread <<" test3 "<<i<<endl;
-	bool hasPriorAboveThreshold=false;
+	//bool hasPriorAboveThreshold=false;
 	//computing prior
 	//                 p(nuc1) is the prob. of endogenous                  *  p(contaminant)
 	for(unsigned int nuc1=0;nuc1<4;nuc1++){ //     b = endogenous
@@ -295,22 +396,24 @@ void *mainContaminationThread(void * argc){
 		    cout<<"MIN i"<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
 		}
 #endif
-		if( (nuc1 != nuc2) && //){
-		    (priortemp > MINPRIOR) ){ //this is to speed up computation and only look at sites that are likely to be contaminated
 
-// #ifdef DEBUGPOS
-// 		    cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+
+// 		if( (nuc1 != nuc2) && //){
+// 		    (priortemp > MINPRIOR) ){ //this is to speed up computation and only look at sites that are likely to be contaminated
+
+// // #ifdef DEBUGPOS
+// // 		    cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+// // #endif
+
+// #ifdef DEBUGCONTPOS
+// 		    cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
 // #endif
-
-#ifdef DEBUGCONTPOS
-		    cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
-#endif
-		    hasPriorAboveThreshold=true;
+// 		    //hasPriorAboveThreshold=true;
 		    
-		}
+// 		}
 
-	    }
-	}
+	    }//end nuc2
+	}//end nuc1
 
 	//	cout<<"Thread #"<<rankThread <<" test4 "<<i<<endl;
 #ifdef DEBUGCONTPOS
@@ -320,7 +423,7 @@ void *mainContaminationThread(void * argc){
 
 	priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
-	skipPositions->at(i) = (!hasPriorAboveThreshold);
+	// skipPositions->at(i) = (!hasPriorAboveThreshold);
 
 
 
@@ -446,10 +549,16 @@ void *mainContaminationThread(void * argc){
 #else
         for(int i=0;i<sizeGenome;i++){
 #endif
+	    if(    !definedSite->at(i) ){//site is not defined
+		continue;
+	    }
+	    if(    skipPositions->at(i) ){//position has a tiny prior on contamination and can be safely skipped
+		continue;
+	    }
 	    
-	    if( (infoPPos[i].cov == 0) || //no coverage
-		(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end()) ||   //not found in endogenous, could be due to deletion 
-		skipPositions->at(i) ){ //position has a tiny prior on contamination and can be safely skipped
+	    if((infoPPos[i].cov == 0) || //no coverage
+	       (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end()) ){  //not found in endogenous, could be due to deletion 
+		// skipPositions->at(i) ){ //position has a tiny prior on contamination and can be safely skipped
 		continue;
 	    }
 
@@ -554,26 +663,34 @@ void *mainContaminationThread(void * argc){
     //                END   COMPUTATION                         //
     //////////////////////////////////////////////////////////////
 	
-	// cout<<"done deleting"<<endl;
-	for(unsigned i=0;i<priorDiNucVec.size();i++){
+    // cout<<"done deleting"<<endl;
+    for(unsigned i=0;i<priorDiNucVec.size();i++){
 
-	    // cout<<"i "<<i<<endl;
-
-	    if(!definedSite->at(i))
-		continue;
-	    delete priorDiNucVec[i];
-
-	    for(unsigned j=0;j<probEndoVec[i]->size();j++){
-		// cout<<"j "<<j<<endl;
-		delete probEndoVec[i]->at(j);
-		delete probContVec[i]->at(j);
-	    }
-
-
-	    delete probEndoVec[i];
-	    delete probContVec[i];	    
+	//cout<<"i1 delete"<<i<<endl;
+	if(i<definedSite->size() &&
+	   !definedSite->at(i) ){
+	    continue;
 	}
-	delete definedSite;
+
+	if(i<skipPositions->size() && 
+	   skipPositions->at(i) ){
+	    continue;
+	}
+
+	///cout<<"i2 delete"<<i<<endl;
+	delete priorDiNucVec[i];
+
+	for(unsigned j=0;j<probEndoVec[i]->size();j++){
+	    // cout<<"j "<<j<<endl;
+	    delete probEndoVec[i]->at(j);
+	    delete probContVec[i]->at(j);
+	}
+
+
+	delete probEndoVec[i];
+	delete probContVec[i];	    
+    }
+    // delete definedSite;
     // int counterl=0;
     // int totall  =0;
     // string line;
@@ -1095,6 +1212,11 @@ int main (int argc, char *argv[]) {
 
     readMTConsensus(consensusFile,pos2phredgeno,sizeGenome,posOfIndels);
 
+
+    definedSite    = new vector<bool>(sizeGenome+1,false); // if there is data
+    skipPositions  = new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
+
+
 #ifdef MINDISTFROMINDEL //delete records in pos2phredgeno found near indels
 
     // map<int, PHREDgeno>          pos2phredgeno;
@@ -1216,6 +1338,9 @@ int main (int argc, char *argv[]) {
 
 
 
+    findPosToSkip();
+
+
 
 
     //init mutex
@@ -1305,6 +1430,9 @@ int main (int argc, char *argv[]) {
     delete cv;
 
     pthread_exit(NULL);
+
+    delete definedSite;
+    delete skipPositions;
 
 
     return 0;

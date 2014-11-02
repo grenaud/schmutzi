@@ -457,6 +457,7 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
   \param genomeRef : The reference genome 
   \param infoPPos: The vector of structure populated by the bam reader
   \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param minQual: PHRED quality threshold, beyong this we print N instead of the base
   \param genomeToPrint: String on which the endogenous genome will be printed
   \param genomeToPrintC: String on which the contaminant genome will be printed
   \param logToPrint:  Pointer to the string stream for the endogenous log
@@ -470,6 +471,7 @@ void insertionInSample(const int i,
 		       const string & genomeRef,
 		       const vector<singlePosInfo> & infoPPos, 
 		       const bool singleCont,
+		       const int minQual,			  
 		       string & genomeToPrint,
 		       string & genomeToPrintC,
 		       stringstream * logToPrint,
@@ -590,7 +592,9 @@ void insertionInSample(const int i,
 		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertEndo[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertEndo)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}
 
-		genomeToPrint+=bestInsertEndo;
+		// cout<<"ins "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl;
+		if(qualInsToPrint >= minQual)
+		    genomeToPrint+=bestInsertEndo;
 	    }
 
 
@@ -607,8 +611,9 @@ void insertionInSample(const int i,
 		for(unsigned int k=0;k<(bestInsertCont.size());k++){
 		    (*logToPrintC)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertCont[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertCont)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}
-
-		genomeToPrintC+=bestInsertCont;
+		
+		if(qualInsToPrint >= minQual)
+		    genomeToPrintC+=bestInsertCont;
 	    }
 
 
@@ -657,8 +662,9 @@ void insertionInSample(const int i,
 		for(unsigned int k=0;k<(bestInsert.size());k++){
 		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsert[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsert)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}
-		//adding in fasta file
-		genomeToPrint+=bestInsert;
+		//adding in fasta file if qual is higher than threshold
+		if(qualInsToPrint >= minQual)
+		    genomeToPrint+=bestInsert;
 	    }
 	    
 	}
@@ -724,8 +730,11 @@ void insertionInSample(const int i,
 //! A method that calls potential deletion in the sample/insertion in the reference
 /*!
   This method is called by printLogAndGenome(). 
+
   When we assume we have a single contaminant :
-     We use llikDeletionBoth, llikDeletionEndo, llikDeletionEndo, llikDeletionCont, llikDeletionNone from infoPPos to find the most likely state for both the endogenous and the contaminant.
+     We use llikDeletionBoth, llikDeletionEndo, llikDeletionEndo, llikDeletionCont, llikDeletionNone 
+     from infoPPos to find the most likely state for both the endogenous and the contaminant.
+
   When we cannot assume we have a single contaminant:
      Use llikDeletion llikNoDeletion to find out wether a deletion is more likely than the
 
@@ -733,6 +742,7 @@ void insertionInSample(const int i,
   \param genomeRef : The reference genome 
   \param infoPPos: The vector of structure populated by the bam reader
   \param singleCont: Boolean as to we assume that we have a single contaminant or not
+  \param minQual: PHRED quality threshold, beyong this we print N instead of the base
   \param logToPrint:  Pointer to the string stream for the endogenous log
   \param logToPrintC: Pointer to the string stream for the contaminant log
   \param skipEndo:  Boolean set by the method for the endogenous sample, set to 1 if the sample has a deletion hence no need to call a base
@@ -740,13 +750,14 @@ void insertionInSample(const int i,
   \param setFlags:  Boolean to say whether we skip printing to the genome/log or not
   \param endoIndel:   Boolean to know if the endogenous has a deletion
   \param contIndel:   Boolean to know if the contaminanthas a deletion
-
-
 */
 void deletionInSample(const int i,
 		      const string & genomeRef,
 		      const vector<singlePosInfo> & infoPPos,
 		      const bool singleCont,
+		      const int minQual,
+		      string & genomeToPrint,
+		      string & genomeToPrintC,			  
 		      stringstream * logToPrint,
 		      stringstream * logToPrintC,
 		      bool & skipEndo,
@@ -794,9 +805,24 @@ void deletionInSample(const int i,
 			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
 		}
 
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
+		long double qualDelToPrint = (-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0));
+
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(qualDelToPrint)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+		if(qualDelToPrint >= minQual){ //deletion is high quality, do nothing
+
+		}else{ //deletion is low quality, put an N
+		    genomeToPrint+="N";
+		}
+
+		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(qualDelToPrint)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+		if(qualDelToPrint >= minQual){ //deletion is high quality, do nothing
+
+		}else{ //deletion is low quality, put an N
+		    genomeToPrintC+="N";
+		}
+
 		PHREDgeno toadd;
 		
 		toadd.ref       = genomeRef[i];
@@ -829,9 +855,15 @@ void deletionInSample(const int i,
 			sumLogLikeCase =  oplusInit(sumLogLikeCase,logLikeDel[n]);
 		}
 
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		long double qualDelToPrint =(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0));
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<< qualDelToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		//(*logToPrintD)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
+		if(qualDelToPrint >= minQual){ //deletion is high quality, do nothing
+
+		}else{ //deletion is low quality, put an N
+		    genomeToPrint+="N";
+		}
+
 		PHREDgeno toadd;
 		
 		toadd.ref       = genomeRef[i];
@@ -864,8 +896,16 @@ void deletionInSample(const int i,
 		}
 
 		//(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll  )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<(-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-		
+		long double qualDelToPrint = (-10.0*(sumLogLikeCase-sumLogLikeAll )/log(10.0)) ;
+
+		(*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<qualDelToPrint <<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+
+		if(qualDelToPrint >= minQual){ //deletion is high quality, do nothing
+
+		}else{ //deletion is low quality, put an N
+		    genomeToPrintC+="N";
+		}
+
 		// PHREDgeno toadd;
 		
 		// toadd.ref       = genomeRef[i];
@@ -892,8 +932,15 @@ void deletionInSample(const int i,
 		if(setFlags){
 		    return ;
 		}
+		long double qualDelToPrint = -10.0*( (infoPPos[i].llikNoDeletion - oplus(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0));
 
-		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<-10.0*( (infoPPos[i].llikNoDeletion - oplus(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<qualDelToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
+		
+		if(qualDelToPrint >= minQual){ //deletion is high quality, do nothing
+
+		}else{ //deletion is low quality, put an N
+		    genomeToPrint+="N";
+		}
 
 		PHREDgeno toadd;
 		
@@ -1310,7 +1357,7 @@ void  printLogAndGenome(const int sizeGenome,
 			const bool   outLogCflag,
 			const string nameMTC){
     // cerr<<outSeq<<"\t"<<outLog<<"\t#"<<outSeqC<<"#\t"<<outLogC<<"#\t"<<outSeqCflag<<"#\t"<<outLogCflag<<"#\t"<<endl;
-    // exit(1);
+    // 
     ofstream outSeqFP ;
     ofstream outLogFP;
 
@@ -1392,6 +1439,9 @@ void  printLogAndGenome(const int sizeGenome,
 			     genomeRef,
 			     infoPPos,
 			     singleCont,
+			     minQual,
+			     genomeToPrint,
+			     genomeToPrintC,
 			     &logToPrint,
 			     &logToPrintC,
 			     skipEndo,
@@ -1405,6 +1455,7 @@ void  printLogAndGenome(const int sizeGenome,
 	    		      genomeRef,
 	    		      infoPPos,
 	    		      singleCont,
+			      minQual,
 	    		      genomeToPrint,
 	    		      genomeToPrintC,
 	    		      &logToPrint,
@@ -1445,6 +1496,9 @@ void  printLogAndGenome(const int sizeGenome,
 			 genomeRef,
 			 infoPPos,
 			 singleCont,
+			 minQual,
+			 genomeToPrint,
+			 genomeToPrintC,
 			 &logToPrint,
 			 &logToPrintC,
 			 skipEndo,
@@ -1520,6 +1574,7 @@ void  printLogAndGenome(const int sizeGenome,
 			  genomeRef,
 			  infoPPos,
 			  singleCont,
+			  minQual,
 			  genomeToPrint,
 			  genomeToPrintC,
 			  &logToPrint,
