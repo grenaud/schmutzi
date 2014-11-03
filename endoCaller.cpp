@@ -592,9 +592,12 @@ void insertionInSample(const int i,
 		    (*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertEndo[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertEndo)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}
 
-		// cout<<"ins "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl;
-		if(qualInsToPrint >= minQual)
+		//cout<<"inse "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl;
+		if(qualInsToPrint >= minQual){
+		    //cout<<"inse "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl<<genomeToPrint<<endl<<genomeToPrintC<<endl;
 		    genomeToPrint+=bestInsertEndo;
+		    //cout<<"inse "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl<<genomeToPrint<<endl<<genomeToPrintC<<endl;
+		}
 	    }
 
 
@@ -611,7 +614,7 @@ void insertionInSample(const int i,
 		for(unsigned int k=0;k<(bestInsertCont.size());k++){
 		    (*logToPrintC)<<(i+1)<<"i\t"<<"-"<<"\t"<<bestInsertCont[k]<<"\t"<<qualInsToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].insertion2count.at(bestInsertCont)<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}
-		
+		//cout<<"insc "<<i<<"\t"<<qualInsToPrint<<"\t"<<minQual<<"\t"<<bestInsertEndo<<endl;		
 		if(qualInsToPrint >= minQual)
 		    genomeToPrintC+=bestInsertCont;
 	    }

@@ -31,6 +31,30 @@ sub writeContToLogFile{
 }
 
 
+sub computeAmountOfPositions{
+  my ($posfile) = @_;
+
+  print "reading position file ".$posfile."\n";
+
+  if ($mock != 1) {
+    open(FILE,$posfile) or die "cannot open ".$posfile."";
+    my $numberLines=0;
+    while (my $line = <FILE>) {
+      chomp($line);
+      $numberLines++;
+    }
+    close(FILE);
+
+    return $numberLines;
+  }else{
+    #mock, nothing to do
+    return -1;
+  }
+
+}
+
+
+
 sub computeIntervalCont{
   my ($mtcontOutputLog) = @_;
 
@@ -409,6 +433,8 @@ my $lengthMT=16569;
 
 
 my $multipleC=0;
+my $usepredC=0;
+
 my $numthreads=1;
 my $maxIterations      = 100;
 my $iterationSameCont  = 3;
@@ -450,6 +476,8 @@ call endoCaller directly (see README.md).
 "\t--uselength\t\t\t\tUse length of the molecules as well\n".
 "\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n".
 "\t--multipleC\t\t\t\tDo not assume that there is a single contaminant".
+"\t--usepredC\t\t\t\tIf assuming a single contaminant, use it as well in the contamination estimate".
+
 "\n\t\t\t\t\t\tThis might lead to worse results".
 "\n\n".
 #
@@ -503,7 +531,7 @@ my $estdeam = 0 ;
 my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'usepredC' => \$usepredC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 
@@ -748,9 +776,11 @@ while(1){
   #convert log to freq
   if(!$multipleC){ #we can assume a single contaminant
 
-    my $cmdLog2Freq =  $log2freq." ".$outputPrefix."_".$numberIteration."_cont.log >  ".$outputPrefix."_".$numberIteration."_cont.freq";
-    runcmd($cmdLog2Freq);
-    push(@listOfFreqFiles, $outputPrefix."_".$numberIteration."_cont.freq");
+    if ( $usepredC  ){
+      my $cmdLog2Freq =  $log2freq." ".$outputPrefix."_".$numberIteration."_cont.log >  ".$outputPrefix."_".$numberIteration."_cont.freq";
+      runcmd($cmdLog2Freq);
+      push(@listOfFreqFiles, $outputPrefix."_".$numberIteration."_cont.freq");
+    }
   }
 
   # estimate cont
@@ -788,6 +818,13 @@ while(1){
     #print seg. sites
     my $cmdLogs2Pos = $logs2pos."  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log  > ".$outputPrefix."_".$numberIteration."_split.pos";
     runcmd($cmdLogs2Pos);
+
+    #count pos in .pos
+    my $countPosFound=computeAmountOfPositions($outputPrefix."_".$numberIteration."_split.pos");
+    if($countPosFound<5){
+      die "Unable to find more than 5 positions that are different in  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log\n".
+	"Either your sample has little or no contamination or too much, either case, we cannot split according to segrating positions. Try running without --useLength and --estdeam ";
+    }
 
     # split according to seg sites
     my $cmdBamSplit = $splitEndo."  ".$outputPrefix."_".$numberIteration."_split.pos  $inbam ".$outputPrefix."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
