@@ -918,7 +918,9 @@ while(1){
   }else{
 
 
-    if(abs($previousCurrentContEst-$currentContEst)<=0.01){
+    my $diffBetweenItContRate = sprintf("%.2f",abs($previousCurrentContEst-$currentContEst));
+
+    if($diffBetweenItContRate <= 0.01){
       $previousCurrentContEstItSameVal++;
     }else{
       $previousCurrentContEstItSameVal=1;
