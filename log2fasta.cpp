@@ -81,7 +81,11 @@ int main (int argc, char *argv[]) {
 	    string  pos    =                      fields[0];
 	    string  ref    =                      fields[1];
 	    string  alt    =                      fields[2];
-	    double  q      =  destringify<double>(fields[3]);
+	    double  q;
+	    if(fields[3]=="inf")
+		    q =  numeric_limits<double>::infinity();
+		else
+		    q =  destringify<double>(fields[3]);
 
 	    
 	    if(alt  == "D" ){ //deletion
