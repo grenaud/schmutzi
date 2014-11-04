@@ -815,34 +815,89 @@ while(1){
 
   if (!$multipleC) {		#we can assume a single contaminant
 
-    #print seg. sites
-    my $cmdLogs2Pos = $logs2pos."  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log  > ".$outputPrefix."_".$numberIteration."_split.pos";
-    runcmd($cmdLogs2Pos);
 
-    #count pos in .pos
-    my $countPosFound=computeAmountOfPositions($outputPrefix."_".$numberIteration."_split.pos");
-    if($countPosFound<5){
-      die "Unable to find more than 5 positions that are different in  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log\n".
-	"Either your sample has little or no contamination or too much, either case, we cannot split according to segrating positions. Try running without --useLength and --estdeam ";
-    }
+    if (  ($estdeam || $useLength)  ) { # we need to split if and only if we re-estimate the deamination at each iteration or use the length of the molecules
 
-    # split according to seg sites
-    my $cmdBamSplit = $splitEndo."  ".$outputPrefix."_".$numberIteration."_split.pos  $inbam ".$outputPrefix."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
-    runcmd($cmdBamSplit);
+      #print seg. sites
+      my $cmdLogs2Pos = $logs2pos."  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log  > ".$outputPrefix."_".$numberIteration."_split.pos";
+      runcmd($cmdLogs2Pos);
+
+      #count pos in .pos
+      my $countPosFound=computeAmountOfPositions($outputPrefix."_".$numberIteration."_split.pos");
+      if ($countPosFound<5) {
+	die "Unable to find more than 5 positions that are different in  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log\n".
+	  "Either your sample has little or no contamination or too much, either case, we cannot split according to segrating positions. Try running without --useLength and --estdeam ";
+      }
+
+      # split according to seg sites
+      my $cmdBamSplit = $splitEndo."  ".$outputPrefix."_".$numberIteration."_split.pos  $inbam ".$outputPrefix."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
+      runcmd($cmdBamSplit);
 
 
-    #re-measure deam rateS
-    if( $estdeam  ){ # re-estimate deamination at each iteration
+      #re-measure deam rateS
+      if ( $estdeam  ) {   # re-estimate deamination at each iteration
 
-      my $cmdBam2ProfEndo = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_endo.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_endo.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
-      runcmd($cmdBam2ProfEndo);
+	my $cmdBam2ProfEndo = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_endo.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_endo.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
+	runcmd($cmdBam2ProfEndo);
 
-      my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_cont.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_cont.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
-      runcmd($cmdBam2ProfCont);
+	my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix."_".($numberIteration+1)."_cont.5p.prof   -3p ".$outputPrefix."_".($numberIteration+1)."_cont.3p.prof  ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
+	runcmd($cmdBam2ProfCont);
 
-      #my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
-      #runcmd($cmdBam2ProfCont);
-    }else{
+	#my $cmdBam2ProfCont = $bam2prof." -length $lengthDeam -".$library." -5p ".$outputPrefix.".cont.5p.prof  -3p ".$outputPrefix.".cont.3p.prof ".$outputPrefix."_cont.bam";
+	#runcmd($cmdBam2ProfCont);
+      } else {
+
+	copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
+	copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
+	copycmd(  $outputPrefix."_".$numberIteration."_cont.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.5p.prof" );
+	copycmd(  $outputPrefix."_".$numberIteration."_cont.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.3p.prof" );
+
+      }
+
+
+      #check if enough data to measure insert size
+      my ($returnCE, $readCountE) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_endo.bam");
+      my ($returnCC, $readCountC) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_cont.bam");
+
+      if ($returnCE !=0) {
+	die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
+      }
+
+      if ($returnCC !=0) {
+	die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
+      }
+
+      if ($readCountE < 50) {
+	warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam, we will not use insert sizes for this iteration";
+      }
+
+      if ($readCountC < 50) {
+	warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam, we will not use insert sizes for this iteration";
+      }
+
+      if ($useLength) { #we use the length of the molecules in the endoCaller
+
+	if ($readCountE >= 50 &&
+	    $readCountC >= 50 ) {
+
+	  #measure insert size
+	  my $cmdBam2InsertsizeEndo = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_endo.bam |gzip   > ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz";
+	  runcmd($cmdBam2InsertsizeEndo);
+	  my $cmdBam2InsertsizeCont = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz";
+	  runcmd($cmdBam2InsertsizeCont);
+
+	  #Log normal fit, copying parameters for next iteration
+	  my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_endo.size.param";
+	  runcmd($cmdinsertsize2LognormEndo);
+	  my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_cont.size.param";
+	  runcmd($cmdinsertsize2LognormCont);
+	  $notEnoughDataSize=0;
+	} else {
+	  $notEnoughDataSize=1;
+	}
+      }
+
+    } else { #if we do not use the length or re-estimate deamintion, we will re-use the deamintion profile from contDeam.pl
 
       copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
       copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
@@ -850,49 +905,7 @@ while(1){
       copycmd(  $outputPrefix."_".$numberIteration."_cont.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.3p.prof" );
 
     }
-
-
-    #check if enough data to measure insert size
-    my ($returnCE, $readCountE) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_endo.bam");
-    my ($returnCC, $readCountC) = runcmdReturnOutput($countRec,$outputPrefix."_".($numberIteration)."_split_cont.bam");
-
-    if($returnCE !=0){
-      die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam";
-    }
-
-    if($returnCC !=0){
-      die "Unable to determine how many reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam";
-    }
-
-    if($readCountE < 50){
-      warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_endo.bam, we will not use insert sizes for this iteration";
-    }
-
-    if($readCountC < 50){
-      warn "Not enough reads are in ".$outputPrefix."_".($numberIteration)."_split_cont.bam, we will not use insert sizes for this iteration";
-    }
-
-
-    if ($readCountE >= 50 &&
-	$readCountC >= 50 ) {
-
-      #measure insert size
-      my $cmdBam2InsertsizeEndo = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_endo.bam |gzip   > ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz";
-      runcmd($cmdBam2InsertsizeEndo);
-      my $cmdBam2InsertsizeCont = $insertSize."   ".$outputPrefix."_".($numberIteration)."_split_cont.bam  |gzip  > ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz";
-      runcmd($cmdBam2InsertsizeCont);
-
-      #Log normal fit, copying parameters for next iteration
-      my $cmdinsertsize2LognormEndo = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_endo.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_endo.size.param";
-      runcmd($cmdinsertsize2LognormEndo);
-      my $cmdinsertsize2LognormCont = $approxDist."  ".$outputPrefix."_".($numberIteration)."_split_cont.size.gz >  ".$outputPrefix."_".($numberIteration+1)."_split_cont.size.param";
-      runcmd($cmdinsertsize2LognormCont);
-      $notEnoughDataSize=0;
-    }else{
-      $notEnoughDataSize=1;
-    }
-
-  }else{ #must use the previous deamination profiles from the previous iteration for the new one
+  } else { #must use the previous deamination profiles from the previous iteration for the new one
 
     copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
     copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
