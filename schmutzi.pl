@@ -9,6 +9,7 @@ use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use Data::Dumper;
 use File::Copy;
+use Time::HiRes qw/ time sleep /;
 
 my $mock =0;
 my $lengthDeam=2;
@@ -511,6 +512,9 @@ call endoCaller directly (see README.md).
   exit;
 }
 
+my $starttime = time;
+
+
 my $help;
 my $library        = "none";
 my $outputPrefix   = "outputdeam";
@@ -710,14 +714,15 @@ while(1){
   $cmdEndoCaller .= " -deam5p ".$outputPrefix."_".$numberIteration."_endo.5p.prof ";
   $cmdEndoCaller .= " -deam3p ".$outputPrefix."_".$numberIteration."_endo.3p.prof ";
 
-  $cmdEndoCaller .= " -deam5pc ".$outputPrefix."_".$numberIteration."_cont.5p.prof ";
-  $cmdEndoCaller .= " -deam3pc ".$outputPrefix."_".$numberIteration."_cont.3p.prof ";
 
 
 
   $cmdEndoCaller .= " -cont ".$currentContEst." ";
 
   if(!$multipleC){ #we can assume a single contaminant
+  $cmdEndoCaller .= " -deam5pc ".$outputPrefix."_".$numberIteration."_cont.5p.prof ";
+  $cmdEndoCaller .= " -deam3pc ".$outputPrefix."_".$numberIteration."_cont.3p.prof ";
+
     $cmdEndoCaller .= " -single  ";
 
     $cmdEndoCaller .= " -seqc ".$outputPrefix."_".$numberIteration."_cont.fa  ";
@@ -1030,7 +1035,7 @@ if ($mock != 1) {
 
 }
 print "\tConfig file                                     : ".    $outputPrefix.".diag.config\n";
-
+print "Total runtime ".(time - $starttime)." s\n";;
 
 
 
