@@ -1193,7 +1193,7 @@ void callSingleNucleotide(const int i,
 
 
 
-    
+    //cout<<"single "<<skipEndo<<"\t"<<skipCont<<"\t"<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<bestNuc<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<sumLogLikeAllButBest<<"\t"<<sumLogLikeAll<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<endl;//<<endl;    
     if(!skipEndo  && !skipCont){  //need to define both
 
 	PHREDgeno toadd;
@@ -1209,6 +1209,7 @@ void callSingleNucleotide(const int i,
 	    covEndoToPrint=infoPPos[i].covPerBaseNoBoundary[bestNuc];
 	else
 	    covEndoToPrint=infoPPos[i].covPerBase[bestNuc];
+
 
 	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covEndoToPrint;//<<endl;
 
@@ -1359,6 +1360,8 @@ void  printLogAndGenome(const int sizeGenome,
 			const bool   outSeqCflag,
 			const bool   outLogCflag,
 			const string nameMTC){
+
+
     // cerr<<outSeq<<"\t"<<outLog<<"\t#"<<outSeqC<<"#\t"<<outLogC<<"#\t"<<outSeqCflag<<"#\t"<<outLogCflag<<"#\t"<<endl;
     // 
     ofstream outSeqFP ;
@@ -3345,7 +3348,7 @@ int main (int argc, char *argv[]) {
     ////////////////////////////////////
 
     //    return 1;
-    string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
+    string errFile     = getCWD(argv[0])+"illuminaProf/error.prof";
     string deam5pfreqE = getCWD(argv[0])+"deaminationProfile/none.prof";
     string deam3pfreqE = getCWD(argv[0])+"deaminationProfile/none.prof";
     string deam5pfreqC = getCWD(argv[0])+"deaminationProfile/none.prof";
@@ -3914,12 +3917,19 @@ int main (int argc, char *argv[]) {
 
 
 	//printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog);
-	printLogAndGenome(sizeGenome, infoPPos,outSeq,outLog, genomeRef,minQual,nameMT,singleCont,		      outSeqC,
-		      outLogC,
-		      outSeqCflag,
-		      outLogCflag,
- 
-		      nameMTC);
+	printLogAndGenome(sizeGenome, 
+			  infoPPos,
+			  outSeq,
+			  outLog, 
+			  genomeRef,
+			  minQual,
+			  nameMT,
+			  singleCont,
+			  outSeqC,
+			  outLogC,
+			  outSeqCflag,
+			  outLogCflag,
+			  nameMTC);
 
     }
 
