@@ -476,7 +476,7 @@ call endoCaller directly (see README.md).
 "\t--mock\t\t\t\t\tDo nothing, just print the commands used\n".
 "\t--uselength\t\t\t\tUse length of the molecules as well\n".
 "\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n".
-"\t--multipleC\t\t\t\tDo not assume that there is a single contaminant".
+"\t--multipleC\t\t\t\tDo not assume that there is a single contaminant\n".
 "\t--usepredC\t\t\t\tIf assuming a single contaminant, use it as well in the contamination estimate".
 
 "\n\t\t\t\t\t\tThis might lead to worse results".
