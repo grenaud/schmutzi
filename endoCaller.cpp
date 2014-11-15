@@ -13,7 +13,7 @@
 //#define DEBUGINS 308
 // #define DEBUG1
 // #define DEBUG2
-#define DEBUG3
+//#define DEBUG3
 //#define DEBUG4
 
 #define CONTPRIORBEFORE
@@ -1105,8 +1105,8 @@ void callSingleNucleotide(const int i,
 		    likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce], infoPPos[i].likeBaseNoindelContNoBoundary[nuce][nucc] + log(0.25)/log(10) );		
 		else
 		    likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce],           infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		if(i==145)
-		    cout<<"E"<<(i+1)<<"\t"<<endoIndelCurrent<<contIndelCurrent<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
+		// if(i==145)
+		//     cout<<"E"<<(i+1)<<"\t"<<endoIndelCurrent<<contIndelCurrent<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
 	    }
 	    // if(i==146)
 	    //     cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<likeBaseNoindel[nuce]<<endl;
@@ -2425,7 +2425,7 @@ public:
 	    // if(posVector < 175 && 
 	    //    posVector > 170){
 	    if(posVector == 10||
-	       posVector==800){
+	       posVector == 800){
 
 		cout<<posAlign<<"\tce"<<closeToEnds<<"\t"<<
 		    "b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
