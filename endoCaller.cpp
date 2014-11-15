@@ -2297,27 +2297,44 @@ public:
 
       if(dist5p <= (int(sub5p.size()) -1)){
 	probSubMatchToUseEndo = &sub5p[  dist5p ];			
+
+      }
+
+      if(dist5p <= (int(sub5pC.size()) -1)){
 	probSubMatchToUseCont = &sub5pC[ dist5p ];
       }
 		    
       if(dist3p <= (int(sub3p.size()) -1)){
 	probSubMatchToUseEndo = &sub3p[  dist3p ];
-	probSubMatchToUseCont = &sub3pC[ dist3p ];
       }
 		    
+      if(dist3p <= (int(sub3pC.size()) -1)){
+	probSubMatchToUseCont = &sub3pC[ dist3p ];
+      }
+
       //we have substitution probabilities for both... take the closest
       if(dist5p <= (int(sub5p.size()) -1) &&
 	 dist3p <= (int(sub3p.size()) -1) ){
 		    
 	if(dist5p < dist3p){
 	  probSubMatchToUseEndo = &sub5p[  dist5p ];
-	  probSubMatchToUseCont = &sub5pC[ dist5p ];
 	}else{
 	  probSubMatchToUseEndo = &sub3p[  dist3p ];
+	}
+		    
+      }
+
+      if(dist5p <= (int(sub5pC.size()) -1) &&
+	 dist3p <= (int(sub3pC.size()) -1) ){
+		    
+	if(dist5p < dist3p){
+	  probSubMatchToUseCont = &sub5pC[ dist5p ];
+	}else{
 	  probSubMatchToUseCont = &sub3pC[ dist3p ];
 	}
 		    
       }
+
       // END DEAMINATION COMPUTATION
 
       long double probEndogenous=1.0-contaminationPrior;
