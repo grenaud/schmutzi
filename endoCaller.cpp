@@ -1,5 +1,5 @@
 /*
- * mitonchondrialDeam
+ * endoCaller
  * Date: Mar-26-2014 
  * Author : Gabriel Renaud gabriel.reno [at sign here ] gmail.com
  *
@@ -13,9 +13,11 @@
 //#define DEBUGINS 308
 // #define DEBUG1
 // #define DEBUG2
-// #define DEBUG3
+#define DEBUG3
+//#define DEBUG4
+
 #define CONTPRIORBEFORE
-//#define DEBUGPRIORENDO
+// #define DEBUGPRIORENDO
 
 //GLOBAL CONSTANTS
 
@@ -1097,14 +1099,14 @@ void callSingleNucleotide(const int i,
 		     		     
 		//likeBaseNoindel[nuce]  +=  pow(10.0,infoPPos[i].likeBaseNoindelCont[nuce][nucc])*0.25;
 
-  // const bool 
-  // 			  const bool contIndelCurrent){
+		// const bool 
+		// 			  const bool contIndelCurrent){
 		if(endoIndelCurrent)
 		    likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce], infoPPos[i].likeBaseNoindelContNoBoundary[nuce][nucc] + log(0.25)/log(10) );		
 		else
 		    likeBaseNoindel[nuce]  =  oplusInit(likeBaseNoindel[nuce],           infoPPos[i].likeBaseNoindelCont[nuce][nucc] + log(0.25)/log(10) );
-		// if(i==146)
-		//cout<<"E"<<(i+1)<<"\t"<<endoIndelCurrent<<contIndelCurrent<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
+		if(i==145)
+		    cout<<"E"<<(i+1)<<"\t"<<endoIndelCurrent<<contIndelCurrent<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<dnaAlphabet[nucc]<<"\t"<<(infoPPos[i].likeBaseNoindelCont[nuce][nucc])<<"\t"<<likeBaseNoindel[nuce]<<endl;
 	    }
 	    // if(i==146)
 	    //     cout<<"E"<<(i+1)<<"\tllik\t"<<dnaAlphabet[nuce]<<"\t"<<likeBaseNoindel[nuce]<<endl;
@@ -2420,8 +2422,11 @@ public:
 	    }
 
 #ifdef DEBUG3		    
-	    if(posVector < 175 && 
-	       posVector > 170){
+	    // if(posVector < 175 && 
+	    //    posVector > 170){
+	    if(posVector == 10||
+	       posVector==800){
+
 		cout<<posAlign<<"\tce"<<closeToEnds<<"\t"<<
 		    "b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
 		  <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
@@ -2449,10 +2454,10 @@ public:
 
 #ifdef DEBUG3
 	//	if(posVector== 146){
-	if(posVector < 175 && 
-	   posVector > 170){
-	  cout<<"-----------------"<<endl;
-	}	    
+	// if(posVector < 175 && 
+	//    posVector > 170){
+	//   cout<<"-----------------"<<endl;
+	// }	    
 #endif
 
       }else{ //if we cannot assume that there is a single contaminant
@@ -2534,7 +2539,7 @@ public:
 
     }//end each read
 	    
-#ifdef DEBUG3
+#ifdef DEBUG4
 
     if(singleCont){ // we consider a single contaminant
 
@@ -2857,27 +2862,44 @@ void computePriorOnReads(const string bamfiletopen,
 
 	    if(dist5p <= (int(sub5p.size()) -1)){
 	      probSubMatchDeam = &sub5p[  dist5p ];
+	    }
+
+	    if(dist5p <= (int(sub5pC.size()) -1)){
 	      probSubMatchNull = &sub5pC[ dist5p ];
 	    }
 		    
 	    if(dist3p <= (int(sub3p.size()) -1)){
 	      probSubMatchDeam = &sub3p[  dist3p ];
+	    }
+
+	    if(dist3p <= (int(sub3pC.size()) -1)){
 	      probSubMatchNull = &sub3pC[ dist3p ];
 	    }
-		    
+	
+	    
 	    //we have substitution probabilities for both... take the closest
 	    if(dist5p <= (int(sub5p.size()) -1) &&
 	       dist3p <= (int(sub3p.size()) -1) ){
 	      
 	      if(dist5p < dist3p){
 		probSubMatchDeam = &sub5p[  dist5p ];			
-		probSubMatchNull = &sub5pC[ dist5p ];
 	      }else{
 		probSubMatchDeam = &sub3p[  dist3p ];
+	      }
+			
+	    }
+
+	    if(dist5p <= (int(sub5pC.size()) -1) &&
+	       dist3p <= (int(sub3pC.size()) -1) ){
+	      
+	      if(dist5p < dist3p){
+		probSubMatchNull = &sub5pC[ dist5p ];
+	      }else{
 		probSubMatchNull = &sub3pC[ dist3p ];
 	      }
 			
 	    }
+
 
 
 	    // cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<"\t"<<dist5p<<"\t"<<dist3p<<endl;
@@ -2975,7 +2997,7 @@ void computePriorOnReads(const string bamfiletopen,
 	//long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
 
 #ifdef DEBUGPRIORENDO
-	cout<<"priorbefore\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
+	cout<<"priorbefore1\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\tpe="<<probEndo<<"\tpdu="<<probDeamUnscaled<<"\tpler="<<probLengthEndoForRead<<"\tpep="<<probEndoProd<<"\tpcp="<<probContProd<<endl;
 #endif
 
 	
@@ -3230,7 +3252,7 @@ void computePriorOnReads(const string bamfiletopen,
 	//long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
 	//cout<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
 #ifdef DEBUGPRIORENDO
-	cout<<"priorafter\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
+	cout<<"priorafter2\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
 #endif
 
 
