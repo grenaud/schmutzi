@@ -717,7 +717,7 @@ while(1){
 
 
 
-  $cmdEndoCaller .= " -cont ".max($currentContEst,0.01)." ";#to allow for the possibility of having contamination
+  $cmdEndoCaller .= " -cont ".min(max($currentContEst,0.01),0.99)." ";#to allow for the possibility of having contamination
 
   if(!$multipleC){ #we can assume a single contaminant
   $cmdEndoCaller .= " -deam5pc ".$outputPrefix."_".$numberIteration."_cont.5p.prof ";
