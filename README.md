@@ -115,6 +115,33 @@ Then run contDeam to estimation endogenous deamination rates:
 This will produce the files:
      	       	  
 
+
+Recommended workflow for ancient samples:
+-------------------------------------------------------------------------------------
+
+- Nuclear
+  The only thing schmutzi can do for nuclear data is to estimate contamination rates 
+  using deamination patterns. However, use this at your own risk as you will not know
+  if you have a contaminant that is deaminated thus leading to an underestimate. Simply
+  use "contDeam.pl"
+
+- MT
+  1) Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using 
+    a sensitive mapper that produces BAM
+  2) run samtools sort on your aligned bam file
+  3) run samtools index on your sorted and aligned bam file
+  4) If you used the wrapped reference, re-wrap your alignments exceeding the junction
+     using for example https://github.com/udo-stenzel/biohazard  this step is not necessary 
+     but produces equal coverage and resolution at the boundaries
+  5) Estimate your initial contamination and deamination rates using "contDeam.pl"
+  6) Run schmutzi.pl once with default parameters
+     If contamination is very high or the algorithm does not converge re-run using 
+     the "--uselength" option
+     If the run was succesful, maybe re-run with "--uselength" to see if your endogenous 
+     consensus call has better quality.
+
+
+
 Frequently asked questions:
 -------------------------------------------------------------------------------------
 
@@ -161,4 +188,28 @@ Frequently asked questions:
   Simply use endoCaller without deamination parameters and length parameters.
 
 
+- The contamination estimate of contDeam.pl is very different from the one obtained from mtCont, why is that ?
+  There are two possibilities:
 
+  * schmutzi.pl did not converge 
+  * The rates of deamination of the contamination are not close to zero.
+
+  For the second option, maybe run using either --uselength or --estdeam and check the cont.prof/endo.prof files being produced.
+
+- The program stopped and said: "Unable to find more than X positions that are different ...". Why is that ?
+
+  This means that upon splitting into the endogenous and contaminant files, the program was not able
+  to find enough positions to split. This could be due to the following:
+  
+  * There is either too much or too little contamination. This makes is impossible to predict the contaminant and/or the endogenous genomes. 
+    If the first contamination estimate was very high, probably it was due to high contamination. Try to run endoCaller manually using higher
+    contamination estimates. If there is too little contamination as indicated by an initial low contamination estimate, you could simply trust 
+    the first iteration of endoCaller or rerun without the "--uselength", "--estdeam" and "--usepredC" options
+
+  * There is very little difference between the endogenous and contaminant. You could trust the contamination rate given by the deamination 
+    patterns and use the first endogenous call.
+
+- Should I filter my BAM file for reads with high mapping quality ?
+  
+  * In theory, no. If the mapping quality is not a bad proxy for the probability of mismapping, you should be fine as mapping quality is 
+    incorporated
