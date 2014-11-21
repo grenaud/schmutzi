@@ -93,7 +93,7 @@ typedef struct{
 
 bool compContRecord (contRecord i, contRecord j) { return (i.logLike<j.logLike); }
 
-char   offsetQual=33;
+char        offsetQual=33;
 
 long double likeMatch[MAXMAPPINGQUAL];
 long double likeMismatch[MAXMAPPINGQUAL];
@@ -132,23 +132,6 @@ map<int, PHREDgeno>          pos2phredgeno;
 vector<int>                  posOfIndels;
 map<unsigned int, int>       threadID2Rank;
 
-// bool                         doneReading;
-
-
-//! 
-
-// template <typename T>
-// inline string arrayToStringInt(const T toPrint[] ,const int size,const string separator=","){
-//     if(size == 0){
-//     	return "";
-//     }
-//     string toReturn="";
-//     for(int i=0;i<(size-1);i++){
-//     	toReturn+=(stringify(int(toPrint[i]))+separator);
-//     }
-//     toReturn+=(stringify(int(toPrint[ size -1 ])));
-//     return toReturn;
-// }
 
 
 vector<bool>  * definedSite;      //= new vector<bool>(sizeGenome+1,false); // if there is data
@@ -344,27 +327,11 @@ void *mainContaminationThread(void * argc){
     // vector<bool>  * definedSite      = new vector<bool>(sizeGenome+1,false); // if there is data
     // vector<bool>  * skipPositions    = new vector<bool>(sizeGenome+1,false); // if the site has such a low prior that it can be overlooked
 
-    // cout<<probEndoVec.size()<<endl;
-    // exit(1);
-
-    //    cout<<"Thread #"<<rankThread <<" test1"<<endl;
-
 
     for(int i=0;i<sizeGenome;i++){
 	//for(int i=261;i<=262;i++){
 	//	cout<<"Thread #"<<rankThread <<" test2 "<<i<<endl;
 
-	 // cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
-	// cout<<infoPPos[i].cov<<endl;
-	// cout<<(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())<<endl;
-	// if( (infoPPos[i].cov == 0) || //no coverage
-	//     (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
-	//     definedSite->at(i) = false;
-	//     continue;
-	// }
-	// definedSite->at(i)     = true;
-	
-	//cout<<"pre i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 
 	if(    !definedSite->at(i) ){
 	    continue;
@@ -690,30 +657,7 @@ void *mainContaminationThread(void * argc){
 	delete probEndoVec[i];
 	delete probContVec[i];	    
     }
-    // delete definedSite;
-    // int counterl=0;
-    // int totall  =0;
-    // string line;
-    // ifstream myFile;
-    // myFile.open(fileNameToUse.c_str(), ios::in);
-
-    // if (myFile.is_open()){
-    // 	while ( getline (myFile,line)){
-    // 	    int n = destringify<int>(line); 
-    // 	    if(isPrime( n )){
-    // 		if(n<100){
-    // 		    cout<<testVec[n]<<endl;
-    // 		}
-    // 		counterl++;
-    // 	    }
-    // 	    totall++;
-    // 	}
-    // 	myFile.close();
-    // }else{
-    // 	cerr << "Unable to open file "<<fileNameToUse<<endl;
-    // 	exit(1);
-    // }
-	//exit(1);
+    
 
     //COUNTERS
     rc = pthread_mutex_lock(&mutexCounter);
@@ -1010,6 +954,8 @@ int main (int argc, char *argv[]) {
 			      "\n\tComputation options:\n"+	
 			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
+			      "\t\t"+"--phred64" +"\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
+
 			      "\n\tMisc. options:\n"+	
 			      "\t\t"+"-t" +"\t\t\t\t"+"Number of cores to use (default: "+stringify(numberOfThreads)+")"+"\n"+
 
@@ -1035,7 +981,12 @@ int main (int argc, char *argv[]) {
     int lastOpt=1;
     for(int i=1;i<(argc-3);i++){ //all but the last 3 args
 
-	if(strcmp(argv[i],"-v") == 0 ){
+	if(string(argv[i]) == "--phred64"  ){
+	    offsetQual=64;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-v" ){
 	    verbose=true;
 	    continue;
 	}
@@ -1076,7 +1027,7 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-nomq") == 0 ){
+	if(string(argv[i]) == "-nomq" ){
 	    ignoreMQ=true;
 	    continue;
 	}
@@ -1107,22 +1058,6 @@ int main (int argc, char *argv[]) {
 
 
 
-    // cout<<bamfiletopen<<endl;
-    // cout<<fastaFile<<endl;
-    // cout<<consensusFile<<endl;
-
-
-    // return 1;
-
-
-    //    return 1;
-    // outSeqFP.open(outSeq.c_str());
-
-    // if (!outSeqFP.is_open()){
-    // 	cerr << "Unable to write to seq file "<<outSeq<<endl;
-    // 	return 1;
-    // }
-
     outLogFP.open(outLog.c_str());
 
     if (!outLogFP.is_open()){
@@ -1143,15 +1078,6 @@ int main (int argc, char *argv[]) {
 
     readIlluminaError(errFile,illuminaErrorsProb);
 
-    // for(int nuc1=0;nuc1<4;nuc1++){
-    // 	for(int nuc2=0;nuc2<4;nuc2++){
-	    
-    // 	    cout<<illuminaErrorsProb.s[nuc2+nuc1*4]<<"\t";
-    // 	}
-    // 	cout<<endl;
-    // }
-    // return 1;
-    
     ////////////////////////////////////////////////////////////////////////
     //
     // END  READING ERROR PROFILE
@@ -1245,18 +1171,6 @@ int main (int argc, char *argv[]) {
     //
     ////////////////////////////////////////////////////////////////////////
 
-    // cout<<vectorToString(allKeysMap(pos2phredgeno))<<endl;
-
-    
-    // for(int i=0;i<=sizeGenome;i++){
-    // 	cout<<i<<"\t"<<(pos2phredgeno.find(i)==pos2phredgeno.end())<<endl;
-    // }
-    // return 1;
-    // typedef struct { 
-    //     vector<singleRead> readsVec;
-    //     double mapqAvg;
-    //     int cov;
-    // } positionInformation;
     for(int i=0;i<=sizeGenome;i++){
 	 positionInformation toadd;
 
@@ -1265,7 +1179,6 @@ int main (int argc, char *argv[]) {
 	 
 	 infoPPos.push_back(toadd);
      }
-    //return 1;
 
 
 
@@ -1372,10 +1285,6 @@ int main (int argc, char *argv[]) {
     pthread_mutex_destroy(&mutexQueue);
     pthread_mutex_destroy(&mutexCounter);
 
-    // cout<<counter<<"\t"<<total<<endl;
-    //outLogFP<<vectorToString(outputToPrint,"\n")<<endl;
-    //outLogFP<<vectorToString(outputToPrint,"\n")<<endl;
-    //long double s=0;
     vector< contRecord > vecPairfilenameLike;
 
 
@@ -1405,10 +1314,7 @@ int main (int argc, char *argv[]) {
 	vecPairfilenameLike.push_back( toaddCt );
     }
 
-    // for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
-    // 	outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
-    // }
-    // outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
+   
     if(verbose){
 	sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
 	// outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
@@ -1418,12 +1324,6 @@ int main (int argc, char *argv[]) {
 	    outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
 	}
 
-	// cout<<s<<endl;
-
-
-	// string genomeToPrint="";
-	// outLogFP<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\n";
-	// //genomeRef
 	outLogFP.close();
     }
 

@@ -154,18 +154,8 @@ long double logcomppdf(long double mu,long double sigma,long double x){
 
 
 
-// typedef struct { 
-//     double likeBaseNoindel[4];
-//     int  covPerBase[4];
-//     double mapqAvg;
-    
-//     int numDel;
-//     vector<string> insertionRight;
-//     int cov;
-// } positionInformation;
 
-
-char offsetQual=33;
+char   offsetQual=33;
 double likeMatch[64];
 double likeMismatch[64];
 double likeMatchMQ[64][64];
@@ -414,37 +404,9 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 	}		 	    
     }//end for nuc
 
-    // for(int nuc=0;nuc<4;nuc++){	    
-    // 	sumLogForNucs[nuc]   = log(sumLogForNucs[nuc])/log(10);
-
-    // 	// if(i==146){
-    // 	//     cout<<nuc<<"\t"<<sumLogForNucs[nuc]<<endl;
-    // 	// }
-    // }
-
-    // sumLogLikeAll        = log(sumLogLikeAll)       /log(10);
-    // sumLogLikeOnlyBest   = log(sumLogLikeOnlyBest)  /log(10);
-    // sumLogLikeAllButBest = log(sumLogLikeAllButBest)/log(10);
     
 }
 
-// typedef struct { 
-//     char ref;
-//     char alt;
-//      unsigned int pos;
-//     double contFreq;
-//     unsigned char cov;
-//     unsigned char refCov;
-//     unsigned char altCov;
-
-//     //    unsigned int ;
-
-//     bool      refOrAlt[MAXCOV]; //ref = false, alt=true
-//     unsigned char mapq[MAXCOV];
-//     unsigned char quals[MAXCOV];;
-//     unsigned char dist5p[MAXCOV];;
-//     unsigned char dist3p[MAXCOV];;   
-//  } positionInfo;
 
 
 //! A method that calls potential insertion in the sample/deletions in the reference
@@ -682,51 +644,6 @@ void insertionInSample(const int i,
 
 
 
-    //old way
-    // if(infoPPos[i].insertionRight.size() != 0){
-
-    // 	map<string,int> insert2count;
-    // 	for(unsigned int k=0;k<infoPPos[i].insertionRight.size();k++){		 
-    // 	    insert2count[ infoPPos[i].insertionRight[k] ]++;
-    // 	}
-	     
-	     
-    // 	int     mostCommonInsCount=-1;
-    // 	string  mostCommonIns="";
-
-
-    // 	for (map<string,int>::iterator itdel=insert2count.begin(); 
-    // 	     itdel!=insert2count.end(); ++itdel){
-    // 	    //cout<<itdel->first<<"\t"<<itdel->second<<endl;
-    // 	    if( itdel->second > mostCommonInsCount){
-    // 		mostCommonInsCount = itdel->second;
-    // 		mostCommonIns      = itdel->first;
-    // 	    }		     
-    // 	}
-
-
-    // 	//if half of the reads support an insertions in reads (deletions in reference) 
-    // 	//TODO add contamination and endogenous split
-    // 	//add probability of correctness "Evaluation of genomic high-throughput sequencing data generated on Illumina HiSeq and Genome Analyzer systems" Minoche
-    // 	if( ((long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov)) >= 0.5){
-    // 	    //outSeqFP<<mostCommonIns;
-    // 	    //return 1;
-    // 	    //if( (-10.0*(log(1.0-double(mostCommonInsCount)/double(infoPPos[i].cov))/log(10.0)))>=minQual){
-    // 	    //min quality ? based on what ?
-    // 	    genomeToPrint+=mostCommonIns;
-    // 	    //}else{
-    // 	    //do not add insert
-    // 	    //}
-
-    // 	    //logToPrint<<string('!',mostCommonIns.size());
-    // 	    for(unsigned int k=0;k<(mostCommonIns.size());k++){
-    // 		(*logToPrint)<<(i+1)<<"i\t"<<"-"<<"\t"<<mostCommonIns[k]<<"\t"<<-10.0*(log(1.0-(long double)(mostCommonInsCount)/(long double)(infoPPos[i].cov))/log(10.0))<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<mostCommonInsCount<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-
-    // 	    }
-		 
-    // 	}
-
-    // }//end insertions in the sample
 
     
 
@@ -2552,27 +2469,7 @@ public:
     }
 #endif
 
-    //exit(1);
-    //store
-    // toStore.cov = numReads;
-
-    // toStore.alt = alt;
-    //  toStore.pos = posAlign;
-
-    // positionsInfoFound->push_back( toStore );
-
-    // if(positionsInfoFound->size()%10000 == 0){
-    // 	cerr<<"Found  "<<thousandSeparator(positionsInfoFound->size())<<" positions "<<endl;
-    // }
-	    
-	    
-    // skiptonextpos:
-    //     return;
-
-    // cout <<m_references[pileupData.RefId].RefName << "\t" 
-    // 	 <<referenceBase<<"\t"
-    // 	 << pileupData.Position << "\t" 
-    // 	 	 << pileupData.PileupAlignments.size() << endl;
+    
   }//end visit()
         
 private:
@@ -2791,10 +2688,6 @@ void computePriorOnReads(const string bamfiletopen,
 	    exit(1);
 	    // return 1;
 	}
-
-	// for(unsigned int i=0;i<reconstructedReference.first.size();i++){
-	// 	cout<<reconstructedReference.first[i]<<"\t"<<reconstructedReference.second[i]<<endl;
-	// }
 
 
 	long double deamLogLike=0.0;
@@ -3449,7 +3342,8 @@ int main (int argc, char *argv[]) {
 			      "\n\tComputation options:\n"+	
 			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
 			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
-			      
+			      "\t\t"+"--phred64" +"\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
+
 			      "\n\tReference options:\n"+	
 			      "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
 			      "\t\t"+"  " +"\t\t\t\t"+"the reference as been wrapped around"+"\n"+
@@ -3471,29 +3365,34 @@ int main (int argc, char *argv[]) {
     for(int i=1;i<(argc-2);i++){ //all but the last 3 args
 
 	
+	if(string(argv[i]) == "--phred64"  ){
+	    offsetQual=64;
+	    continue;
+	}
 
-	if(strcmp(argv[i],"--loce") == 0 ){
+
+	if(string(argv[i]) == "--loce" ){
 	    locatione =destringify<long double>(argv[i+1]);
 	    i++;
 	    specifiedLoce=true;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"--scalee") == 0 ){
+	if(string(argv[i]) == "--scalee" ){
 	    scalee =destringify<long double>(argv[i+1]);
 	    i++;
 	    specifiedScalee=true;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"--locc") == 0 ){
+	if(string(argv[i]) == "--locc" ){
 	    locationc =destringify<long double>(argv[i+1]);
 	    i++;
 	    specifiedLocc=true;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"--scalec") == 0 ){
+	if(string(argv[i]) == "--scalec" ){
 	    scalec =destringify<long double>(argv[i+1]);
 	    i++;
 	    specifiedScalec=true;
@@ -3542,7 +3441,7 @@ int main (int argc, char *argv[]) {
 	}
 
 
-	if(strcmp(argv[i],"-cont") == 0 ){
+	if(string(argv[i]) ==  "-cont" ){
 	    contaminationPrior=destringify<long double>(argv[i+1]);
 	    specifiedContPrior=true;
 	    i++;
@@ -3555,31 +3454,31 @@ int main (int argc, char *argv[]) {
 	//     continue;
 	// }
 
-	if(strcmp(argv[i],"-nomq") == 0 ){
+	if(string(argv[i]) == "-nomq" ){
 	    ignoreMQ=true;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-seq") == 0 ){
+	if(string(argv[i]) == "-seq" ){
 	    outSeq=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-log") == 0 ){
+	if(string(argv[i]) == "-log" ){
 	    outLog=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-name") == 0 ){
+	if(string(argv[i]) == "-name" ){
 	    nameMT=string(argv[i+1]);
 	    i++;
 	    continue;
 	}
 
 
-	if(strcmp(argv[i],"-seqc") == 0 ){
+	if(string(argv[i]) == "-seqc" ){
 	    outSeqC=string(argv[i+1]);
 	    outSeqCflag = true;
 	    userWantsContProduced=true;
@@ -3587,7 +3486,7 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-logc") == 0 ){
+	if(string(argv[i]) == "-logc" ){
 	    outLogC=string(argv[i+1]);
 	    outLogCflag = true;
 	    userWantsContProduced=true;
@@ -3595,14 +3494,14 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-namec") == 0 ){
+	if(string(argv[i]) == "-namec" ){
 	    nameMTC=string(argv[i+1]);
 	    userWantsContProduced=true;
 	    i++;
 	    continue;
 	}
 
-	if(strcmp(argv[i],"-qual") == 0 ){
+	if(string(argv[i]) == "-qual" ){
 	    minQual=destringify<int>(argv[i+1]);
 	    i++;
 	    continue;
@@ -3610,7 +3509,7 @@ int main (int argc, char *argv[]) {
 
 
 
-	if(strcmp(argv[i],"-l") == 0 ){
+	if(string(argv[i]) == "-l" ){
 	    sizeGenome=atoi(argv[i+1]);
 	    i++;
 	    continue;
@@ -3866,18 +3765,7 @@ int main (int argc, char *argv[]) {
 	sizeGenome=genomeRef.size();//use the one from the fasta
     }
 
-    // double ** likelihoodPBasePPos = new double * [genome.size()];
-    // for(unsigned int i = 0; i< genome.size(); i++) {
-    // 	likelihoodPBasePPos[i] = new double  [4];
-    // }
-    // //return 1;
-
-
-    // void iterateOverReads(const string fastaFile,
-    // 		      const string bamfiletopen,
-    // 		      vector<singlePosInfo>  infoPPos,
-    // 		      const int sizeGenome,
-    // 		      const bool ignoreMQ ){
+    
 
     iterateOverReads(fastaFile,
 		     bamfiletopen,

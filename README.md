@@ -2,11 +2,13 @@
   schmutzi: Bayesian maximum a posteriori contamination estimate for ancient samples
 =====================================================================================
 
-Upon sequencing ancient DNA for homonin samples, the DNA of the individuals involved in 
-excavation, extraction of DNA and library preparation can become mixed with the actual 
-sample being sequenced. We define as endogenous the DNA pertaining to the original sample 
-and contaminant the DNA of the experimenters. schmutzi is a set of programs aimed at hominin 
-ancient DNA data that can :
+Upon sequencing ancient DNA , the DNA of the individuals involved in excavation, extraction 
+of DNA and library preparation can become mixed with the actual  sample being sequenced. 
+We define as endogenous the DNA pertaining to the original sample and contaminant the DNA of the experimenters. 
+
+
+schmutzi is a set of programs aimed at ancient DNA data that can :
+
 	- estimate contamination based on deamination patterns alone
 	- call a mitonchondrial consensus for the endogenous genome. This consensus calls 
 	  takes into account contamination and deamination.
@@ -105,15 +107,44 @@ posteriorDeam.R		Plot the posterior probability
 Test Data:
 -------------------------------------------------------------------------------------
 
-To test schmutzi, we have made available real data and simulated data. First you need to estimate endogenous
-deamination rates. First create an output directory:
-	    mkdir /output dir./
+To test schmutzi, we have made available real data with single-strand (testdata/mezB9687.bam) 
+and simulated data with double strand (testdata/simulation.bam). 
+
+
+First you need to estimate endogenous deamination rates. First create an output directory:
+	    mkdir outputdir/
 
 Then run contDeam to estimation endogenous deamination rates:
-	    ./contDeam.pl  --library single --out /output dir./ testData/in.bam
+	    ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
+or for the simulated
+            ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
 
 This will produce the files:
-     	       	  
+     	  outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
+	  outputdir/[out].cont.est      Estimate for contamination based on deamination
+	  outputdir/[out].config	Configuration file describing the variables used
+
+
+
+This will produce the files:
+        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/311/freqs/  testdata/mezB9687.bam
+        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/311/freqs/  testdata/simulation.bam
+ 	  
+It will run for a few minutes and produce the following files:
+
+For contamination:
+	  [out]_final_mtcont.out        Contamination estimates for all samples in the database
+	  [out]_final.cont		Contamination estimates for the sample in the database with the highest likelihood
+	  [out]_final.cont.est		Contamination estimates for the most likely sample with confidence intervals 	  
+	  [out]_final.cont.pdf		Posterior probability on the contamination for the most likely sample
+
+For the respective genomes of the endogenous and contaminant:	  
+	  [out]_final_endo.fa		Endogenous mitochondrial genome as fasta
+	  [out]_final_endo.log		Endogenous mitochondrial genome as a log file with likelihoods on a PHRED scale
+	  
+	  [out]_final_cont.fa		Contaminant mitochondrial genome as fasta
+	  [out]_final_cont.log		Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale
+
 
 
 Recommended workflow for ancient samples:
@@ -135,11 +166,10 @@ Recommended workflow for ancient samples:
      but produces equal coverage and resolution at the boundaries
   5) Estimate your initial contamination and deamination rates using "contDeam.pl"
   6) Run schmutzi.pl once with default parameters
-     If contamination is very high or the algorithm does not converge re-run using 
-     the "--uselength" option
-     If the run was succesful, maybe re-run with "--uselength" to see if your endogenous 
-     consensus call has better quality.
+  7) Run schmutzi.pl again  with "--usepredC"
 
+  8) If contamination is more than a few percent re-run using the "--uselength" option
+     
 
 
 Frequently asked questions:
