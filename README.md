@@ -187,6 +187,34 @@ Frequently asked questions:
   for them is higher than 1 or 2 \%, the results provided by contDeam.pl will not 
   reliable.
   
+- The contamination estimate given by contDeam.pl gives me a very different result
+  than schmutzi.pl does, why is that ?
+
+  There could be a few reasons:
+  1) Your contamination is deaminated. That can be the case for museum samples.
+     Check to see if the 
+        - [output prefix]_[iteration]_cont.5p.prof 
+        and 
+        - [output prefix]_[iteration]_cont.3p.prof 
+     present any sign of deamination.
+
+  2) The algorithm diverged. This could be due to a misleading prior or an almost absence
+     of endogenous material.
+
+- How can I know if I have multiple contaminants ?
+    If you have highly divergent quality values for bases in the contamination prediction,
+    this could be an indication that you might have multiple contaminants. Further, if  
+    the predicted contaminant does not seem to fall within a given haplogroup and has
+    diagnostic positions from different haplogroups, this could be an indication that 
+    your contaminant is multiple. 
+
+- What to do if I suspect that I have multiple contaminants ?
+    Do not use the --usepredC option and turn on the --multipleC option. If the contamination 
+    rate is a lot lower than the one predicted by the deamination patterns, this could be an 
+    indication that schmutzi did not converge and contamination is very high. Try to do a simple prediction
+    using deaminated molecules (hoping that the contaminant is not deaminated) and use this as the input of 
+    mtCont manually. Datasets that are heavily contaminated with multiple contaminants are very difficult 
+    targets.
 
 - Can I build my own set of putative contaminants ?
 
