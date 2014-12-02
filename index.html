@@ -37,15 +37,16 @@
         <h3>
 <a id="About" class="anchor" href="#about" aria-hidden="true"><span class="octicon octicon-link"></span></a>About.</h3>
 
-<p>Upon sequencing mitochondrial DNA from ancient samples and aligning the molecules to a reference, deamination of the molecules can interfere with consensus calling. For hominin samples, contamination from modern humans involved in the excavation and experimental process can complicate consensus calling of the endogenous (i.e. pertaining to the original individual). Also, quantifying this contamination is crucial to evaluate which samples are the most promising. </p> 
+<p>Sequencing of mitochondrial DNA from ancient samples is often used as a preliminary strategy to ensure recoverable endogenous DNA, that is DNA endogenous to sample of interest. Deamination of the molecules, a common form of damage to aDNA, can interfere with alignment and consensus calling against a reference sequence. For hominin samples, contamination from modern humans involved in the excavation and experimental process can further complicate consensus calling meaning quantification of this contamination is crucial in evaluating which ancient samples have the most potential for further downstream analyses. </p> 
 
-<p>schmutzi is a Bayesian maximum <i>a posteriori</i> estimator of contamination for ancient hominin samples. It also calls the endogenous mitochondrial consensus. 
+<p>schmutzi is a Bayesian maximum <i>a posteriori</i> estimator of contamination for ancient hominin samples which also calls the endogenous mitochondrial consensus. 
 
 More precisely, schmutzi is a set of programs aimed at ancient DNA data that can :
+
  <ul>
    <li> estimate contamination based on deamination patterns alone </li>
-   <li> call a mitonchondrial consensus for the endogenous genome. This consensus calls takes into account contamination and deamination.</li>
-      <li> estimate mitonchondrial contamination using the endogenous calls, scan a database modern human set of putative contamination source. It can identify the most likely contaminant among the database records. An exhaustive set of human MTs is provided with the package.    </li>
+   <li> call a mitochondrial consensus for the endogenous genome accounting for both contamination and deamination.</li>
+      <li> estimate mitochondrial contamination using the endogenous calls. By scanning a database of modern human putative contamination sources it can identify the most likely contaminant among the database records. An exhaustive set of human MTs is provided with the package.  </li>
  </ul>
 
 
