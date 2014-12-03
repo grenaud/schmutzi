@@ -23,7 +23,7 @@ Questions :
 Downloading:
 -------------------------------------------------------------------------------------
 Do a "git clone --recursive https://github.com/grenaud/schmutzi.git"
-
+or download a zipped file from https://bioinf.eva.mpg.de/schmutzi/schmutzi.tar.gz
 
 Requirements:
 -------------------------------------------------------------------------------------
@@ -31,19 +31,12 @@ Requirements:
    - R
       -  The fitdistrplus R package
       -  The MASS package
+  
 
 Installation:
 -------------------------------------------------------------------------------------
-1) Build Bamtools first:
 
-    cd bamtools/   
-    mkdir build/   
-    cd build/
-    cmake ..
-    make 
-    cd ../..
-
-2) type "make"
+1) type "make" which should build pretty much everything. 
 
 
 Running:
