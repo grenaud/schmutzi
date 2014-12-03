@@ -1129,13 +1129,22 @@ void callSingleNucleotide(const int i,
 	else
 	    covEndoToPrint=infoPPos[i].covPerBase[bestNuc];
 
-
-	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covEndoToPrint;//<<endl;
+	long double valToPrintE= (-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0);
+	if(valToPrintE==0.0) 
+	    valToPrintE = 0.0;
+	
+	
+	
+	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<< valToPrintE <<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covEndoToPrint;//<<endl;
 
 
 	for(int nuc=0;nuc<4;nuc++){
-	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.phred[nuc]  =        (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    long double valToPrint =  (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    if(valToPrint==0.0) 
+		valToPrint = 0.0;
+
+	    (*logToPrint)<<"\t"<<      valToPrint;
+	    toadd.phred[nuc]  =        valToPrint;
 	    toadd.perror[nuc] =    pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
 	}
 	(*logToPrint)<<endl;
@@ -1157,12 +1166,18 @@ void callSingleNucleotide(const int i,
 		covContToPrint=infoPPos[i].covPerBaseNoBoundary[bestNucC];
 	    else
 		covContToPrint=infoPPos[i].covPerBase[bestNucC];
-
-	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covContToPrint;//<<endl;
+	    long double valToPrintC= (-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0);
+	    if(valToPrintC==0.0) 
+		valToPrintC = 0.0;
+	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<< valToPrintC <<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covContToPrint;//<<endl;
 	 
 	    for(int nuc=0;nuc<4;nuc++){
-		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		toadd.phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		long double valToPrint= (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC)); 
+		if(valToPrint==0.0) 
+		    valToPrint = 0.0;
+
+		(*logToPrintC)<<"\t"<<      (valToPrint);
+		toadd.phredC[nuc]  =        (valToPrint);
 		toadd.perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
 	    }
 	    (*logToPrintC)<<endl;
@@ -1189,11 +1204,20 @@ void callSingleNucleotide(const int i,
 	    else
 		covContToPrint=infoPPos[i].covPerBase[bestNucC];
 
-	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<(-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covContToPrint;//<<endl;
+	    long double valToPrintC= (-10*(sumLogLikeAllButBestC-sumLogLikeAllC)+0.0);
+	    if(valToPrintC==0.0) 
+		valToPrintC = 0.0;
+
+	    (*logToPrintC)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNucC]<<"\t"<<valToPrintC<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covContToPrint;//<<endl;
 	 
+	    
 	    for(int nuc=0;nuc<4;nuc++){
-		(*logToPrintC)<<"\t"<<      (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
-		pos2phredgeno[   (i+1)   ].phredC[nuc]  =     (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC));
+		long double valToPrint= (-10*(sumLogForNucsC[nuc]-sumLogLikeAllC)); 
+		if(valToPrint==0.0) 
+		    valToPrint = 0.0;
+
+		(*logToPrintC)<<"\t"<<                        (valToPrint);
+		pos2phredgeno[   (i+1)   ].phredC[nuc]  =     (valToPrint);
 		pos2phredgeno[   (i+1)   ].perrorC[nuc] = pow(10.0,(sumLogForNucsC[nuc]-sumLogLikeAllC));
 	    }
 	    (*logToPrintC)<<endl;
@@ -1219,12 +1243,22 @@ void callSingleNucleotide(const int i,
 	else
 	    covEndoToPrint=infoPPos[i].covPerBase[bestNuc];
 
-	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<(-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0)<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covEndoToPrint;//<<endl;
+	
+	long double valToPrintE= (-10*(sumLogLikeAllButBest-sumLogLikeAll)+0.0);
+	if(valToPrintE==0.0) 
+	    valToPrintE = 0.0;
+
+
+	(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<dnaAlphabet[bestNuc]<<"\t"<<valToPrintE<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<covEndoToPrint;//<<endl;
 
 
 	for(int nuc=0;nuc<4;nuc++){
-	    (*logToPrint)<<"\t"<<      (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
-	    toadd.phred[nuc]  =     (-10*(sumLogForNucs[nuc]-sumLogLikeAll));
+	    long double valToPrint= (-10*(sumLogForNucs[nuc]-sumLogLikeAll)); 
+	    if(valToPrint==0.0) 
+		valToPrint = 0.0;
+
+	    (*logToPrint)<<"\t"<<      valToPrint;
+	    toadd.phred[nuc]     =     valToPrint;
 	    toadd.perror[nuc] = pow(10.0,(sumLogForNucs[nuc]-sumLogLikeAll));
 	}
 	(*logToPrint)<<endl;
