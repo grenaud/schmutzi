@@ -27,7 +27,11 @@ or download a zipped file from https://bioinf.eva.mpg.de/schmutzi/schmutzi.tar.g
 
 Requirements:
 -------------------------------------------------------------------------------------
+
    - zlib.h
+   - cmake to build bamtools
+   - C++ compiler
+   - Perl interpreter
    - R
       -  The fitdistrplus R package
       -  The MASS package
@@ -36,7 +40,15 @@ Requirements:
 Installation:
 -------------------------------------------------------------------------------------
 
+
+For Mac users, open a terminal please type "cmake". If it is not installed, please install it. 
+For Windows users, you would need cygwin to run schmutzi as it runs on the terminal (https://www.cygwin.com/). 
+
 1) type "make" which should build pretty much everything. 
+
+We mostly tested our program on Linux system, please email us if you have trouble building under cygwin or Mac. 
+A comment about cygwin: the high precision version of the logarithm does not seem available by default. Therefore, 
+we are forced to use the low precision variant for cygwin. For higher accuracy, run our software under Linux.
 
 
 Running:
@@ -119,9 +131,10 @@ This will produce the files:
 
 
 
-This will produce the files:
-        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/311/freqs/  testdata/mezB9687.bam
-        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/311/freqs/  testdata/simulation.bam
+Then run the following to produce the endogenous consensus and the contamination estimate:
+
+        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/197/freqs/  testdata/mezB9687.bam
+        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/197/freqs/  testdata/simulation.bam
  	  
 It will run for a few minutes and produce the following files:
 

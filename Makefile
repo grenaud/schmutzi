@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.so
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -18,7 +18,7 @@ libgab/utils.h:
 	git clone --recursive https://github.com/grenaud/libgab.git
 
 
-libgab/utils.o: bamtools/lib/libbamtools.so  libgab/utils.h
+libgab/utils.o: bamtools/lib/libbamtools.a  libgab/utils.h
 	make -C libgab
 
 bamtools/src/api/BamAlignment.h:
@@ -26,7 +26,7 @@ bamtools/src/api/BamAlignment.h:
 	git clone --recursive https://github.com/pezmaster31/bamtools.git
 
 
-bamtools/lib/libbamtools.so: bamtools/src/api/BamAlignment.h
+bamtools/lib/libbamtools.a: bamtools/src/api/BamAlignment.h
 	cd bamtools/ && mkdir build/  && cd build/ && cmake .. && make && cd ../..
 
 

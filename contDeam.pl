@@ -29,27 +29,32 @@ sub runcmd{
 sub fileExists{
   my ($exeFile) = @_;
 
-  if (!( -e $exeFile)) {
-    die "Executable ".$exeFile." does not exist\n";
+  if (!( -e $$exeFile)) {
+    if (!( -e (($$exeFile).".exe")) ) {
+      $$exeFile=(($$exeFile).".exe");
+    }else{
+      die "Executable ".$$exeFile." does not exist\n";
+    }
   }
 }
+
 my @arraycwd=split("/",abs_path($0));
 pop(@arraycwd);
 my $pathdir = join("/",@arraycwd);
 
 my $insertSize  = $pathdir."/insertSize";
-my $approxDist = $pathdir."/approxDist.R";
-my $bam2prof   = $pathdir."/bam2prof";
-my $contDeam   = $pathdir."/contDeam";
-my $contDeamR  = $pathdir."/posteriorDeam.R";
-my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
+my $approxDist  = $pathdir."/approxDist.R";
+my $bam2prof    = $pathdir."/bam2prof";
+my $contDeam    = $pathdir."/contDeam";
+my $contDeamR   = $pathdir."/posteriorDeam.R";
+my $splitEndo   = $pathdir."/splitEndoVsCont/poshap2splitbam";
 
-fileExists($insertSize);
-fileExists($approxDist);
-fileExists($bam2prof);
-fileExists($contDeam);
-fileExists($contDeamR);
-fileExists($splitEndo);
+fileExists(\$insertSize);
+fileExists(\$approxDist);
+fileExists(\$bam2prof);
+fileExists(\$contDeam);
+fileExists(\$contDeamR);
+fileExists(\$splitEndo);
 
 #
 # protocol s or d

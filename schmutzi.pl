@@ -387,8 +387,12 @@ sub runcmdReturnOutput {
 sub fileExists{
   my ($exeFile) = @_;
 
-  if (!( -e $exeFile)) {
-    die "Executable ".$exeFile." does not exist\n";
+  if (!( -e $$exeFile)) {
+    if (!( -e (($$exeFile).".exe")) ) {
+      $$exeFile=(($$exeFile).".exe");
+    }else{
+      die "Executable ".$$exeFile." does not exist\n";
+    }
   }
 }
 
@@ -410,17 +414,17 @@ my $contDeam   = $pathdir."/contDeam";
 my $contDeamR  = $pathdir."/posteriorDeam.R";
 my $splitEndo  = $pathdir."/splitEndoVsCont/poshap2splitbam";
 
-fileExists($mtCont);
-fileExists($endoCaller);
-fileExists($insertSize);
-fileExists($countRec);
-fileExists($approxDist);
-fileExists($bam2prof);
-fileExists($log2freq);
-fileExists($logs2pos);
-fileExists($contDeam);
-fileExists($contDeamR);
-fileExists($splitEndo);
+fileExists(\$mtCont);
+fileExists(\$endoCaller);
+fileExists(\$insertSize);
+fileExists(\$countRec);
+fileExists(\$approxDist);
+fileExists(\$bam2prof);
+fileExists(\$log2freq);
+fileExists(\$logs2pos);
+fileExists(\$contDeam);
+fileExists(\$contDeamR);
+fileExists(\$splitEndo);
 
 
 my $nameMT    = "MT";

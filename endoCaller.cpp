@@ -6,7 +6,12 @@
  */
 
 
-
+#if defined(__CYGWIN__) 
+#define atanl(X) atan(X)
+#define logl(X) log(X)
+#define sqrtl(X) sqrt(X)
+#endif
+  
 
 //TODO
 

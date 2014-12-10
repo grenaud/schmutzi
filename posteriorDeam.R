@@ -14,7 +14,7 @@ title <- args[3];
 
 
 pdf(pdffile);
-plot(data$V2,data$V3,xlab="Contamination",ylab="Posterior probability (log scale)",main=title,col="red",pch=4,lty=1);
+plot(data$V2,data$V3,xlab="Contamination",ylab="Posterior probability (log scale)",main=title,pch="*",col="darkred",lty=1);
 
 if(length(args)>3){ #title
 abline(v=args[4],lty=2);

@@ -144,7 +144,8 @@ int main (int argc, char *argv[]) {
 
 		
 		if(seq[i][j] == 'N' ||
-		   seq[i][j] == '-' ){
+		   seq[i][j] == '-' ||
+		   isAmbiguousUIPAC(seq[i][j])){
 		    outProf<<indexRef<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		}else{	
 		    //cout<<indexRef<<"\t"<< idtouse<<"\t"<<(seqREF[j])<<"\t"<<(seq[i][j])<<endl;
