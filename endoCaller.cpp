@@ -1390,6 +1390,10 @@ void  printLogAndGenome(const int sizeGenome,
 	bool  contIndel=false;
 
 
+	if( !isResolvedDNA(genomeRef[i]) ){
+	    cerr<<"Skipping position "<<i<<" due to, found base = "<<genomeRef[i]<<endl;
+	}
+	
 
 	//need to check for indel in the position in front
 #ifdef	IGNOREINDELBOUND
@@ -3279,7 +3283,7 @@ void initScores(){
        Recalls iterateOverReads() to populated infoPPos and printLogAndGenome to print the information contained therein using the new prior on the reads
 */
 int main (int argc, char *argv[]) {
-
+    setlocale(LC_ALL, "POSIX");
     int sizeGenome=0;
     string outSeq  = "/dev/stdout";
     string outLog  = "/dev/stderr";

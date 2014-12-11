@@ -164,7 +164,7 @@ Recommended workflow for ancient samples:
 
 - MT
   1) Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using 
-    a sensitive mapper that produces BAM
+    a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
   2) run samtools sort on your aligned bam file
   3) run samtools index on your sorted and aligned bam file
   4) If you used the wrapped reference, re-wrap your alignments exceeding the junction
@@ -180,6 +180,13 @@ Recommended workflow for ancient samples:
 
 Frequently asked questions:
 -------------------------------------------------------------------------------------
+
+- How should I prepare the BAM file as input for endoCaller ?
+   
+   As we mention above the, data must be aligned and ideally, wrapped around the ends.
+   We provide a little wrapper script to call the shrimp mapper and wrap the reads around
+   the edge : wrapper.pl
+
 
 - When should I trust the output of contDeam.pl ?
 
@@ -275,5 +282,21 @@ Frequently asked questions:
 
 - Should I filter my BAM file for reads with high mapping quality ?
   
-  * In theory, no. If the mapping quality is not a bad proxy for the probability of mismapping, you should be fine as mapping quality is 
+  * In theory, no. If the mapping quality is good proxy for the probability of mismapping, you should be fine as mapping quality is 
     incorporated
+
+
+- How much can I trust the endogenous consensus call ?
+ 
+  * That depends on two factors:
+     1) Amount of contamination and coverage, you can check how good the quality of the log is. If you have low quality, not much can be done
+     2) It the case of very distant mt genomes (ex: Denisova to human) the divergence might 
+        be very high in certain regions and leads to misalignments. To solve this, an approach is to call the endogenous iteratively as such:
+        
+        ./wrapper.pl   testDenisova/endo.it1  refs/human_MT.fa testDenisova/input.bam
+        ./endoCaller -seq testDenisova/endo.it1.fa -log testDenisova/endo.it1.log  refs/human_MT.fa testDenisova/endo.it1.bam
+        samtools faidx testDenisova/endo.it1.fa
+        ./wrapper.pl   testDenisova/endo.it2  testDenisova/endo.it1.fa testDenisova/endo.bam
+        ./endoCaller -seq testDenisova/endo.it2.fa -log testDenisova/endo.it2.log testDenisova/endo.it1.fa  testDenisova/endo.it2.bam
+         ...
+        Until there is no difference

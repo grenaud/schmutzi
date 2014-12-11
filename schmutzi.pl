@@ -388,7 +388,7 @@ sub fileExists{
   my ($exeFile) = @_;
 
   if (!( -e $$exeFile)) {
-    if (!( -e (($$exeFile).".exe")) ) {
+    if ( ( -e (($$exeFile).".exe")) ) {
       $$exeFile=(($$exeFile).".exe");
     }else{
       die "Executable ".$$exeFile." does not exist\n";
