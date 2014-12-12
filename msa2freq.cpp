@@ -7,6 +7,8 @@
 
 #include <iostream>
 #include <set>
+#include <algorithm>
+#include <string>
 #include <fstream>
 #include <gzstream.h>
 #include "FastQParser.h"
@@ -112,8 +114,12 @@ int main (int argc, char *argv[]) {
 		}		  
 	    }
 	   
+	    
 	    cerr<<"Processing "<<idtouse<<endl;
+	    replace( idtouse.begin(), idtouse.end(), '|', '_');//to avoid the | from GenBank
 	    string filenameout = "freqs/"+idtouse + ".freq";
+
+
 	    ofstream outProf;
 
 
