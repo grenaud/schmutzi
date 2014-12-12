@@ -35,20 +35,31 @@ Requirements:
    - R
       -  The fitdistrplus R package
       -  The MASS package
-  
+
+On Ubuntu, these dependencies can be resolved using :
+  sudo apt-get install perl
+  sudo apt-get install git
+  sudo apt-get install cmake
+  sudo apt-get install g++
+  sudo apt-get install zlib
+  sudo apt-get install zlib1g-dev
+  sudo apt-get install r-base-core
+
 
 Installation:
 -------------------------------------------------------------------------------------
 
 
-For Mac users, open a terminal please type "cmake". If it is not installed, please install it. 
+For Mac users, open a terminal please type "cmake" to check if works. If it is not installed, please install it. 
 For Windows users, you would need cygwin to run schmutzi as it runs on the terminal (https://www.cygwin.com/). 
 
 1) type "make" which should build pretty much everything. 
 
-We mostly tested our program on Linux system, please email us if you have trouble building under cygwin or Mac. 
+We tested our program on a Linux system and MacOS, please email us if you have trouble building under cygwin. 
+
 A comment about cygwin: the high precision version of the logarithm does not seem available by default. Therefore, 
-we are forced to use the low precision variant for cygwin. For higher accuracy, run our software under Linux.
+we are forced to use the low precision variant for cygwin. For higher accuracy, run our software under Linux. Also, 
+some users have reported bugs with the locale used by C++ 
 
 
 Running:
@@ -112,23 +123,31 @@ posteriorDeam.R		Plot the posterior probability
 Test Data:
 -------------------------------------------------------------------------------------
 
-To test schmutzi, we have made available real data with single-strand (testdata/mezB9687.bam) 
-and simulated data with double strand (testdata/simulation.bam). 
+To test schmutzi, we have made available emprical data with single-strand (ex: testdata/mezB9687.bam) 
+and simulated data with double-stranded damage patterns (ex: testdata/simulation.bam). 
 
+
+To download it, either download it manually from :
+   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
+   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
+   https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
+   https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
+
+Or, if you have "wget" installed, just type:
+    make testdata
 
 First you need to estimate endogenous deamination rates. First create an output directory:
-	    mkdir outputdir/
+    mkdir outputdir/
 
 Then run contDeam to estimation endogenous deamination rates:
-	    ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
+    ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
 or for the simulated
-            ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
+    ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
 
 This will produce the files:
-     	  outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
-	  outputdir/[out].cont.est      Estimate for contamination based on deamination
-	  outputdir/[out].config	Configuration file describing the variables used
-
+    outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
+    outputdir/[out].cont.est      Estimate for contamination based on deamination
+    outputdir/[out].config	Configuration file describing the variables used
 
 
 Then run the following to produce the endogenous consensus and the contamination estimate:

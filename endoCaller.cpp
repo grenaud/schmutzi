@@ -1391,7 +1391,7 @@ void  printLogAndGenome(const int sizeGenome,
 
 
 	if( !isResolvedDNA(genomeRef[i]) ){
-	    cerr<<"Skipping position "<<i<<" due to, found base = "<<genomeRef[i]<<endl;
+	    cerr<<"Skipping position "<<i<<" due to unknown base, found  = "<<genomeRef[i]<<endl;
 	}
 	
 

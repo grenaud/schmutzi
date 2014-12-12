@@ -104,6 +104,16 @@ damage2profile.o:	libgab/utils.o damage2profile.cpp
 damage2profile:	libgab/utils.o damage2profile.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
+testdata: testdata/mezB9687.bam testdata/simulation.bam
+
+
+testdata/mezB9687.bam:
+	wget -O mezB9687.bam       https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
+	wget -O mezB9687.bam.bai   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
+
+testdata/simulation.bam:
+	wget -O simulation.bam     https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
+	wget -O simulation.bam.bai https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
 
 
 clean :
