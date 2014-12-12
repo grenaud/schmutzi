@@ -255,10 +255,10 @@ void *mainContaminationThread(void * argc){
 
     bool foundData=false;
 
-    threadID2Rank[(unsigned int)pthread_self()]  = threadID2Rank.size()+1;
+    threadID2Rank[*(int *)pthread_self()]  = threadID2Rank.size()+1;
     cerr<<"Thread #"<<rankThread <<" started and is requesting data"<<endl;
 
-    rankThread = threadID2Rank[(unsigned int)pthread_self()];
+    rankThread = threadID2Rank[*(int *)pthread_self()];
 
     //cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
 
