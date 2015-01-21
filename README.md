@@ -30,6 +30,7 @@ Requirements:
 
    - zlib.h
    - cmake to build bamtools
+   - git to download the submodules
    - C++ compiler
    - Perl interpreter
    - R
