@@ -117,6 +117,8 @@ using namespace std;
 #define MAXCOV    5000
 #define INDELERRORPROB 1.0e-5 // http://genomebiology.com/2011/12/11/R112
 #define LOGRATIOFORINDEL 50  //beyond that difference in log, a indel will be called
+#define MAXMAPPINGQUAL 257     // maximal mapping quality, should be sufficient as mapping qualities are encoded using 8 bits
+
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
 const long double PI  = atanl(1.0L)*4;   
@@ -162,18 +164,18 @@ long double logcomppdf(long double mu,long double sigma,long double x){
 
 
 char offsetQual=33;
-double likeMatch[64];
-double likeMismatch[64];
-double likeMatchMQ[64][64];
-double likeMismatchMQ[64][64];
+double likeMatch[MAXMAPPINGQUAL];
+double likeMismatch[MAXMAPPINGQUAL];
+double likeMatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+double likeMismatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
 
-double likeMatchProb[64];
-double likeMismatchProb[64];
-double likeMatchProbMQ[64][64];
-double likeMismatchProbMQ[64][64];
+double likeMatchProb[MAXMAPPINGQUAL];
+double likeMismatchProb[MAXMAPPINGQUAL];
+double likeMatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+double likeMismatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
 
-double probMapping[64];
-double probMismapping[64];
+double probMapping[MAXMAPPINGQUAL];
+double probMismapping[MAXMAPPINGQUAL];
 
 
 double probLengthEndo[1000];
@@ -1747,7 +1749,7 @@ void initScores(){
 
 
     //Computing for quality scores 2 and up
-    for(int i=2;i<64;i++){
+    for(int i=2;i<MAXMAPPINGQUAL;i++){
         likeMatch[i]        = log1p(    -pow(10.0,i/-10.0) )     /log(10);          
         likeMismatch[i]     = log  (     pow(10.0,i/-10.0)/3.0  )/log(10);
 
@@ -1757,7 +1759,7 @@ void initScores(){
 
 
     //Adding mismapping probability
-    for(int m=0;m<64;m++){
+    for(int m=0;m<MAXMAPPINGQUAL;m++){
 
 	double incorrectMappingProb   =     pow(10.0,m/-10.0); //m
 	double correctMappingProb     = 1.0-pow(10.0,m/-10.0); //1-m
@@ -1778,7 +1780,7 @@ void initScores(){
 
 
     	//Computing for quality scores 2 and up
-    	for(int i=2;i<64;i++){
+    	for(int i=2;i<MAXMAPPINGQUAL;i++){
 	    //  (1-m)(1-e) + m/4  = 1-m-e+me +m/4  = 1+3m/4-e+me
     	    likeMatchMQ[m][i]         = log(  correctMappingProb*(1.0-pow(10.0,i/-10.0)    ) + incorrectMappingProb/4.0    )/log(10);    
 	    //  (1-m)(e/3) + m/4  = e/3 -me/3 + m/4
@@ -1790,7 +1792,7 @@ void initScores(){
 
 
 #ifdef DEBUG1
-    	for(int i=0;i<64;i++){
+    	for(int i=0;i<MAXMAPPINGQUAL;i++){
 	    cerr<<"m\t"<<m<<"\t"<<i<<"\t"<<likeMatchMQ[m][i]<<"\t"<<likeMismatchMQ[m][i]<<"\t"<<likeMatchProbMQ[m][i]<<"\t"<<likeMismatchProbMQ[m][i]<<endl;
 	}
 #endif
