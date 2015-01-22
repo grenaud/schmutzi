@@ -549,6 +549,7 @@ my $configfiledeam = $prefixcontDeam.".deam.config";
 my $freqDir        = $ARGV[ $#ARGV -1 ];
 my $inbam          = $ARGV[ $#ARGV -0 ];
 my $splitDeam =-1;
+
 open(FILEcontdeam, $configfiledeam) or die "cannot open ".$configfiledeam;
 
 while (my $line = <FILEcontdeam>) {

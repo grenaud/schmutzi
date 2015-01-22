@@ -27,7 +27,7 @@ bamtools/src/api/BamAlignment.h:
 
 
 bamtools/lib/libbamtools.a: bamtools/src/api/BamAlignment.h
-	cd bamtools/ && mkdir build/  && cd build/ && cmake .. && make && cd ../..
+	cd bamtools/ && mkdir -p build/  && cd build/ && cmake .. && make && cd ../..
 
 
 miscfunc.o:	libgab/utils.o miscfunc.cpp
