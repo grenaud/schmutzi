@@ -426,7 +426,7 @@ int main (int argc, char *argv[]) {
 	else
 	    typesOfDimer5pToUse = &typesOfDimer5pSingle;
     }else{
-	typesOfDimer5pToUse = &typesOfDimer5p;
+	typesOfDimer5pToUse     = &typesOfDimer5p;
     }
 
     for(int l=0;l<lengthMaxToPrint;l++){
@@ -444,9 +444,11 @@ int main (int argc, char *argv[]) {
 		    file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs);
 		}else{ 
 		    if(doubleStr){
-			if(     n1==1 && n2==3  ) {     file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+			//          C        T
+			if(         n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
 		    }else{ 
 			if(singleStr){
+			    //      C        T
 			    if(     n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
 			
 			}
@@ -503,9 +505,11 @@ int main (int argc, char *argv[]) {
 		    file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs);
 		}else{ 
 		    if(doubleStr){
-			if(     n1==1 && n2==3  ) {     file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+			//          G        A
+			if(         n1==2 && n2==0  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
 		    }else{ 
 			if(singleStr){
+			    //      C        T
 			    if(     n1==1 && n2==3  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
 			
 			}

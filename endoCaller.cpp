@@ -15,7 +15,7 @@
 
 //TODO
 
-//#define DEBUGINS 308
+//#define DEBUGINS 5893
 // #define DEBUG1
 // #define DEBUG2
 //#define DEBUG3
@@ -413,8 +413,6 @@ inline void callBestNucleotideGivenLikelihood( int         & bestNuc,
 
     
 }
-
-
 
 //! A method that calls potential insertion in the sample/deletions in the reference
 /*!
@@ -1602,7 +1600,60 @@ void  printLogAndGenome(const int sizeGenome,
 
 
 
+//! A method that computes by how much a string overlaps another using the prefix
+/*!
+  
+  \param s1: first string
+  \param s2: second string
+  \return The fraction that a string overlaps another using the prefix
+*/
+inline long double string2sub(const string & s1,const string & s2){
+    if(s1==s2)
+	return 1.0;
+    // else
+    //  	return 0.0;
+    int minStrSize = int(min(s1.size(),s2.size()));
+    int maxStrSize = int(max(s1.size(),s2.size()));
+    int ident=0;
 
+    for(int i=0;i<minStrSize;i++){
+	if(s1[i] == s2[i]){
+	    ident++;
+	}else
+	    break;
+    }
+
+    return (long double)(ident) / (long double)(maxStrSize);
+}
+
+
+
+
+//! A method that computes the probability of observing a given insertion 
+/*!
+  This method is called by insertionInSample to compute the probability of 
+  observing a given insertion given an insertion in the model.
+  
+  \param modelIns:   The string from the "model"
+  \param obserIns:   The observed string
+  \return The probability of observing obserIns given modelIns
+*/
+inline long double insertPair2Prob(const string & modelIns,const string & obserIns){
+    long double overlapFrac = string2sub(modelIns,obserIns);//1 if identical, 0 otherwise
+    //if(modelIns == obserIns)
+    //                     //correct                        + incorrect
+    long double toReturn = overlapFrac*(1.0-INDELERRORPROB) + (1.0-overlapFrac)*INDELERRORPROB;
+    //cout<<"insertPair2Prob\t"<<modelIns<<"\t"<<obserIns<<"\t"<<toReturn<<endl;
+    return toReturn;
+    // else
+    // 	return (    INDELERRORPROB);
+}
+// inline long double insertPair2Prob(const string & modelIns,const string & obserIns){
+//     if(modelIns == obserIns)
+// 	return (1.0-INDELERRORPROB);
+//     else
+// 	return (    INDELERRORPROB);
+// }
 
 
 //unsigned int posFound;
@@ -1762,7 +1813,9 @@ public:
 
 #ifdef DEBUGINS
 	if(posVector == DEBUGINS){
-	    cout<<"al#"<<i<<endl;
+	    cout<<"al#"<<i<<"\tpos="<<posVector<<endl;
+	    cout<<"ref base"<< referenceBase <<endl;
+
 	    cout<<pileupData.PileupAlignments[i].Alignment.Name<<endl;
 	    cout<<pileupData.PileupAlignments[i].IsCurrentDeletion<<endl;
 	    cout<<pileupData.PileupAlignments[i].IsNextInsertion<<endl;
@@ -1787,7 +1840,7 @@ public:
 
 #ifdef DEBUGINS
 	    if(posVector == DEBUGINS)
-		cout<<insert<<"\t"<<m_infoPPos->at(posVector).insertion2count[insert]<<endl;
+		cout<<"ins\t"<<insert<<"\t"<<m_infoPPos->at(posVector).insertion2count[insert]<<endl;
 	    //m_infoPPos->at(posVector).allInserts.insert(insert);
 
 #endif
@@ -1826,7 +1879,7 @@ public:
 	//make sure the read is not too close to the boundary, otherwise skip
 	if( !(
 	      ( (                                                           pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
-	     &&
+	      &&
 	      ( (pileupData.PileupAlignments[i].Alignment.QueryBases.size()-pileupData.PileupAlignments[i].PositionInAlignment) > IGNOREINDELBOUND) 
 	      ) 
 	    ){
@@ -1841,222 +1894,280 @@ public:
 
 #endif
 
-      int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
-      long double probEndogenous=1.0-contaminationPrior;
+	int  m   = int(pileupData.PileupAlignments[i].Alignment.MapQuality);
+	long double probEndogenous=1.0-contaminationPrior;
 
 
-      if(read2endoProbInit){ //include probability of endogenous		    
-	map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
-										"#"+ 
-										stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
+	if(read2endoProbInit){ //include probability of endogenous		    
+	    map<string,long double>::iterator itRead2endoProb = read2endoProb.find( pileupData.PileupAlignments[i].Alignment.Name+
+										    "#"+ 
+										    stringify(pileupData.PileupAlignments[i].Alignment.AlignmentFlag) );
 		    
 		    
-	if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
-	  probEndogenous = 1.0-contaminationPrior;        // assume that a read is equally to belong to either the endo or the contaminant
-	}else{
-	  probEndogenous = itRead2endoProb->second;
+	    if( itRead2endoProb == read2endoProb.end() ){     // skipped due to deletions near the end or something			    
+		probEndogenous = 1.0-contaminationPrior;        // assume that a read is equally to belong to either the endo or the contaminant
+	    }else{
+		probEndogenous = itRead2endoProb->second;
+	    }
 	}
-      }
 
 
 		
-      if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
-	  pileupData.PileupAlignments[i].IsNextInsertion &&
-	  (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
+	if( !pileupData.PileupAlignments[i].IsCurrentDeletion &&
+	    pileupData.PileupAlignments[i].IsNextInsertion &&
+	    (pileupData.PileupAlignments[i].InsertionLength>0)){ //has insertion
 		    
 
 
-	string insert="";
-	for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
-	  insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
-	}
-	
-	//cout<<"ins "<<insert<<endl;
-		    
+	    string insert="";
+	    for(int del=1;del<=pileupData.PileupAlignments[i].InsertionLength;del++){
+		insert+=  pileupData.PileupAlignments[i].Alignment.QueryBases[ pileupData.PileupAlignments[i].PositionInAlignment+del ];
+	    }
+	  
+	    //cout<<"ins "<<insert<<endl;
+	  
 #ifdef DEBUGINS
 	    
 
 	    if(posVector == DEBUGINS){
-		cout<<"current insert #"<<insert<<"#pe="<<probEndogenous<<endl;
+		cout<<"current insert #"<<insert<<"#pe="<<probEndogenous<< "\t"<<pileupData.PileupAlignments[i].PositionInAlignment<<"\t"<<pileupData.PileupAlignments[i].Alignment.QueryBases.size()<<"\twith ins"<<endl;
 
-		for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-		    it1 != m_infoPPos->at(posVector).allInserts.end(); 
-		    ++it1) {
+		if(singleCont){
+		    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+			it1 != m_infoPPos->at(posVector).allInserts.end(); 
+			++it1) {
 
 
-		    //marginalize over each possible contaminant
-		    for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-			it2 != m_infoPPos->at(posVector).allInserts.end(); 
-			++it2) {
-			pair<string,string> keytouse (*it1,*it2);
 
-			cout<<"comp like i\t"<<i << "\ti1=#"<<*it1<<"#\ti2=#"<<*it2<<"\t"<<m_infoPPos->at(posVector).insertion2loglikeEndoCont.at( keytouse ) <<endl;
-				
+			//marginalize over each possible contaminant
+		    
+			for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it2) {
+			    pair<string,string> keytouse (*it1,*it2);
+			
+			    cout<<"comp like i\t"<<i << "\ti1=#"<<*it1<<"#\ti2=#"<<*it2<<"\t"<<m_infoPPos->at(posVector).insertion2loglikeEndoCont.at( keytouse ) <<endl;
+			}
+		    }
+		}else{
+		    for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+			it != m_infoPPos->at(posVector).allInserts.end(); 
+			++it) {
+			cout<<"comp like i\t"<<i << "\ti1=#"<<*it<<"\t"<<m_infoPPos->at(posVector).insertion2loglike.at( *it ) <<endl;
+			// if( *it != insert)
+			// 	m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
 		    }
 		}
+
 	    }
 #endif
 
 		    
-	if(singleCont){
-	  // m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-	  // m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-	  //both endo and cont have the insert, both right
-	  if(1){
-	    pair<string,string> keytouse (insert,insert);
-	    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-	      log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-	  }
+	    if(singleCont){
+		// m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		// m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
 
-	  //only endo has the insert, endo has it right, cont has is wrong
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert){
-	      pair<string,string> keytouse (insert,*it);
-	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-	    }
-			    
-	  }
-			
-	  //only cont has the insert, endo has it wrong, cont has is cont
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert){
-	      pair<string,string> keytouse (*it   ,insert);
-	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-	    }
-			    
-	  }
-			
-	  //none have the insert, both have it wrong
-	  for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it1 != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it1) {
-	    if( *it1 != insert){
-	      for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-		  it2 != m_infoPPos->at(posVector).allInserts.end(); 
-		  ++it2) {
-		if( *it2 != insert){
-		  pair<string,string> keytouse (*it1  ,*it2);
-		  m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+
+		for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+		    it1 != m_infoPPos->at(posVector).allInserts.end(); 
+		    ++it1) {
+		    //if( *it1 != insert){
+		    for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+			it2 != m_infoPPos->at(posVector).allInserts.end(); 
+			++it2) {
+			//if( *it2 != insert){
+			//                           #e     , c
+			pair<string,string> keytouse (*it1  ,*it2);
+			m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+			    log( (probEndogenous)*probMapping[m]*( insertPair2Prob(*it1,insert)  ) + (1.0-probEndogenous)*probMapping[m]*( insertPair2Prob(*it2,insert))  )/log(10);
+			//}
+		    }
+		    //}
 		}
-	      }
+
+		// //both endo and cont have the insert, both right
+		// if(1){
+		//     pair<string,string> keytouse (insert,insert);
+		//     m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+		// }
+
+		// //only endo has the insert, endo has it right, cont has is wrong
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert){
+		// 	pair<string,string> keytouse (insert,*it);
+		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		//     }
+			    
+		// }
+			
+		// //only cont has the insert, endo has it wrong, cont has is cont
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert){
+		// 	pair<string,string> keytouse (*it   ,insert);
+		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+		//     }
+			    
+		// }
+			
+		// //none have the insert, both have it wrong
+		// for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it1 != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it1) {
+		//     if( *it1 != insert){
+		// 	for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+		// 	    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+		// 	    ++it2) {
+		// 	    if( *it2 != insert){
+		// 		pair<string,string> keytouse (*it1  ,*it2);
+		// 		m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		// 	    }
+		// 	}
+		//     }
+		// }
+			
+			
+	    }else{ //not single cont
+		for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		    it != m_infoPPos->at(posVector).allInserts.end(); 
+		    ++it) {		    
+		    m_infoPPos->at(posVector).insertion2loglike[*it]         += log( (    probEndogenous)*probMapping[m]*( insertPair2Prob(*it,insert) ) )/log(10);
+		}
+		//got it right for the insert
+		// m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+		// //The remaining insertions have it wrong
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert)
+		// 	m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		// }
 	    }
-	  }
-			
-			
-	}else{ //not single cont
-	  //got it right for the insert
-	  m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-	  //The remaining insertions have it wrong
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert)
-	      m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-	  }
-	}
 		    
-      }else{ //does not have insert but bases, compute likelihood for no insert
-	string insert="";
-	//push none
-	if(singleCont){
-	  // m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-	  // m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+	}else{ //DOES NOT HAVE INSERT BUT BASES, COMPUTE LIKELIHOOD FOR NO INSERT
+	    string insert=""; //model is no insert
+	    //push none
+	    if(singleCont){
+		// m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		// m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
 	    
 #ifdef DEBUGINS
 	    
 
-	    if(posVector == DEBUGINS){
-		cout<<"current insert #"<<insert<<"#pe="<<probEndogenous<<endl;
+		if(posVector == DEBUGINS){
+		    //cout<<"current insert singleCont #"<<insert<<"#pe="<<probEndogenous<<endl;
+		    cout<<"current insert  #"<<insert<<"#pe="<<probEndogenous<< "\t"<<pileupData.PileupAlignments[i].PositionInAlignment<<"\t"<<pileupData.PileupAlignments[i].Alignment.QueryBases.size()<<"\t"<<"singleCont no ins"<<endl;
+		    for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+			it1 != m_infoPPos->at(posVector).allInserts.end(); 
+			++it1) {
+
+
+			//marginalize over each possible contaminant
+			for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+			    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+			    ++it2) {
+			    pair<string,string> keytouse (*it1,*it2);
+
+			    cout<<"comp like i\t"<<i << "\ti1=#"<<*it1<<"#\ti2=#"<<*it2<<"\t"<<m_infoPPos->at(posVector).insertion2loglikeEndoCont.at( keytouse ) <<endl;
+
+	
+			}
+		    }
+		}
+#endif
+
 
 		for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
 		    it1 != m_infoPPos->at(posVector).allInserts.end(); 
 		    ++it1) {
-
-
-		    //marginalize over each possible contaminant
+		    //if( *it1 != insert){
 		    for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
 			it2 != m_infoPPos->at(posVector).allInserts.end(); 
 			++it2) {
-			pair<string,string> keytouse (*it1,*it2);
-
-			cout<<"comp like i\t"<<i << "\ti1=#"<<*it1<<"#\ti2=#"<<*it2<<"\t"<<m_infoPPos->at(posVector).insertion2loglikeEndoCont.at( keytouse ) <<endl;
-
-	
+			//if( *it2 != insert){
+			//                           #e     , c
+			pair<string,string> keytouse (*it1  ,*it2);
+			m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+			    log( (probEndogenous)*probMapping[m]*( insertPair2Prob(*it1,insert)  ) + (1.0-probEndogenous)*probMapping[m]*( insertPair2Prob(*it2,insert))  )/log(10);
+			//}
 		    }
+		    //}
 		}
-	    }
-#endif
+		
+		// //both endo and cont have the insert, both right
+		// if(1){
+		//     pair<string,string> keytouse (insert,insert);
+		//     m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+		// }
 
+		// //only endo has the insert, endo has it right, cont has is wrong
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert){
+		// 	pair<string,string> keytouse (insert,*it);
+		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		//     }
 
-	  //both endo and cont have the insert, both right
-	  if(1){
-	    pair<string,string> keytouse (insert,insert);
-	    m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-	      log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-	  }
-
-	  //only endo has the insert, endo has it right, cont has is wrong
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert){
-	      pair<string,string> keytouse (insert,*it);
-	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-	    }
-
-	  }
+		// }
 			
-	  //only cont has the insert, endo has it wrong, cont has is cont
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert){
-	      pair<string,string> keytouse (*it   ,insert);
-	      m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-	    }
+		// //only cont has the insert, endo has it wrong, cont has is cont
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert){
+		// 	pair<string,string> keytouse (*it   ,insert);
+		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 	    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
+		//     }
 			    
-	  }
+		// }
 			
-	  //none have the insert, both have it wrong
-	  for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it1 != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it1) {
-	    if( *it1 != insert){
-	      for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-		  it2 != m_infoPPos->at(posVector).allInserts.end(); 
-		  ++it2) {
-		if( *it2 != insert){
-		  pair<string,string> keytouse (*it1  ,*it2);
-		  m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		// //none have the insert, both have it wrong
+		// for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it1 != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it1) {
+		//     if( *it1 != insert){
+		// 	for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
+		// 	    it2 != m_infoPPos->at(posVector).allInserts.end(); 
+		// 	    ++it2) {
+		// 	    if( *it2 != insert){
+		// 		pair<string,string> keytouse (*it1  ,*it2);
+		// 		m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
+		// 		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
+		// 	    }
+		// 	}
+		//     }
+		// }
+			
+			
+	    }else{ //not single cont
+		for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		    it != m_infoPPos->at(posVector).allInserts.end(); 
+		    ++it) {		    
+		    m_infoPPos->at(posVector).insertion2loglike[*it]         += log( (    probEndogenous)*probMapping[m]*( insertPair2Prob(*it,insert) ) )/log(10);
 		}
-	      }
+		// //got it right for the insert
+		// m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
+		// //The remaining insertions have it wrong
+		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
+		//     it != m_infoPPos->at(posVector).allInserts.end(); 
+		//     ++it) {
+		//     if( *it != insert)
+		// 	m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
+		// }
 	    }
-	  }
-			
-			
-	}else{ //not single cont
-	  //got it right for the insert
-	  m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-	  //The remaining insertions have it wrong
-	  for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-	      it != m_infoPPos->at(posVector).allInserts.end(); 
-	      ++it) {
-	    if( *it != insert)
-	      m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-	  }
-	}
 		    
-      }//end, no insert
+	}//end, no insert
     }//end for each read
 	
 
@@ -3339,7 +3450,9 @@ int main (int argc, char *argv[]) {
 
     bool deamread                  = false;
     bool useLengthPrior            = false;
-    long double contaminationPrior = 0.5;
+    long double contaminationPrior       = 0.5;
+    long double contaminationPriorNoDeam = 0.0;
+
     bool singleCont                = false;
     bool specifiedContPrior        = false;
     bool specifiedLoce             = false;
@@ -3366,7 +3479,8 @@ int main (int argc, char *argv[]) {
 
 
 			      "\t\t"+"-deamread" +"\t\t\t"+"Set a prior on reads according to their deamination pattern (default: "+ booleanAsString(deamread) +")"+"\n"+
-			      "\t\t"+"-cont [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
+			      "\t\t"+"-cont    [cont prior]"+"\t\t"+"If the -deamread option is specified, this is the contamination prior (default: "+ stringify(contaminationPrior) +")"+"\n"+
+			      "\t\t"+"                  "+"\t\t"+"Otherwise the contamination prior will be  "+ stringify(contaminationPriorNoDeam) +""+"\n\n"+
 
 			      "\t\t"+"-single"+"\t\t\t\t"+"Try to determine the contaminant under the assumption that there is a single\n\t\t\t\t\t\tone  (default: "+ booleanAsString(singleCont) +")"+"\n\n"+
 
@@ -3630,7 +3744,11 @@ int main (int argc, char *argv[]) {
 	    return 1;	
 	}
     }
-    
+
+    if(!deamread){
+	contaminationPrior = contaminationPriorNoDeam  ;
+    }    
+
     if(userWantsContProduced &&
        !singleCont){
 	cerr<<"Error: You cannot specify either the -seqc, -logc or -namec if you do not specify the -singleCont option, there options are only used if you are willing to accept the possibilty of the single contaminant"<<endl;
