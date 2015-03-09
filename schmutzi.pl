@@ -438,7 +438,8 @@ my $lengthMT=16569;
 
 
 my $multipleC=0;
-my $usepredC=0;
+#my $usepredC=0;
+my $notusepredC=0;
 
 my $numthreads=1;
 my $maxIterations      = 100;
@@ -481,7 +482,7 @@ call endoCaller directly (see README.md).
 "\t--uselength\t\t\t\tUse length of the molecules as well\n".
 "\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n".
 "\t--multipleC\t\t\t\tDo not assume that there is a single contaminant\n".
-"\t--usepredC\t\t\t\tIf assuming a single contaminant, use it as well in the contamination estimate".
+"\t--notusepredC\t\t\t\tIf assuming a single contaminant, do not use it as well in the contamination estimate".
 
 "\n\t\t\t\t\t\tThis might lead to worse results".
 "\n\n".
@@ -539,7 +540,7 @@ my $estdeam = 0 ;
 my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'usepredC' => \$usepredC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'notusepredC' => \$notusepredC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 
@@ -786,7 +787,7 @@ while(1){
   #convert log to freq
   if(!$multipleC){ #we can assume a single contaminant
 
-    if ( $usepredC  ){
+    if ( !$notusepredC  ){
       my $cmdLog2Freq =  $log2freq." ".$outputPrefix."_".$numberIteration."_cont.log >  ".$outputPrefix."_".$numberIteration."_cont.freq";
       runcmd($cmdLog2Freq);
       push(@listOfFreqFiles, $outputPrefix."_".$numberIteration."_cont.freq");

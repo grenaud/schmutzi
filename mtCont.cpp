@@ -123,6 +123,7 @@ vector< vector<contaminationEstimate> > outputToPrint;
 
 pthread_mutex_t  mutexQueue   = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t  mutexCounter = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t  mutexRank    = PTHREAD_MUTEX_INITIALIZER;
 
 
 //GLOBALLY accessed
@@ -244,6 +245,16 @@ void *mainContaminationThread(void * argc){
     string freqFileNameToUse;
     int rankThread=0;
 
+    rc = pthread_mutex_lock(&mutexRank);
+    checkResults("pthread_mutex_lock()\n", rc);
+
+    threadID2Rank[*(int *)pthread_self()]  = threadID2Rank.size()+1;
+    rankThread = threadID2Rank[*(int *)pthread_self()];
+
+    
+    rc = pthread_mutex_unlock(&mutexRank);
+    checkResults("pthread_mutex_unlock()\n", rc);
+
  checkqueue:    
     // stackIndex=-1;
     //check stack
@@ -254,11 +265,8 @@ void *mainContaminationThread(void * argc){
 
 
     bool foundData=false;
-
-    threadID2Rank[*(int *)pthread_self()]  = threadID2Rank.size()+1;
+    
     cerr<<"Thread #"<<rankThread <<" started and is requesting data"<<endl;
-
-    rankThread = threadID2Rank[*(int *)pthread_self()];
 
     //cerr<<"Thread #"<<(unsigned int)pthread_self() <<" started "<<endl;
 
@@ -1261,6 +1269,7 @@ int main (int argc, char *argv[]) {
     // pthread_mutex_t  mutexCounter = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_init(&mutexQueue,   NULL);
     pthread_mutex_init(&mutexCounter, NULL);
+    pthread_mutex_init(&mutexRank ,   NULL);
 
     pthread_t             thread[numberOfThreads];
     int                   rc=0;
@@ -1282,6 +1291,7 @@ int main (int argc, char *argv[]) {
 	checkResults("pthread_join()\n", rc);
     }
 
+    pthread_mutex_destroy(&mutexRank);
     pthread_mutex_destroy(&mutexQueue);
     pthread_mutex_destroy(&mutexCounter);
 

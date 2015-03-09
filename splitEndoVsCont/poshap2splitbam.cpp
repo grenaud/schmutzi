@@ -33,6 +33,7 @@ using namespace std;
 #define MAXCOV 5000
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
+char   offsetQual=33;
 
 unsigned int coverageTotal;
 
@@ -43,7 +44,9 @@ class myPileVisitor : public PileupVisitor {
 		  const vector< vector< pair<char,string> > > * pos2hap,
 		  vector< vector< pair<char,int> > > * pos2hapCounter,
 		  map<string,string>  * readname2hap,
-		  map<string,vector<int> >  * readname2posmask)
+		  map<string,vector<int> >  * readname2posmask,
+		  const int  minQual
+		  )
 		  //,int coordToFind, 
 		  // BamWriter * writerA,
 		  // BamWriter * writerC,
@@ -56,7 +59,7 @@ class myPileVisitor : public PileupVisitor {
 	    , m_pos2hapCounter(pos2hapCounter)
 	    , m_readname2hap(readname2hap)
 	    , m_readname2posmask(readname2posmask)
-
+	    , m_minQual( minQual)
 	    // , m_coverageCounter(coverageCounter)
 	    // , m_coordToFind(coordToFind)
 
@@ -104,11 +107,12 @@ class myPileVisitor : public PileupVisitor {
 		    if(pileupData.PileupAlignments[i].Alignment.QueryBases[pileupData.PileupAlignments[i].PositionInAlignment] 
 		       == 
 		       (*m_pos2hap)[ pileupData.Position+1 ][p].first ){ //if matches the base
-			
-			(*m_readname2hap)[      pileupData.PileupAlignments[i].Alignment.Name ] = (*m_pos2hap)[ pileupData.Position+1 ][p].second;
-			(*m_readname2posmask)[  pileupData.PileupAlignments[i].Alignment.Name ].push_back( pileupData.PileupAlignments[i].PositionInAlignment );
 
-			(*m_pos2hapCounter)[ pileupData.Position+1 ][p].second++;
+			if( int( pileupData.PileupAlignments[i].Alignment.Qualities[i]-offsetQual ) > m_minQual){
+			    (*m_readname2hap)[      pileupData.PileupAlignments[i].Alignment.Name ] = (*m_pos2hap)[ pileupData.Position+1 ][p].second;
+			    (*m_readname2posmask)[  pileupData.PileupAlignments[i].Alignment.Name ].push_back( pileupData.PileupAlignments[i].PositionInAlignment );
+			    (*m_pos2hapCounter)[ pileupData.Position+1 ][p].second++;
+			}
 
 		    }
 
@@ -133,7 +137,8 @@ class myPileVisitor : public PileupVisitor {
     vector< vector< pair<char,int> > >           * m_pos2hapCounter;
     map<string,string>                           * m_readname2hap;
     map<string,vector<int> >                     * m_readname2posmask;
-    
+        int m_minQual; 
+
 };
 
 
@@ -141,10 +146,25 @@ class myPileVisitor : public PileupVisitor {
 int main (int argc, char *argv[]) {
 
 
-    if(argc != 4){
-	cerr<<"Usage:"<<argv[0]<<" [haplogroup diag. pos.]  [bam file in] [bam suffix out] "<<endl<<"\tThis program takes a set of diagnostic positions and splits a bam file according to them. Please note that the bases overlapping the diagnostic positions will have their qualities decreased. "<<endl;
-	return 1;
-    }
+    //if(argc != 4){
+    int minQual=0;
+
+    const string usage= "Usage:\n\t"+string(argv[0])+"(options) [haplogroup diag. pos.]  [bam file in] [bam suffix out]\n\n"+"This program takes a set of diagnostic positions and splits a bam file according to them.\nPlease note that the bases overlapping the diagnostic positions will have their qualities decreased.\n\nOptions:\n"+
+	"\t-q\t[qc score]\tMinimum base quality (Default: "+stringify(minQual)+"\n"+
+
+	"\n";
+
+    // 	return 1;
+    // }
+
+                                                                                                    
+    if( (argc== 1) ||
+        (argc== 2 && string(argv[1]) == "-h") || 
+        (argc== 2 && string(argv[1]) == "-help") ||
+        (argc== 2 && string(argv[1]) == "--help") ){
+        cout<<usage<<endl;
+        return 1;  
+    }    
 
     //[outbam prefix] bamfile coord
     vector< vector< pair<char,string> > > pos2hap;
@@ -163,7 +183,13 @@ int main (int argc, char *argv[]) {
     }
     
 
-
+    for(int i=1;i<(argc-3);i++){ //all but the last 3 args                                                                                                                                            
+        if(string(argv[i]) == "-q"  ){ 
+            minQual=destringify<int>( argv[i+1] );
+            continue;
+        } 
+              
+    }
 
     string haploGroupFile =                    string(argv[argc-3]);
     string bamfiletopen   =                    string(argv[argc-2]);
@@ -230,7 +256,8 @@ int main (int argc, char *argv[]) {
 					   &pos2hap,
 					   &pos2hapCounter,
 					   &readname2hap,
-					   &readname2posmask);
+					   &readname2posmask,
+					   minQual);
      //coordToFind,&writerA,&writerC,&writerG,&writerT);
      PileupEngine pileup;
      pileup.AddVisitor(cv);
