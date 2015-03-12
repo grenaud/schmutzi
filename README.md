@@ -120,6 +120,7 @@ mitoConsPDF.R		Plot various information like coverage and quality for the consen
 mas2freq		Turn a multiple sequence alignment file in multifasta format into an allele frequency 
 			matrix to be used as contaminant source
 posteriorDeam.R		Plot the posterior probability
+contOut2ContEst.pl 	Take the output of mtcont and get a point estimate
 
 
 Test Data:
@@ -179,9 +180,26 @@ Recommended workflow for ancient samples:
 
 - Nuclear
   The only thing schmutzi can do for nuclear data is to estimate contamination rates 
-  using deamination patterns. However, use this at your own risk as you will not know
-  if you have a contaminant that is deaminated thus leading to an underestimate. Simply
-  use "contDeam.pl"
+  using deamination patterns. Simply use "contDeam.pl" 
+  
+  However, use this at your own risk, we know three factors that lead to wrong estimates:
+
+  	1) Insuffient # of molecules (we need at least 500M)
+	2) Insuffient rates of endogenous deamination (we need upwards of 5%)
+	3) No or very little deamination of the contaminant fragments
+	4) Since we need to condition on one end to measure deamination on the other, 
+	   we need independence between 5' and 3' deamination rates 
+
+  If you have a contaminant that is deaminated this will lead to an underestimate. 
+  Lack of independence between the 5' and 3' deamination rates can lead to overestimated
+  deamination rates for the endogenous portion and an overestimate. To test this, two programs were added as part of the package:
+  jointFreqDeaminated and jointFreqDeaminatedDouble (double stranded). For samples with low amounts of contamination, they compute the 
+  joint frequency of deamination:
+   ./jointFreqDeaminated  in.bam > in.freq
+  Then use 
+  ./jointFreqDeaminated.R in.freq 
+  If you get low p-values, the method should be safe to use, you only have to worry about a deaminated contaminant.
+
 
 - MT
   1) Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using 

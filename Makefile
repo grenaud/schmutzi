@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -43,6 +43,12 @@ countRecords.o:	libgab/utils.o countRecords.cpp
 	${CXX} ${CXXFLAGS} countRecords.cpp
 
 countRecords: countRecords.o  ${LIBGAB}utils.o
+	${CXX} -o $@ $^ $(LDLIBS) 
+
+jointFreqDeaminated: jointFreqDeaminated.o  ${LIBGAB}utils.o ${LIBGAB}/ReconsReferenceBAM.o
+	${CXX} -o $@ $^ $(LDLIBS) 
+
+jointFreqDeaminatedDouble: jointFreqDeaminatedDouble.o  ${LIBGAB}utils.o ${LIBGAB}/ReconsReferenceBAM.o
 	${CXX} -o $@ $^ $(LDLIBS) 
 
 mtCont.o:	libgab/utils.o mtCont.cpp 
