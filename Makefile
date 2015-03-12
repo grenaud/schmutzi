@@ -45,6 +45,12 @@ countRecords.o:	libgab/utils.o countRecords.cpp
 countRecords: countRecords.o  ${LIBGAB}utils.o
 	${CXX} -o $@ $^ $(LDLIBS) 
 
+jointFreqDeaminated.o:	libgab/utils.o jointFreqDeaminated.cpp 
+	${CXX} ${CXXFLAGS} jointFreqDeaminated.cpp
+
+jointFreqDeaminatedDouble.o:	libgab/utils.o jointFreqDeaminatedDouble.cpp 
+	${CXX} ${CXXFLAGS} jointFreqDeaminatedDouble.cpp
+
 jointFreqDeaminated: jointFreqDeaminated.o  ${LIBGAB}utils.o ${LIBGAB}/ReconsReferenceBAM.o
 	${CXX} -o $@ $^ $(LDLIBS) 
 
