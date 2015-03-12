@@ -129,7 +129,7 @@ testdata/simulation.bam:
 
 
 clean :
-	rm -f mtCont.o mtCont contDeam.o contDeam endoCaller endoCaller.o damage2profile.o damage2profile miscfunc.o log2freq log2fasta msa2freq contDeam insertSize countRecords logs2pos
+	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble 
 	make -C splitEndoVsCont/ clean
 	make -C libgab/ clean
 
