@@ -140,7 +140,7 @@ Or, if you have "wget" installed, just type:
     make testdata
 
 First you need to estimate endogenous deamination rates. First create an output directory:
-    mkdir outputdir/
+    mkdir -p outputdir/
 
 Then run contDeam to estimation endogenous deamination rates:
     ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
