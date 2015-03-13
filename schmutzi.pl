@@ -482,7 +482,7 @@ call endoCaller directly (see README.md).
 "\t--uselength\t\t\t\tUse length of the molecules as well\n".
 "\t--lengthDeam (bp)\t\t\tOnly consider this about of bases to be deaminated on each end (Default : $lengthDeam)\n".
 "\t--multipleC\t\t\t\tDo not assume that there is a single contaminant\n".
-"\t--notusepredC\t\t\t\tIf assuming a single contaminant, do not use it as well in the contamination estimate".
+"\t--notusepredC\t\t\t\tIf assuming a single contaminant, do not use the predicted contaminant in the contamination estimate".
 
 "\n\t\t\t\t\t\tThis might lead to worse results".
 "\n\n".

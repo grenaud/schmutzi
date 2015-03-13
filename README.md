@@ -33,9 +33,10 @@ Requirements:
    - git to download the submodules
    - C++ compiler
    - Perl interpreter
-   - R
-      -  The fitdistrplus R package
-      -  The MASS package
+   - R (recent version)
+      -  Rscript 
+      -  The fitdistrplus R package ( install.packages("fitdistrplus") )
+      -  The MASS package ( install.packages("MASS") )
 
 On Ubuntu, these dependencies can be resolved using :
   sudo apt-get install perl
@@ -45,6 +46,7 @@ On Ubuntu, these dependencies can be resolved using :
   sudo apt-get install zlib
   sudo apt-get install zlib1g-dev
   sudo apt-get install r-base-core
+  
 
 
 Installation:
@@ -157,7 +159,14 @@ Then run the following to produce the endogenous consensus and the contamination
 
         ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/197/freqs/  testdata/mezB9687.bam
         ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/197/freqs/  testdata/simulation.bam
- 	  
+
+  --uselength tells the program to use the length of the molecules
+  --ref is for the reference
+
+  outputdir/mez is the output from contDeam
+  alleleFreqMT/197/freqs/ is the database of putative contaminants 
+  testdata/mezB9687.bam is the input bam file
+
 It will run for a few minutes and produce the following files:
 
 For contamination:

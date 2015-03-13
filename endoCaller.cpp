@@ -18,8 +18,8 @@
 //#define DEBUGINS 5893
 // #define DEBUG1
 // #define DEBUG2
-//#define DEBUG3
-//#define DEBUG4
+// #define DEBUG3
+// #define DEBUG4
 
 #define CONTPRIORBEFORE
 // #define DEBUGPRIORENDO
@@ -1083,6 +1083,12 @@ void callSingleNucleotide(const int i,
 				       likeBaseNoindel,
 				       infoPPos,
 				       i );
+    // if(i==146){
+    // 	for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
+    // 	    cout<<"E\t"<<dnaAlphabet[nuc]<<"\tbest="<<dnaAlphabet[bestNucC]<<"\t"<<likeBaseNoindel[nuc]<<"\t"<<likeBaseNoindelC[nuc]<<endl;
+    // 	    //likeBaseNoindel[nuc] = infoPPos[i].likeBaseNoindel[PHREDgeno];
+    // 	}		
+    // }
 
     // if(i==146){
     //     for(unsigned int nuc=0;nuc<4;nuc++){ //iterate over each possible endogenous base
@@ -1092,6 +1098,7 @@ void callSingleNucleotide(const int i,
     // }
 
     if(singleCont){//if single contaminant, call the contaminant
+
 
 	callBestNucleotideGivenLikelihood( bestNucC,
 					   sumLogLikeAllC,        // sum of all the logs
@@ -2482,11 +2489,15 @@ public:
 
 
 	    if(ignoreMQ){ //ignore MQ
-	      probFinal = (               probBase                          );
+		probFinal = (               probBase                          );
 	    }else{
-	      probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+		probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
 	    }
-			
+	    //flat prior nuc/4 + (1/4)*(1/4) 
+	    //-------------------------------
+	    //             2 (to scale)
+	    probFinal=probFinal*0.125+0.03125; 
+	    
 
 	    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc]               += log(probFinal)/log(10);
 
@@ -2495,14 +2506,16 @@ public:
 	    }
 
 #ifdef DEBUG3		    
+	    if(posVector == 1184 ){ 
 	    // if(posVector < 175 && 
 	    //    posVector > 170){
-	    if(posVector == 10||
-	       posVector == 800){
+	    // if(posVector == 10||
+	    //    posVector == 800){
 
 		cout<<posAlign<<"\tce"<<closeToEnds<<"\t"<<
-		    "b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 
-		  <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
+		    "b_obs="<<b<<" e_b="<< dnaAlphabet[nuce]<<" c_b="<< dnaAlphabet[nucc]<<" q="<<int(q)<<" m="<<m<<" p(endo) "<<probEndogenous<<" p(cont) "<<( 1.0-probEndogenous ) 		   
+		    <<"\t"<<"final="<<(probFinal)<<"\t"<<log(probFinal)/log(10)<<"\t"
+		    <<m<<"\tp(mapping)="<<probMapping[m]<<"\tp(base)"<<probBase<<"\tp(basee)"<<probBasee<<"\tp(basec)"<<probBasec <<"\tp(mismmap)="<<probMismapping[m]<<"\t"
 		  <<"\tllik\t"<<(m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc])<<"\t"
 		  <<"\tlliknb\t"<<(m_infoPPos->at(posVector).likeBaseNoindelContNoBoundary[nuce][nucc])<<"\t"
 
@@ -2574,7 +2587,7 @@ public:
 	  }else{
 	    probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
 	  }
-			
+	  probFinal=probFinal/4.0 + 0.25;//flat prior			
 			
 	  m_infoPPos->at(posVector).likeBaseNoindel[nuc]               += log(probFinal)/log(10);
 

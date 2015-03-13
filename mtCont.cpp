@@ -223,6 +223,9 @@ void findPosToSkip(){
 	//priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
 	skipPositions->at(i) = (!hasPriorAboveThreshold);
+	// if(i%1000==0)
+	//     skipPositions->at(i) = (false); //TO REMOVE
+
 	//cout<<i<<"\t"<<skipPositions->at(i)<<endl;
     }//end for each pos in the genome
 
