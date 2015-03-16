@@ -166,7 +166,9 @@ Then run the following to produce the endogenous consensus and the contamination
   outputdir/mez is the output from contDeam
   alleleFreqMT/197/freqs/ is the database of putative contaminants 
   testdata/mezB9687.bam is the input bam file
-
+  
+  The first dataset is an empirical dataset with about 40-45% contamination and the second is a simulated dataset with 20% contamination
+   
 It will run for a few minutes and produce the following files:
 
 For contamination:
@@ -199,6 +201,7 @@ Recommended workflow for ancient samples:
 	4) Since we need to condition on one end to measure deamination on the other, 
 	   we need independence between 5' and 3' deamination rates 
 
+  So use at your own risk. For mt, we can at least double check using "mtCont" but not for nuclear
   If you have a contaminant that is deaminated this will lead to an underestimate. 
   Lack of independence between the 5' and 3' deamination rates can lead to overestimated
   deamination rates for the endogenous portion and an overestimate. To test this, two programs were added as part of the package:
@@ -221,7 +224,6 @@ Recommended workflow for ancient samples:
   5) Estimate your initial contamination and deamination rates using "contDeam.pl"
   6) Run schmutzi.pl once with default parameters
   7) Run schmutzi.pl again  with "--usepredC"
-
   8) If contamination is more than a few percent re-run using the "--uselength" option
      
 
