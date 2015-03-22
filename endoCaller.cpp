@@ -28,7 +28,7 @@
 
 #define MAXCOV    5000
 #define INDELERRORPROB 1.0e-5 // http://genomebiology.com/2011/12/11/R112
-#define LOGRATIOFORINDEL 50  //beyond that difference in log, a indel will be called
+// #define LOGRATIOFORINDEL 50  //beyond that difference in log, a indel will be called
 #define MAXMAPPINGQUAL 257     // maximal mapping quality, should be sufficient as mapping qualities are encoded using 8 bits
 
 #define IGNOREINDELBOUND 5  //ignore INDEL if there are within this amount of bp of the. 5 is good since it offsets the cost of a gap in a standard SW scoring scheme
@@ -163,6 +163,8 @@ long double logcomppdf(long double mu,long double sigma,long double x){
 
 char   offsetQual=33;
 
+
+long double LOGRATIOFORINDEL=50;
 double likeMatch[MAXMAPPINGQUAL];
 double likeMismatch[MAXMAPPINGQUAL];
 double likeMatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
@@ -3533,6 +3535,7 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
 			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      "\t\t"+"--phred64" +"\t\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
+			      "\t\t"+"-logindel  [log indel]" +"\t\t"+"Minimal difference between log-likelihoods for calling an indel (default: "+stringify( LOGRATIOFORINDEL )+")"+"\n"+
 
 			      "\n\tReference options:\n"+	
 			      "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
@@ -3586,6 +3589,12 @@ int main (int argc, char *argv[]) {
 	    scalec =destringify<long double>(argv[i+1]);
 	    i++;
 	    specifiedScalec=true;
+	    continue;
+	}
+
+	if(string(argv[i]) == "--logindel" ){
+	    LOGRATIOFORINDEL =destringify<long double>(argv[i+1]);
+	    i++;
 	    continue;
 	}
 
