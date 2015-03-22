@@ -3592,7 +3592,7 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
-	if(string(argv[i]) == "--logindel" ){
+	if(string(argv[i]) == "-logindel" ){
 	    LOGRATIOFORINDEL =destringify<long double>(argv[i+1]);
 	    i++;
 	    continue;
