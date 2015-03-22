@@ -205,7 +205,7 @@ runcmd($cmd1);
 #runcmd($cmd6);
 
 
-my $cmd2 = $gmapper." -N $threads -o 1 --single-best-mapping --sam-unaligned --fastq --sam --no-qv-check  --qv-offset 33  <( $samtools bam2fq $inBAM   )  $referenceFastaWrapped | $samtools view -bS - | ".$samtools." fillmd -b  /dev/stdin  $referenceFastaWrapped   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort1 /dev/stdin | ".$bamrewrap." \"mtref:".$refLength."\"   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort2  /dev/stdin   > ".$outPrefix.".bam";
+my $cmd2 = $gmapper." -N $threads -o 1 --single-best-mapping --sam-unaligned --fastq --sam --no-qv-check  --qv-offset 33  <( $samtools bam2fq $inBAM   )  $referenceFastaWrapped | $samtools view -bS  -F4 /dev/stdin | ".$samtools." fillmd -b  /dev/stdin  $referenceFastaWrapped   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort1 /dev/stdin | ".$bamrewrap." \"mtref:".$refLength."\"   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort2  /dev/stdin    > ".$outPrefix.".bam";
 runcmd($cmd2);
 
 

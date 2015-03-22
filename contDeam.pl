@@ -104,7 +104,7 @@ my $useLength      = 0;
 my $splitDeam      = 0;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength,'lengthDeam' => \$lengthDeam,'splitDeam' => \$splitDeam )
+	     ! GetOptions('help|?' => \$help, 'split=s' => \$splitPos,'library=s' => \$library,'ref=s' => \$referenceFasta,'title=s' => \$textGraph,'cont=f' => \$contPriorKnow, 'out=s' => \$outputPrefix,'mock' => \$mock, 'uselength' => \$useLength,'lengthDeam=i' => \$lengthDeam,'splitDeam' => \$splitDeam )
           or defined $help );
 
 
