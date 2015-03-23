@@ -431,6 +431,7 @@ my $nameMT    = "MT";
 my $nameMTc   = "MTc";
 my $qualmin   = 0;
 my $lengthMT=16569;
+my $logindel=50;
 
 #
 # protocol s or d
@@ -492,6 +493,8 @@ call endoCaller directly (see README.md).
 "\t--name (name)\t\t\t\tName of the endogenous MT genome\n".
 "\t--namec (name)\t\t\t\tName of the contaminant MT genome\n".
 "\t--qual (qual)\t\t\t\tMinimum quality for a base in the  MT consensus (on a PHRED scale, e.g. 50 = 1/100,000)\n".
+"\t--logindel  (logindel)\t\t\tMinimum difference between logs to call an indel (on a PHRED scale default : ".$logindel.")\n".
+
 "\t--contknown (cont)\t\t\tIf you have prior knowledge about the contamination\n\t\t\t\t\t\trate, enter it here [0-1] and it will be plotted\n".
 "\t--title (title)\t\t\t\tTitle for the graph of the posterior distribution\n".
 "\n".
@@ -540,7 +543,7 @@ my $estdeam = 0 ;
 my $contPriorUser      = -1 ;
 
 usage() if ( @ARGV < 1 or
-	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'notusepredC' => \$notusepredC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
+	     ! GetOptions('help|?' => \$help, 'iterations=i' => \$maxIterations,'ref=s' => \$referenceFastaCMDL, 't=i' => \$numthreads, 'mock' => \$mock, 'estdeam' => \$estdeam, 'uselength' => \$useLength, 'title=s' => \$textGraph, 'out=s' => \$outputPrefixCMDLINE, 'contknown=f' => \$contPriorKnowCMDLine, 'lengthDeam' => \$lengthDeam,'lengthMT' => \$lengthMT,'multipleC' => \$multipleC,'notusepredC' => \$notusepredC,'contprior=f' => \$contPriorUser,'qual=f' => \$qualmin,'logindel=f' => \$logindel,'name=s' => \$nameMT,'namec=s' => \$nameMTc )
           or defined $help );
 
 
@@ -715,7 +718,7 @@ while(1){
 
   $cmdEndoCaller .= " -name ".$nameMT." ";
   $cmdEndoCaller .= " -qual ".$qualmin." ";
-
+  $cmdEndoCaller .= " -logindel ".$logindel." ";
   $cmdEndoCaller .= " -deamread ";
   $cmdEndoCaller .= " -deam5p ".$outputPrefix."_".$numberIteration."_endo.5p.prof ";
   $cmdEndoCaller .= " -deam3p ".$outputPrefix."_".$numberIteration."_endo.3p.prof ";
