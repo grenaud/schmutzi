@@ -2122,53 +2122,6 @@ public:
 		    //}
 		}
 		
-		// //both endo and cont have the insert, both right
-		// if(1){
-		//     pair<string,string> keytouse (insert,insert);
-		//     m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-		// }
-
-		// //only endo has the insert, endo has it right, cont has is wrong
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert){
-		// 	pair<string,string> keytouse (insert,*it);
-		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-		//     }
-
-		// }
-			
-		// //only cont has the insert, endo has it wrong, cont has is cont
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert){
-		// 	pair<string,string> keytouse (*it   ,insert);
-		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-		//     }
-			    
-		// }
-			
-		// //none have the insert, both have it wrong
-		// for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it1 != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it1) {
-		//     if( *it1 != insert){
-		// 	for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-		// 	    it2 != m_infoPPos->at(posVector).allInserts.end(); 
-		// 	    ++it2) {
-		// 	    if( *it2 != insert){
-		// 		pair<string,string> keytouse (*it1  ,*it2);
-		// 		m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-		// 	    }
-		// 	}
-		//     }
-		// }
 			
 			
 	    }else{ //not single cont
@@ -2183,15 +2136,6 @@ public:
 
 										     )/log(10);
 		}
-		// //got it right for the insert
-		// m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-		// //The remaining insertions have it wrong
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert)
-		// 	m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		// }
 	    }
 		    
 	}//end, no insert
@@ -2201,12 +2145,6 @@ public:
 
 
 
-
-    // for(map<int,int>::iterator it = test2test.begin(); 
-    // 	it != test2test.end(); 
-    // 	++it) {
-
-    // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
 
 
 
@@ -2260,13 +2198,11 @@ public:
 	}
       }
 
-      // if(posVector>=513 && posVector<=516){
-      //     cout<<"pos ="<<posVector<<"\t"<<rg<<endl;
-      // }
 		
       if( pileupData.PileupAlignments[i].IsCurrentDeletion &&
 	  pileupData.PileupAlignments[i].IsNextInsertion &&
 	  (pileupData.PileupAlignments[i].InsertionLength == 0)){ //has deletion
+
 	//continue;
 	//cout<<"del"<<endl;
 		    
@@ -2277,10 +2213,6 @@ public:
 	m_infoPPos->at(posVector).numDel++;
 
 	if(singleCont){
-	  // m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right
-	  // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong
-	  // m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10); //got it right	
-	  // m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10); //got it wrong	
 
 	  //there is a deletion in both, got it right 2x
 	    m_infoPPos->at(posVector).llikDeletionBoth += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  + probMismapping[m]*(1/4.0) )/log(10); 
@@ -2311,10 +2243,6 @@ public:
 	  //none have it, right in both
 	  m_infoPPos->at(posVector).llikDeletionNone += log( probEndogenous*probMapping[m]*(1.0-INDELERRORPROB) +  (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + probMismapping[m]*(1/4.0) )/log(10); 
 
-	  // m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
-	  // m_infoPPos->at(posVector).llikNoDeletion       += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
-	  // m_infoPPos->at(posVector).llikDeletionCont     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);   //got it wrong
-	  // m_infoPPos->at(posVector).llikNoDeletionCont   += log( (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);   //got it right
 
 	}else{
 	  m_infoPPos->at(posVector).llikDeletion         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB)  + probMismapping[m]*(1/2.0) )/log(10); //got it wrong

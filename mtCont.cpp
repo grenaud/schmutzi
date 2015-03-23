@@ -376,19 +376,6 @@ void *mainContaminationThread(void * argc){
 #endif
 
 
-// 		if( (nuc1 != nuc2) && //){
-// 		    (priortemp > MINPRIOR) ){ //this is to speed up computation and only look at sites that are likely to be contaminated
-
-// // #ifdef DEBUGPOS
-// // 		    cout<<"MIN i"<<i<<"\t"<<nuc1<<"\t"<<nuc2<<"\t"<<priortemp<<"\t"<<infoPPos[i].posAlign<<"\t"<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\t"<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
-// // #endif
-
-// #ifdef DEBUGCONTPOS
-// 		    cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
-// #endif
-// 		    //hasPriorAboveThreshold=true;
-		    
-// 		}
 
 	    }//end nuc2
 	}//end nuc1
@@ -505,18 +492,6 @@ void *mainContaminationThread(void * argc){
     } //end for each position in the genome
     cerr<<"Thread #"<<rankThread <<" is done with  pre-computations"<<endl;
 
-    // if(probEndoVec.size() != sizeGenome){
-    // 	cerr<<"Error difference in size for vectors "<<probEndoVec.size()<<"\t"<<sizeGenome<<endl;
-    // 	exit(1);
-    // }
-    // if(probContVec.size() != sizeGenome){
-    // 	cerr<<"Error difference in size for vectors "<<probContVec.size()<<"\t"<<sizeGenome<<endl;
-    // 	exit(1);
-    // }
-    // if(priorDiNucVec.size() != sizeGenome){
-    // 	cerr<<"Error difference in size for vectors "<<probContVec.size()<<"\t"<<sizeGenome<<endl;
-    // 	exit(1);
-    // }
 
     for(contaminationRate=0.0;contaminationRate<1.0;contaminationRate+=0.01){
 	long double logLike=0.0;
