@@ -9,11 +9,9 @@ We define as endogenous the DNA pertaining to the original sample and contaminan
 
 schmutzi is a set of programs aimed at ancient DNA data that can :
 
-	- estimate contamination based on deamination patterns alone
-	- call a mitonchondrial consensus for the endogenous genome. This consensus calls 
-	  takes into account contamination and deamination.
-	- estimate mitonchondrial contamination and identify the most likely contaminant 
-	  from a set.
+* estimate contamination based on deamination patterns alone
+* call a mitonchondrial consensus for the endogenous genome. This consensus calls takes into account contamination and deamination.
+* estimate mitonchondrial contamination and identify the most likely contaminant from a set.
 
 Questions :
 -------------------------------------------------------------------------------------
@@ -22,7 +20,10 @@ Questions :
 
 Downloading:
 -------------------------------------------------------------------------------------
-Do a "git clone --recursive https://github.com/grenaud/schmutzi.git"
+Do a :
+
+	git clone --recursive https://github.com/grenaud/schmutzi.git
+
 or download a zipped file from https://bioinf.eva.mpg.de/schmutzi/schmutzi.tar.gz
 
 Requirements:
@@ -39,7 +40,7 @@ Requirements:
       -  The MASS package ( install.packages("MASS") )
 
 On Ubuntu, these dependencies can be resolved using :
-sudo apt-get install perl
+	sudo apt-get install perl
 	sudo apt-get install git
 	sudo apt-get install cmake
 	sudo apt-get install g++
