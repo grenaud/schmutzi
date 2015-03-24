@@ -40,6 +40,7 @@ Requirements:
       -  The MASS package ( install.packages("MASS") )
 
 On Ubuntu, these dependencies can be resolved using :
+
 	sudo apt-get install perl
 	sudo apt-get install git
 	sudo apt-get install cmake
