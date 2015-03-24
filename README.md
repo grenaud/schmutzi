@@ -150,17 +150,23 @@ To download it, either download it manually from :
         https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
 
 Or, if you have "wget" installed, just type:
+
         make testdata
 
 First you need to estimate endogenous deamination rates. First create an output directory:
+
         mkdir -p outputdir/
 
 Then run contDeam to estimation endogenous deamination rates:
+
         ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
+
 or for the simulated
+
         ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
 
 This will produce the files:
+
         outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
         outputdir/[out].cont.est      Estimate for contamination based on deamination
         outputdir/[out].config	Configuration file describing the variables used
