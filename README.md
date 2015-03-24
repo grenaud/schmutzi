@@ -190,6 +190,7 @@ The first dataset is an empirical dataset with about 40-45% contamination and th
 It will run for a few minutes and produce the following files:
 
 For contamination:
+
 | file                      | content                                                                            |
 | ------------------------- | -----------------------------------------------------------------------------------|
 | [out]_final_mtcont.out    | Contamination estimates for all samples in the database                            |
@@ -198,6 +199,7 @@ For contamination:
 | [out]_final.cont.pdf	    | Posterior probability on the contamination for the most likely sample              |
 
 For the respective genomes of the endogenous and contaminant:
+
 | file                      | content                                                                            |
 | ------------------------- | -----------------------------------------------------------------------------------|
 | [out]_final_endo.fa	    |	Endogenous mitochondrial genome as fasta                                         |
