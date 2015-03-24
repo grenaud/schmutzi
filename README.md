@@ -233,12 +233,14 @@ Recommended workflow for ancient samples:
         ./jointFreqDeaminated  in.bam > in.freq
 
   Then use 
+
         ./jointFreqDeaminated.R in.freq 
 
   If you get low p-values, the method should be safe to use, you only have to worry about a deaminated contaminant.
 
 
-- MT
+* MT
+
 1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using 
     a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
 2. run samtools sort on your aligned bam file
