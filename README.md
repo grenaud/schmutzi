@@ -308,7 +308,13 @@ Frequently asked questions:
     mtCont manually. Datasets that are heavily contaminated with multiple contaminants are very difficult 
     targets.
 
-- 
+- How can I just use mtCont using a fasta file or a fasta file from a proxy mitochondria ?
+  
+  Given you have a fasta file with the endogenous mitochondria called endo.fa and using the reference ref/human_MT.fa. You can run mafft and pipe into msa2log:
+
+          cat endo.fa refs/human_MT.fa |mafft --auto /dev/stdin  |./msa2log /dev/stdin  mtref  > endo.log
+
+  Then you have a log file for mtCont.
 
 - Can I build my own set of putative contaminants ?
 

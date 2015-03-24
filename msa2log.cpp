@@ -29,10 +29,12 @@ int main (int argc, char *argv[]) {
     double qual=100;
     const string usage=string("\nThis program takes an pairwise sequence alignment with the mt reference and outputs the per-position log of non-reference sequence \n\t"+
 			      string(argv[0])+                        
-                              "  [msa]  [name of reference sequence]"+"\n\n");
+                              "  [msa]  [name of reference sequence]\n\n"+
+			      "\t\t"+"-q [qual]" +"\t\t\t"+"Quality on a PHRED scale for individual bases (Default: "+stringify(qual)+" )"+"\n"+
+			      "\n\n");
+    
 
-
-    if( (argc!= 3) ||
+    if( (argc < 2) ||
         (argc== 2 && string(argv[1]) == "-h") ||
         (argc== 2 && string(argv[1]) == "-help") ||
         (argc== 2 && string(argv[1]) == "--help") ){
@@ -43,9 +45,32 @@ int main (int argc, char *argv[]) {
 
     
     
+    // int lastOpt=1;
+    for(int i=1;i<(argc-2);i++){ //all but the last 3 args
 
-    FastQParser fqp (string(argv[1]),true );
-    string IDREF = string(argv[2]);
+        if(string(argv[i]) == "-q" ){
+            qual = destringify<double>(argv[i+1]);
+	    i++;
+            continue;
+        }
+
+        // if(string(argv[i])[0] != '-'  ){
+        //     //cout<<"end"<<i<<endl;
+        //     lastOpt=i;
+        //     break;
+        // }
+
+
+
+        cerr<<"Wrong option "<<string(argv[i])<<endl;
+        return 1;
+
+    }
+
+
+
+    FastQParser fqp (string(argv[argc-2]),true );
+    string IDREF   = string(argv[argc-1]);
 
     if(!strBeginsWith(IDREF,">")){
 	IDREF = ">"+IDREF;
@@ -119,7 +144,7 @@ int main (int argc, char *argv[]) {
 
     for(unsigned int j=0;j<seq[indexRef].size();j++){
 	if(seq[indexRef][j] == '-' ){
-	    cout<<(indexOnTheReference-1)<<"i\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<qual<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    cout<<(indexOnTheReference-1)<<"i\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<qual<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
 	    //useless and do not increase counter
 	    continue;
 	}
@@ -127,25 +152,35 @@ int main (int argc, char *argv[]) {
 	if(seq[indexRef][j] == 'N' ){
 	    //useless and do not increase counter, put a bunch of zeros even though the other might be defined.
 	    //cout<<indexRef<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
-	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<"D"<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<"D"<<"\t"<<0<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
 	    indexOnTheReference++;
 	    continue;
 	}
 
 	if(seq[indexTarget][j] == '-' ){
-	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<"D"<<"\t"<<qual<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<"D"<<"\t"<<qual<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
 	    indexOnTheReference++;
 	    continue;
 	}
 		
 	if(                 seq[indexTarget][j] == 'N' ||
 	   isAmbiguousUIPAC(seq[indexTarget][j])){
-	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t" <<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<0<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
 	 
 	}else{	
 	    //cout<<indexRef<<"\t"<< idtouse<<"\t"<<(seqREF[j])<<"\t"<<(seq[i][j])<<endl;
 	    //cout<<indexRef<<"\t"<<outputs[ baseResolved2int(seq[i][j]) ]<<endl;
-	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<250<<"\t"<<100<<"\t"<<100<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    cout<<indexOnTheReference<<"\t"<<seq[indexRef][j]<<"\t"<<seq[indexTarget][j]<<"\t"<<qual<<"\t"<<250<<"\t"<<100<<"\t"<<100;
+	    if(seq[indexTarget][j] == 'A')
+		cout<<"\t"<<qual<<"\t"<<0<<"\t"<<0<<"\t"<<0<<endl;
+	    if(seq[indexTarget][j] == 'C')
+		cout<<"\t"<<0<<"\t"<<qual<<"\t"<<0<<"\t"<<0<<endl;
+	    if(seq[indexTarget][j] == 'G')
+		cout<<"\t"<<0<<"\t"<<0<<"\t"<<qual<<"\t"<<0<<endl;
+	    if(seq[indexTarget][j] == 'T')
+		cout<<"\t"<<0<<"\t"<<0<<"\t"<<0<<"\t"<<qual<<endl;
+
+	    
 	}
 
 	indexOnTheReference++;
