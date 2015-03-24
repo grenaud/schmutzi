@@ -60,9 +60,10 @@ For Mac users, open a terminal please type "cmake", "git" and "R" to check if wo
 For Windows users, you would need cygwin to run schmutzi as it runs on the terminal (https://www.cygwin.com/). 
 
 1) type:
+
 	make
 
-   which should build pretty much everything. 
+which should build pretty much everything. 
 
 We tested our program on a Linux system and MacOS, please email us if you have trouble building under cygwin. 
 
