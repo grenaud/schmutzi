@@ -27,7 +27,7 @@ int main (int argc, char *argv[]) {
 			      "\n\tOptions:\n"+	
 
 			      "\t\t"+"-q"+"\t[quality cutoff]" +"\t\t"+"Only consider sites with quality greater than this cutoff (default: 0)"+"\n"+
-			      "\t\t"+"-name"+"\t[name]" +"\t\t\t\t"+"Name of the sequence (default "+stringify(name)+")"+ 
+			      "\t\t"+"-name"+"\t[name]" +"\t\t\t\t"+"Name of the sequence (default "+stringify(name)+")\n"+ 
 			      "\t\t"+"-indel"+"\t[quality cutoff]" +"\t\t"+"Filter indels according to this threshold (default: 0)"+"\n"+
 			      "\t\t"+"\t"+"\t\t" +"\t\t"+"Warning: This means that for indels, you will produce what the reference has"+"\n"+
 			      "\t\t"+"\t"+"\t\t" +"\t\t"+"         hence adding a potential reference bias"+"\n"+
