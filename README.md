@@ -278,14 +278,17 @@ Frequently asked questions:
   than schmutzi.pl does, why is that ?
 
   There could be a few reasons:
-  1) Your contamination is deaminated. That can be the case for museum samples.
+  1. Your contamination is deaminated. That can be the case for museum samples.
      Check to see if the 
+
         - [output prefix]_[iteration]_cont.5p.prof 
-        and 
+     and 
+
         - [output prefix]_[iteration]_cont.3p.prof 
+
      present any sign of deamination.
 
-  2) The algorithm diverged. This could be due to a misleading prior or an almost absence
+  2. The algorithm diverged. This could be due to a misleading prior or an almost absence
      of endogenous material.
 
 - How can I know if I have multiple contaminants ?
