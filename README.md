@@ -18,7 +18,7 @@ schmutzi is a set of programs aimed at ancient DNA data that can :
 Questions :
 -------------------------------------------------------------------------------------
 	contact: Gabriel Renaud   
-   	email:	 gabriel [dot] reno [ at sign ] gmail.com
+	email:	 gabriel [dot] reno [ at sign ] gmail.com
 
 Downloading:
 -------------------------------------------------------------------------------------
@@ -39,13 +39,13 @@ Requirements:
       -  The MASS package ( install.packages("MASS") )
 
 On Ubuntu, these dependencies can be resolved using :
-  sudo apt-get install perl
-  sudo apt-get install git
-  sudo apt-get install cmake
-  sudo apt-get install g++
-  sudo apt-get install zlib
-  sudo apt-get install zlib1g-dev
-  sudo apt-get install r-base-core
+sudo apt-get install perl
+	sudo apt-get install git
+	sudo apt-get install cmake
+	sudo apt-get install g++
+	sudo apt-get install zlib
+	sudo apt-get install zlib1g-dev
+	sudo apt-get install r-base-core
   
 
 
@@ -57,7 +57,10 @@ For Mac users, open a terminal please type "cmake", "git" and "R" to check if wo
 
 For Windows users, you would need cygwin to run schmutzi as it runs on the terminal (https://www.cygwin.com/). 
 
-1) type "make" which should build pretty much everything. 
+1) type:
+	make
+
+   which should build pretty much everything. 
 
 We tested our program on a Linux system and MacOS, please email us if you have trouble building under cygwin. 
 
@@ -71,58 +74,62 @@ Running:
 There are 2 main Perl scripts that drive the underlying programs written in C++.
 
 
-contDeam.pl   Is a script that allows for the estimation of endogenous deamination and
-              subsequent contamination estimate using those. Assuming that the contaminant
-              is not deaminated, it will measure rates of deamination for the endogenous material 
-	      and provide a rough contamination estimate. If say the endogenous material is 
-              30% deaminated at one base but the observed deamination rate for the entire set is 15%,
-              the contamination rate is therefore 0.5 . There are two ways to estimate endogenous 
-              deamination:
-		1) (default)
- 		   Condition on one end of the read being deaminated (ex: 5') and measure 
- 		   deamination rates on the other (ex: 3'). This approach is useful for 
-                   all types of ancient DNA (nuclear and mitonchondrial). Please note however
-                   that if the contaminant is deaminated as well, which can occur, this approach 
-                   will return an underestimate whose error comensurates with rates of contaminant 
-                   deamination.
-                2) --split
-                   Take a series of mitonchondrial diagnostic positions (positions that indicate 
-                   whether the read pertains to a particular type of homonin (ex: Neandertal) or 
-                   the putative contaminant homonin (ex: modern Humans) and separate the contaminant
-                   from the endogenous reads. This approach is useful when prior information on the 
-                   sample is available and when enough diagnostic positions are available (case of 
-                   archaic homonins).
-
-
-schmutzi.pl   This script performs two tasks: 
-	      	   1) Call an endogenous consensus 
-		   2) Using the consensus called in 1) and a set of known contaminants, compute 
-                      the contamination rate for entry in this set. Return the most likely contaminant 
-		      with its corresponding rate. 
-	      Both 1) and 2) are called iteratively until a stable contamination rate is reached. The script 
-	      produces a fasta file of the endogenous mitonchondrial genome 
+| script       | function                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------  |
+|contDeam.pl   | Is a script that allows for the estimation of endogenous deamination and                    |
+|              | subsequent contamination estimate using those. Assuming that the contaminant                |
+|              | is not deaminated, it will measure rates of deamination for the endogenous material         |
+|	       | and provide a rough contamination estimate. If say the endogenous material is               |
+|              | 30% deaminated at one base but the observed deamination rate for the entire set is 15%,     |
+|              | the contamination rate is therefore 0.5 . There are two ways to estimate endogenous         |
+|              | deamination:                                                                                |
+|	       | 1) (default)                                                                                |
+|	       |     Condition on one end of the read being deaminated (ex: 5') and measure                  |
+|	       |     deamination rates on the other (ex: 3'). This approach is useful for                    |
+|              |     all types of ancient DNA (nuclear and mitonchondrial). Please note however              |
+|              |     that if the contaminant is deaminated as well, which can occur, this approach           |
+|              |     will return an underestimate whose error comensurates with rates of contaminant         |
+|              |     deamination.                                                                            |
+|              |  2) --split                                                                                 |
+|              |     Take a series of mitonchondrial diagnostic positions (positions that indicate           |
+|              |     whether the read pertains to a particular type of homonin (ex: Neandertal) or           |
+|              |     the putative contaminant homonin (ex: modern Humans) and separate the contaminant       |
+|              |     from the endogenous reads. This approach is useful when prior information on the        |
+|              |     sample is available and when enough diagnostic positions are available (case of         |
+|              |     archaic homonins).                                                                      |
+|schmutzi.pl   | This script performs two tasks:                                                             |
+|	       |	   1) Call an endogenous consensus                                                   |
+|	       |   2) Using the consensus called in 1) and a set of known contaminants, compute              |
+|              |       the contamination rate for entry in this set. Return the most likely contaminant      |
+|	       |      with its corresponding rate.                                                           |
+|	       | Both 1) and 2) are called iteratively until a stable contamination rate is reached. The     |
+|	       | script produces a fasta file of the endogenous mitonchondrial genome                        |
                    
                        
 
 Also, the various subparts of schmutzi can be called directly:
 
 main modules:
-contDeam  	   	Contamination estimate using deamination patterns
-endoCaller	  	Consensus calling for mitochondrial data
-mtCont			Contamination estimate using a set of known contaminants
 
-sub modules:
-approxDist.R		Do a maximum likelihood estimate of log-normal paramaters given molecule length data
-bam2prof		Measure deamination rates and produce a matrix of deamination probabilities
-insertSize		Produce all insert sizes for aligned data in BAM format
-log2freq		Turn a endogenous or consensus log file into an allele frequency matrix to be used 
-			as contaminant source
-logs2pos		Takes two log files and produces which positions are segregating
-mitoConsPDF.R		Plot various information like coverage and quality for the consensus log file
-mas2freq		Turn a multiple sequence alignment file in multifasta format into an allele frequency 
-			matrix to be used as contaminant source
-posteriorDeam.R		Plot the posterior probability
-contOut2ContEst.pl 	Take the output of mtcont and get a point estimate
+| program            | function                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------  |
+|contDeam  	     |	Contamination estimate using deamination patterns                                          |
+|endoCaller	     |	Consensus calling for mitochondrial data                                                   |
+|mtCont		     |	Contamination estimate using a set of known contaminants                                   |
+|                    |                                                                                             |
+|approxDist.R	     |	Do a maximum likelihood estimate of log-normal paramaters given molecule length data       |
+|bam2prof	     |	Measure deamination rates and produce a matrix of deamination probabilities                |
+|insertSize	     |	Produce all insert sizes for aligned data in BAM format                                    |
+|log2freq	     |	Turn a endogenous or consensus log file into an allele frequency matrix to be used         |
+|		     |	as contaminant source                                                                      |
+|logs2pos	     |	Takes two log files and produces which positions are segregating                           |
+|mitoConsPDF.R	     |	Plot various information like coverage and quality for the consensus log file              |
+|mas2freq	     |	Turn a multiple sequence alignment file in multifasta format into an allele frequency      |
+|		     |	matrix to be used as contaminant source                                                    |
+|mas2log	     |	Transform a pairwise alignment of an endogenous sequence to the reference                  |
+|		     |	into a log file for contamination estimate using mtCont                                    |
+|posteriorDeam.R     |	Plot the posterior probability                                                             |
+|contOut2ContEst.pl  |	Take the output of mtcont and get a point estimate                                         |
 
 
 Test Data:
@@ -133,26 +140,26 @@ and simulated data with double-stranded damage patterns (ex: testdata/simulation
 
 
 To download it, either download it manually from :
-   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
-   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
-   https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
-   https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
+        https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
+        https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
+        https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
+        https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
 
 Or, if you have "wget" installed, just type:
-    make testdata
+        make testdata
 
 First you need to estimate endogenous deamination rates. First create an output directory:
-    mkdir -p outputdir/
+        mkdir -p outputdir/
 
 Then run contDeam to estimation endogenous deamination rates:
-    ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
+        ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
 or for the simulated
-    ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
+        ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
 
 This will produce the files:
-    outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
-    outputdir/[out].cont.est      Estimate for contamination based on deamination
-    outputdir/[out].config	Configuration file describing the variables used
+        outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
+        outputdir/[out].cont.est      Estimate for contamination based on deamination
+        outputdir/[out].config	Configuration file describing the variables used
 
 
 Then run the following to produce the endogenous consensus and the contamination estimate:
@@ -160,14 +167,15 @@ Then run the following to produce the endogenous consensus and the contamination
         ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/197/freqs/  testdata/mezB9687.bam
         ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/197/freqs/  testdata/simulation.bam
 
-  --uselength tells the program to use the length of the molecules
-  --ref is for the reference
 
-  outputdir/mez is the output from contDeam
-  alleleFreqMT/197/freqs/ is the database of putative contaminants 
-  testdata/mezB9687.bam is the input bam file
+        --uselength tells the program to use the length of the molecules
+        --ref is for the reference
+
+       outputdir/mez is the output from contDeam
+       alleleFreqMT/197/freqs/ is the database of putative contaminants 
+       testdata/mezB9687.bam is the input bam file
   
-  The first dataset is an empirical dataset with about 40-45% contamination and the second is a simulated dataset with 20% contamination
+The first dataset is an empirical dataset with about 40-45% contamination and the second is a simulated dataset with 20% contamination
    
 It will run for a few minutes and produce the following files:
 
@@ -179,8 +187,7 @@ For contamination:
 
 For the respective genomes of the endogenous and contaminant:	  
 	  [out]_final_endo.fa		Endogenous mitochondrial genome as fasta
-	  [out]_final_endo.log		Endogenous mitochondrial genome as a log file with likelihoods on a PHRED scale
-	  
+	  [out]_final_endo.log		Endogenous mitochondrial genome as a log file with likelihoods on a PHRED scale	  
 	  [out]_final_cont.fa		Contaminant mitochondrial genome as fasta
 	  [out]_final_cont.log		Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale
 
@@ -279,6 +286,8 @@ Frequently asked questions:
     mtCont manually. Datasets that are heavily contaminated with multiple contaminants are very difficult 
     targets.
 
+- 
+
 - Can I build my own set of putative contaminants ?
 
   Yes. First build a multiple sequence alignment (msa) of the various mitochondria
@@ -333,7 +342,8 @@ Frequently asked questions:
 - Should I filter my BAM file for reads with high mapping quality ?
   
   * In theory, no. If the mapping quality is good proxy for the probability of mismapping, you should be fine as mapping quality is 
-    incorporated
+    incorporated. However, most aligners do not compute the mismapping probability properly. We have found that sometimes applying a cutoff
+    of 30 or 35 bp reduces the chance of mismapping.
 
 
 - How much can I trust the endogenous consensus call ?

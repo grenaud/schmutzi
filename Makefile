@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -109,6 +109,13 @@ msa2freq:	libgab/utils.o msa2freq.o ${LIBGAB}utils.o  libgab/FastQParser.o libga
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 
+msa2log.o:	libgab/utils.o msa2log.cpp
+	${CXX} ${CXXFLAGS} msa2log.cpp
+
+msa2log:	libgab/utils.o msa2log.o ${LIBGAB}utils.o  libgab/FastQParser.o libgab/FastQObj.o libgab/gzstream/libgzstream.a 
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
+
 
 damage2profile.o:	libgab/utils.o damage2profile.cpp
 	${CXX} ${CXXFLAGS} damage2profile.cpp
@@ -129,7 +136,7 @@ testdata/simulation.bam:
 
 
 clean :
-	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble 
+	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble 
 	make -C splitEndoVsCont/ clean
 	make -C libgab/ clean
 
