@@ -112,7 +112,7 @@ There are 2 main Perl scripts that drive the underlying programs written in C++.
 
 Also, the various subparts of schmutzi can be called directly:
 
-main modules:
+
 
 | program            | function                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------  |
@@ -143,6 +143,7 @@ and simulated data with double-stranded damage patterns (ex: testdata/simulation
 
 
 To download it, either download it manually from :
+
         https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
         https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
         https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
