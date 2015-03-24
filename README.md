@@ -292,6 +292,7 @@ Frequently asked questions:
      of endogenous material.
 
 - How can I know if I have multiple contaminants ?
+
     If you have highly divergent quality values for bases in the contamination prediction,
     this could be an indication that you might have multiple contaminants. Further, if  
     the predicted contaminant does not seem to fall within a given haplogroup and has
@@ -299,6 +300,7 @@ Frequently asked questions:
     your contaminant is multiple. 
 
 - What to do if I suspect that I have multiple contaminants ?
+
     Do not use the --usepredC option and turn on the --multipleC option. If the contamination 
     rate is a lot lower than the one predicted by the deamination patterns, this could be an 
     indication that schmutzi did not converge and contamination is very high. Try to do a simple prediction
@@ -314,7 +316,7 @@ Frequently asked questions:
   including the reference used for mapping. Go to the directory where you want 
   to store the frequencies then run:
   
-  ./msa2freq [msa] [name of the reference]
+          ./msa2freq [msa] [name of the reference]
   
   A freqs/ directory should appear with one file per record in the msa.
 
@@ -328,12 +330,14 @@ Frequently asked questions:
   
   First determine your deamination rates using bam2prof with the appropriate library type:
   
-  ./bam2prof [-single|-double] -5p out5p.prof -3p out3p.prof input.bam
+           ./bam2prof [-single|-double] -5p out5p.prof -3p out3p.prof input.bam
   
   Then call the consensus:
-  ./endoCaller -cont 0 -deam5p out5p.prof -deam3p out3p.prof -seq output.fa -log outlog.log -l [length reference] /path/to/reference.fasta input.bam
+
+            ./endoCaller -cont 0 -deam5p out5p.prof -deam3p out3p.prof -seq output.fa -log outlog.log -l [length reference] /path/to/reference.fasta input.bam
 
 - Can I use schmutzi on modern DNA for mitochondrial consensus ?
+
   Yes, it is the simple case where deamination does not exist. 
   Simply use endoCaller without deamination parameters and length parameters.
 
@@ -341,8 +345,8 @@ Frequently asked questions:
 - The contamination estimate of contDeam.pl is very different from the one obtained from mtCont, why is that ?
   There are two possibilities:
 
-  * schmutzi.pl did not converge 
-  * The rates of deamination of the contamination are not close to zero.
+  1. schmutzi.pl did not converge 
+  2. The rates of deamination of the contamination are not close to zero.
 
   For the second option, maybe run using either --uselength or --estdeam and check the cont.prof/endo.prof files being produced.
 
@@ -369,14 +373,15 @@ Frequently asked questions:
 - How much can I trust the endogenous consensus call ?
  
   * That depends on two factors:
-     1) Amount of contamination and coverage, you can check how good the quality of the log is. If you have low quality, not much can be done
-     2) It the case of very distant mt genomes (ex: Denisova to human) the divergence might 
+     1. Amount of contamination and coverage, you can check how good the quality of the log is. If you have low quality, not much can be done
+     2. It the case of very distant mt genomes (ex: Denisova to human) the divergence might 
         be very high in certain regions and leads to misalignments. To solve this, an approach is to call the endogenous iteratively as such:
         
-        ./wrapper.pl   testDenisova/endo.it1  refs/human_MT.fa testDenisova/input.bam
-        ./endoCaller -seq testDenisova/endo.it1.fa -log testDenisova/endo.it1.log  refs/human_MT.fa testDenisova/endo.it1.bam
-        samtools faidx testDenisova/endo.it1.fa
-        ./wrapper.pl   testDenisova/endo.it2  testDenisova/endo.it1.fa testDenisova/endo.bam
-        ./endoCaller -seq testDenisova/endo.it2.fa -log testDenisova/endo.it2.log testDenisova/endo.it1.fa  testDenisova/endo.it2.bam
-         ...
+              ./wrapper.pl   testDenisova/endo.it1  refs/human_MT.fa testDenisova/input.bam
+              ./endoCaller -seq testDenisova/endo.it1.fa -log testDenisova/endo.it1.log  refs/human_MT.fa testDenisova/endo.it1.bam
+              samtools faidx testDenisova/endo.it1.fa
+              ./wrapper.pl   testDenisova/endo.it2  testDenisova/endo.it1.fa testDenisova/endo.bam
+              ./endoCaller -seq testDenisova/endo.it2.fa -log testDenisova/endo.it2.log testDenisova/endo.it1.fa  testDenisova/endo.it2.bam
+              ...
+
         Until there is no difference
