@@ -218,10 +218,10 @@ Recommended workflow for ancient samples:
   
   However, use this at your own risk, we know three factors that lead to wrong estimates:
 
-1. Insuffient # of molecules (we need at least 500M)
-2. Insuffient rates of endogenous deamination (we need upwards of 5%)
-3. No or very little deamination of the contaminant fragments
-4. Since we need to condition on one end to measure deamination on the other, we need independence between 5' and 3' deamination rates 
+  1. Insuffient # of molecules (we need at least 500M)
+  2. Insuffient rates of endogenous deamination (we need upwards of 5%)
+  3. No or very little deamination of the contaminant fragments
+  4. Since we need to condition on one end to measure deamination on the other, we need independence between 5' and 3' deamination rates 
 
   So use at your own risk. For mt, we can at least double check using "mtCont" but not for nuclear
   If you have a contaminant that is deaminated this will lead to an underestimate. 
@@ -239,19 +239,16 @@ Recommended workflow for ancient samples:
   If you get low p-values, the method should be safe to use, you only have to worry about a deaminated contaminant.
 
 
-* MT
+- MT
 
-1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using 
-    a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
-2. run samtools sort on your aligned bam file
-3. run samtools index on your sorted and aligned bam file
-4. If you used the wrapped reference, re-wrap your alignments exceeding the junction
-     using for example https://github.com/udo-stenzel/biohazard  this step is not necessary 
-     but produces equal coverage and resolution at the boundaries
-5. Estimate your initial contamination and deamination rates using "contDeam.pl"
-6. Run schmutzi.pl once with default parameters
-7. Run schmutzi.pl again  with "--usepredC"
-8. If contamination is more than a few percent re-run using the "--uselength" option
+  1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using  a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
+  2. run samtools sort on your aligned bam file
+  3. run samtools index on your sorted and aligned bam file
+  4. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/udo-stenzel/biohazard  this step is not necessary but produces equal coverage and resolution at the boundaries
+  5. Estimate your initial contamination and deamination rates using "contDeam.pl"
+  6. Run schmutzi.pl once with default parameters
+  7. Run schmutzi.pl again  with "--usepredC"
+  8. If contamination is more than a few percent re-run using the "--uselength" option
      
 
 
