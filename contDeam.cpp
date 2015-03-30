@@ -1239,8 +1239,9 @@ void computePriorOnReads(const string bamfiletopen,
     while ( reader.GetNextAlignment(al) ) { //for each read
 	//cout<<al.Name<<endl;
 	//those reads are ignored later anyway..
-	if(!al.IsMapped()){   continue; }
+	if(!al.IsMapped()  ){ continue; }
 	if( al.IsFailedQC()){ continue; }
+	if( al.IsPaired()  ){ continue; }
 
 	pair< string,vector<int> > reconstructedReference = reconstructRefWithPos(&al);
 	    
@@ -1497,6 +1498,7 @@ void computePriorOnReads(const string bamfiletopen,
 	//those reads are ignored later anyway..
 	if(!al.IsMapped()){   continue; }
 	if( al.IsFailedQC()){ continue; }
+	if( al.IsPaired()  ){ continue; }
 
 	pair< string,vector<int> > reconstructedReference = reconstructRefWithPos(&al);
 	    
