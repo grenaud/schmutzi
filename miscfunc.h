@@ -153,16 +153,16 @@ void readMTAlleleFreq(const string freqFile,	map<int, alleleFrequency> & pos2all
 
 // Returns log10( pow(10,x)+pow(10,y) ), but does so without causing
 // overflow or loss of precision.
-template <typename T>
-inline T oplusInit(T x,T y ){
-    if( x == 0 ){ //no initialized, a log = 0 should not exist
-	return y;
-    }
+/* template <typename T> */
+/* inline T oplusInit(T x,T y ){ */
+/*     if( x == 0 ){ //no initialized, a log = 0 should not exist */
+/* 	return y; */
+/*     } */
 
-    return x > y 
-        ? x + log1p( pow( 10, y-x ) ) / log(10)
-        : y + log1p( pow( 10, x-y ) ) / log(10) ;
-}
+/*     return x > y  */
+/*         ? x + log1p( pow( 10, y-x ) ) / log(10) */
+/*         : y + log1p( pow( 10, x-y ) ) / log(10) ; */
+/* } */
 
 
 #endif
