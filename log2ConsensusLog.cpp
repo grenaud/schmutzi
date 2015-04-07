@@ -114,6 +114,7 @@ int main (int argc, char *argv[]) {
 
     vector<string> lines     (logFDs.size(),"");
     vector<bool> insertion   (logFDs.size(),false);
+    cout<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt"<<endl;
 
     //bool breakLoop;
     while(true){
