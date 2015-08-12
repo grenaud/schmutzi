@@ -22,10 +22,9 @@ int main (int argc, char *argv[]) {
 
     string name = "MT";
     const string usage=string("\t"+string(argv[0])+
-			      " This program transform a log file into a contamination profile "+
+			      " This program filters a log file  "+
 			      " [options]  [log file]  "+"\n\n"+			      
 			      "\n\tOptions:\n"+	
-
 			      "\t\t"+"-q"+"\t[quality cutoff]" +"\t\t"+"Only consider sites with quality greater than this cutoff (default: 0)"+"\n"+
 			      "\t\t"+"-name"+"\t[name]" +"\t\t\t\t"+"Name of the sequence (default "+stringify(name)+")\n"+ 
 			      "\t\t"+"-indel"+"\t[quality cutoff]" +"\t\t"+"Filter indels according to this threshold (default: 0)"+"\n"+
@@ -79,10 +78,11 @@ int main (int argc, char *argv[]) {
 	cerr << "File  "<<logFile<<" must be unix formatted, exiting"<<endl;
 	return 1;
     }
+    cout<<"pos\trefBase\tbase\tqual\tavgmapq\tcov\tsupp\tpa\tpc\tpg\tpt"<<endl;
 
 
     igzstream logFD;
-    string sequence = "";
+    // string sequence = "";
 
     logFD.open(logFile.c_str(),ios::in);
     if (logFD.good()){
@@ -104,9 +104,10 @@ int main (int argc, char *argv[]) {
 	    
 	    if(alt  == "D" ){ //deletion
 		if(q<qcutoffIndel){//skip those below threshold
-		    sequence+="N";
+		    //sequence+="N";
+		    cout<<line<<endl;
 		}else{
-		    sequence+=""; //do nothing, deletion is above QC threshold
+		    //sequence+=""; //do nothing, deletion is above QC threshold
 		}       
 		continue;
 	    }
@@ -121,7 +122,8 @@ int main (int argc, char *argv[]) {
 		if(q<qcutoffIndel)//skip those below threshold		 
 		    continue;
 		
-		sequence+=alt;
+		//sequence+=alt;
+		cout<<line<<endl;
 		//cout<<line<<"\t"<<sequence<<endl;
 		continue;
 	    }
@@ -129,9 +131,11 @@ int main (int argc, char *argv[]) {
 	    //not deletion or insertion
 
 	    if(q<qcutoff)//skip those below threshold
-		sequence+="N";       	
+		cout<<pos<<"\t"<<ref<<"\t"<<alt<<"\t"<<"0.0\t0.0\t0.0\t0.0\t0.0\t0.0\t0.0\t0.0"<<endl;
+		//sequence+="N";       	
 	    else
-		sequence+=alt;
+		cout<<line<<endl;
+		//sequence+=alt;
 	    
 	}
 	logFD.close();
@@ -144,14 +148,14 @@ int main (int argc, char *argv[]) {
 
     cerr<<"program "<<argv[0]<<" finished successfully"<<endl;
 
-    cout<<name<<endl;
-    for(unsigned int i=0;i<sequence.size();i++){
-	cout<<sequence[i];
-	if( (i!=0) && ( (i%80)  == 79) ){
-	    cout<<endl;
-	}
-    }
-    cout<<endl;
+    // cout<<name<<endl;
+    // for(unsigned int i=0;i<sequence.size();i++){
+    // 	cout<<sequence[i];
+    // 	if( (i!=0) && ( (i%80)  == 79) ){
+    // 	    cout<<endl;
+    // 	}
+    // }
+    // cout<<endl;
     return 0;
 }
 

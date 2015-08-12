@@ -173,7 +173,7 @@ int main (int argc, char *argv[]) {
 	string  alt       =                      fields0[2];
 	long double qualB0 =  numeric_limits<long double>::infinity(); //destringify<long double>(fields0[2] );
 	long double qualI0 =  numeric_limits<long double>::infinity();
-	if(strEndsWith(fields0[0],"i") || alt == "D"){
+	if(strEndsWith(fields0[0],"i") || alt == "D" ){
 	    qualI0=destringify<long double>( fields0[3] );
 	}else{
 	    qualB0=destringify<long double>( fields0[3] );

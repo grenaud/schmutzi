@@ -210,7 +210,7 @@ int main (int argc, char *argv[]) {
     //cout<<haploGroupFile<<endl;
     if (myFilePos.good()){
 	while ( getline (myFilePos,linePos)){
-	    //cout<<linePos<<endl;
+	    // cout<<linePos<<endl;
 	    vector<string> fields = allTokens(linePos,'\t');
 	    int pos    = destringify<int>(fields[0]);
  	    pair<char,string> baseHap;
@@ -239,11 +239,12 @@ int main (int argc, char *argv[]) {
 	return 1;
     }
 
-
+    // cout<<"fine"<<endl;
+    // return 1;
     BamReader reader;
 
      if ( !reader.Open(bamfiletopen) ) {
-	 cerr << "Could not open input BAM files : " << bamfiletopen <<endl;
+	 cerr << "Could not open input BAM files : " << bamfiletopen <<endl;	 
 	 return 1;
      }
 
@@ -266,7 +267,7 @@ int main (int argc, char *argv[]) {
     BamAlignment al;
     //unsigned int numReads=0;
     while ( reader.GetNextAlignment(al) ) {
-	// cout<<"1 "<<al.Name<<endl;
+	//cout<<"1 "<<al.Name<<endl;
         pileup.AddAlignment(al);
     }
 
@@ -275,7 +276,7 @@ int main (int argc, char *argv[]) {
     pileup.Flush();
     reader.Close();
     // fastaReference.Close();
-    // cout<<"test"<<endl;
+    //cout<<"test"<<endl;
     delete cv;
 
     BamReader reader2;

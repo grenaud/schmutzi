@@ -226,6 +226,8 @@ int main (int argc, char *argv[]) {
     bool allStr   =true;
     bool singleStr=false;
     bool doubleStr=false;
+    bool singAnddoubleStr=false;
+
     int lengthMaxToPrint = 5;
     int minQualBase      = 3;
 
@@ -241,10 +243,11 @@ int main (int argc, char *argv[]) {
 			"\t\t"+"-endo\t\t\tRequire the 5' end to be deaminated to compute the 3' end and vice-versa (Default: "+stringify( endo )+")\n"+
 			"\t\t"+"-length\t[length]\tDo not consider bases beyond this length  (Default: "+stringify(lengthMaxToPrint)+" ) \n"+
 
-			"\n\n\tSpecify either one of the two:\n"+
+			"\n\n\tYou can specify either one of the two:\n"+
 			"\t\t"+"-single\t\t\tUse the deamination profile of a single strand library  (Default: "+booleanAsString( singleStr )+")\n"+
 			"\t\t"+"-double\t\t\tUse the deamination profile of a double strand library  (Default: "+booleanAsString( doubleStr )+")\n"+
-		
+			"\n\tor specify this option:\n"+
+			"\t\t"+"-both\t\t\tReport both C->T and G->A regardless of stand  (Default: "+booleanAsString( singAnddoubleStr )+")\n"+
 
 			"\n\n\tOutput options:\n"+
 			"\t\t"+"-5p\t[output file]\tOutput profile for the 5' end (Default: "+stringify(file5p)+")\n"+
@@ -292,6 +295,17 @@ int main (int argc, char *argv[]) {
             continue;
         }
 
+        if(string(argv[i]) == "-both" ){
+	    //doubleStr=true;
+
+	    allStr           = false;
+	    singleStr        = false;
+	    doubleStr        = false;
+	    singAnddoubleStr = true;
+            continue;
+        }
+
+
         if(string(argv[i]) == "-single" ){
 
 	    allStr    = false;
@@ -316,12 +330,19 @@ int main (int argc, char *argv[]) {
 	return 1;
     }
 
-    if(endo)
+    if(endo){
+	if(singAnddoubleStr){
+	    cerr<<"Error: cannot use -singAnddoubleStr with -endo"<<endl;
+	    return 1;
+	}
+	
 	if( !singleStr &&
 	    !doubleStr ){
 	    cerr<<"Error: you have to provide the type of protocol used (single or double) when using endogenous"<<endl;
 	    return 1;
 	}
+
+    }
 
     typesOfDimer5p       = vector< vector<unsigned int> >();
     typesOfDimer3p       = vector< vector<unsigned int> >();
@@ -443,14 +464,18 @@ int main (int argc, char *argv[]) {
 		if(allStr){
 		    file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs);
 		}else{ 
-		    if(doubleStr){
-			//          C        T
-			if(         n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
-		    }else{ 
-			if(singleStr){
-			    //      C        T
-			    if(     n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
-			
+		    if(singAnddoubleStr){
+			if(         (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+
+		    }else{
+			if(doubleStr){
+			    //          C        T
+			    if(         n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+			}else{ 
+			    if(singleStr){
+				//      C        T
+				if(     n1==1 && n2==3  ) { file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); } else { file5pFP<<"0.0"; }
+			    }
 			}
 		    }
 		}
@@ -504,14 +529,20 @@ int main (int argc, char *argv[]) {
 		if(allStr){
 		    file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs);
 		}else{ 
-		    if(doubleStr){
-			//          G        A
-			if(         n1==2 && n2==0  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
-		    }else{ 
-			if(singleStr){
-			    //      C        T
-			    if(     n1==1 && n2==3  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
-			
+		    if(singAnddoubleStr){
+			// if(         n1==2 && n2==0  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+			if(   (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+
+		    }else{
+			if(doubleStr){
+			    //          G        A
+			    if(         n1==2 && n2==0  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+			}else{ 
+			    if(singleStr){
+				//      C        T
+				if(     n1==1 && n2==3  ) { file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); } else { file3pFP<<"0.0"; }
+				
+			    }
 			}
 		    }
 		}

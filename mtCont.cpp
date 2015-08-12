@@ -8,14 +8,15 @@
 // #define DEBUG1
 // #define DEBUG2
 // #define DEBUGPOS 714 //position to debug
-//#define DEBUGPOS 608 //position to debug
+// #define DEBUGPOS 608 //position to debug
 
-//#define DEBUGPOS 14250
+// #define DEBUGPOS 14250
 // #define DEBUGPOSEACHREAD //to debug each read
-//#define DEBUGCONTPOS //print pos that are potential contaminants
+//#define DEBUGCONTPOS  //print pos that are potential contaminants
+// #define DEBUGMTPOSSKIP
 
 #define MAXCOV 5000            // beyond that coverage, we stop computing
-#define MINPRIOR 0.001         // below that prior for contamination at a given base, we give up
+#define MINPRIOR 0.1         // below that prior for contamination at a given base, we give up
 #define MAXMAPPINGQUAL 257     // maximal mapping quality, should be sufficient as mapping qualities are encoded using 8 bits
 #define MINDISTFROMINDEL 5     // ignore positions that are within X bp of an indel
 
@@ -116,6 +117,8 @@ long double probMapping[MAXMAPPINGQUAL];
 long double probMismapping[MAXMAPPINGQUAL];
 
 string dnaAlphabet="ACGT";
+long double stepContEst = 0.01;
+long double topCont = 1.0;
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
@@ -147,7 +150,7 @@ vector<bool>  * skipPositions;    //= new vector<bool>(sizeGenome+1,false); // i
   
 
 */				
-void findPosToSkip(){
+void findPosToSkip(bool printPosToskip){
     queue<string>  queueFilesToRead = queueFilesToprocess;
     vector< map<int, alleleFrequency> > freqsFromFile;
     cerr<<"Finding positions to skip"<<endl;
@@ -166,6 +169,33 @@ void findPosToSkip(){
 	// cerr<<"file3="<<freqFileNameToread<<"\t"<<queueFilesToprocess.empty()<<endl;	
     }
 
+
+    vector<bool> definedFreqPos  = vector<bool>(sizeGenome+1,true); 
+
+    //detect undefined positions
+    for(unsigned int fileFreq=0;fileFreq<freqsFromFile.size();fileFreq++){ //   each frequency file found
+	for(int i=0;i<sizeGenome;i++){
+	    
+	    double freqSum=0.0;
+	    for(unsigned int nuc=0;nuc<4;nuc++){ //     b = endogenous
+
+		freqSum+=freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc];
+
+	    }    
+	    
+	    if(freqSum<0.99){
+		definedFreqPos[i]=false;
+	    }
+	}
+    }
+
+#ifdef DEBUGMTPOSSKIP
+	for(int i=0;i<sizeGenome;i++){
+	    if(!definedFreqPos[i])
+		cout<<"empty\t"<<i<<"\t"<<infoPPos[i].posAlign<<"\t"<<definedFreqPos[i]<<endl;
+	}
+#endif
+
     // cout<<sizeGenome<<endl;
     
     for(int i=0;i<sizeGenome;i++){
@@ -175,8 +205,9 @@ void findPosToSkip(){
 	//cout<<"pre i"<<i<<"\t"<<endl;
 	// cout<<infoPPos[i].cov<<endl;
 	// cout<<(pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())<<endl;
-	if( (infoPPos[i].cov == 0) || //no coverage
-	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end())  ){ //not found in endogenous consensus, could be due to deletion 	    
+	if( (infoPPos[i].cov == 0)                                              || //no coverage
+	    (pos2phredgeno.find( infoPPos[i].posAlign ) == pos2phredgeno.end()) || //not found in endogenous consensus, could be due to deletion
+	    !definedFreqPos[i]                                                   ){  //frequency files disagree
 	    definedSite->at(i) = false;
 	    continue;
 	}
@@ -206,7 +237,7 @@ void findPosToSkip(){
 			// #endif
 
 #ifdef DEBUGCONTPOS
-			cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+			cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2]<<endl;
 #endif
 			hasPriorAboveThreshold=true;
 		    
@@ -225,6 +256,10 @@ void findPosToSkip(){
 	//priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
 	skipPositions->at(i) = (!hasPriorAboveThreshold);
+
+	if(printPosToskip && !skipPositions->at(i))
+	    cerr<<"Skipping position "<<(i+1)<<endl;
+	    //cout<<i<<"\t"<<skipPositions->at(i)<<endl;
 	// if(i%1000==0)
 	//     skipPositions->at(i) = (false); //TO REMOVE
 
@@ -385,10 +420,10 @@ void *mainContaminationThread(void * argc){
 	}//end nuc1
 
 	//	cout<<"Thread #"<<rankThread <<" test4 "<<i<<endl;
-#ifdef DEBUGCONTPOS
-	if(hasPriorAboveThreshold)
-	    cout<<endl;
-#endif
+// #ifdef DEBUGCONTPOS
+// 	if(hasPriorAboveThreshold)
+// 	    cout<<endl;
+// #endif
 
 	priorDiNucVec[ i ] = priorDiNuc;
 	// if(i==3105){ exit(1); }
@@ -535,7 +570,7 @@ void *mainContaminationThread(void * argc){
     cerr<<"Thread #"<<rankThread <<" is done with  pre-computations"<<endl;
 
 
-    for(contaminationRate=0.0;contaminationRate<1.0;contaminationRate+=0.01){
+    for(contaminationRate=0.0;contaminationRate<topCont;contaminationRate+=stepContEst){
 	long double logLike=0.0;
     
 
@@ -963,6 +998,7 @@ int main (int argc, char *argv[]) {
     string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
     string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
     bool verbose      = false;
+    bool printPosToskip      = false;
 
     const string usage=string("\t"+string(argv[0])+
 			      " [options]  [endogenous consensus file] [reference fasta file] [bam file] [cont file1] [cont file2] ..."+"\n\n"+
@@ -970,6 +1006,8 @@ int main (int argc, char *argv[]) {
 			      "\n\tOutput options:\n"+	
 			      "\t\t"+"-v" +"\t\t"+"Verbose output, print the MAP value for each contaminant in increasing order of likelihood"+"\n"+
 			      "\t\t"+"-o  [output log]" +"\t\t"+"Output log (default: stdout)"+"\n"+
+
+
 			      //"\t\t"+"-log  [log file]" +"\t\t"+"Output log  (default: stderr)"+"\n"+
 			      // "\t\t"+"-name [name]" +"\t\t\t"  +"Name  (default "+nameMT+") "+"\n"+
 			      // "\t\t"+"-qual [minimum quality]" +"\t\t"  +"Filter bases with quality less than this  (default "+stringify(minQual)+") "+"\n"+
@@ -981,13 +1019,17 @@ int main (int argc, char *argv[]) {
 			      // // "\t\t"+"-deam5" +"\t\t"+"5p deamination frequency"+"\n"+
 			      // // "\t\t"+"-deam3" +"\t\t"+"3p deamination frequency"+"\n"+
 			      "\n\tComputation options:\n"+	
+			      "\t\t"+"-maxc" +"\t\t\t\t"+"Maximum contamination value to check (default: "+stringify(topCont)+")"+"\n"+
+
+			      "\t\t"+"-step" +"\t\t\t\t"+"Step for reporting the contamination estimate (default: "+stringify(stepContEst)+")"+"\n"+
 			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
 			      "\t\t"+"--phred64" +"\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
 
 			      "\n\tMisc. options:\n"+	
 			      "\t\t"+"-t" +"\t\t\t\t"+"Number of cores to use (default: "+stringify(numberOfThreads)+")"+"\n"+
-
+			      "\t\t"+"-p" +"\t\t\t\t"+"Print positions to skip (default: "+booleanAsString(printPosToskip)+")"+"\n"+
+			      
 			      // "\t\t"+"-cont [file1,file2,...]" +"\t\t"+"Contamination allele frequency (default : "+fileFreq+")"+"\n"+ 
 			      // "\n\tReference options:\n"+	
 			      // "\t\t"+"-l [length]" +"\t\t\t"+"Actual length of the genome used for"+"\n"+
@@ -1015,6 +1057,11 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
+	if(string(argv[i]) == "-p" ){
+	    printPosToskip=true;
+	    continue;
+	}
+
 	if(string(argv[i]) == "-v" ){
 	    verbose=true;
 	    continue;
@@ -1037,6 +1084,19 @@ int main (int argc, char *argv[]) {
 	    i++;
 	    continue;
 	}
+
+	if(string(argv[i]) == "-maxc"  ){
+	    topCont=destringify<long double>(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-step"  ){
+	    stepContEst=destringify<long double>(argv[i+1]);
+	    i++;
+	    continue;
+	}
+
 
 	if(string(argv[i]) == "-deam3p"  ){
 	    deam3pfreq=string(argv[i+1]);
@@ -1280,7 +1340,7 @@ int main (int argc, char *argv[]) {
 
 
 
-    findPosToSkip();
+    findPosToSkip(printPosToskip);
 
 
 

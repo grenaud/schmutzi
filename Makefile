@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -94,6 +94,12 @@ log2fasta.o:	libgab/utils.o log2fasta.cpp
 log2fasta:	libgab/utils.o log2fasta.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
+filterlog.o:	libgab/utils.o filterlog.cpp
+	${CXX} ${CXXFLAGS} filterlog.cpp
+
+filterlog:	libgab/utils.o filterlog.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
 logs2pos.o:	libgab/utils.o logs2pos.cpp
 	${CXX} ${CXXFLAGS} logs2pos.cpp
 
@@ -114,11 +120,23 @@ logdiff.o:	libgab/utils.o logdiff.cpp
 logdiff:	libgab/utils.o logdiff.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
+logmask.o:	libgab/utils.o logmask.cpp
+	${CXX} ${CXXFLAGS} logmask.cpp
+
+logmask:	libgab/utils.o logmask.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
 
 msa2freq.o:	libgab/utils.o msa2freq.cpp
 	${CXX} ${CXXFLAGS} msa2freq.cpp
 
 msa2freq:	libgab/utils.o msa2freq.o ${LIBGAB}utils.o  libgab/FastQParser.o libgab/FastQObj.o libgab/gzstream/libgzstream.a 
+	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+
+msa2singlefreq.o:	libgab/utils.o msa2singlefreq.cpp
+	${CXX} ${CXXFLAGS} msa2singlefreq.cpp
+
+msa2singlefreq:	libgab/utils.o msa2singlefreq.o ${LIBGAB}utils.o  libgab/FastQParser.o libgab/FastQObj.o libgab/gzstream/libgzstream.a 
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 
@@ -149,7 +167,7 @@ testdata/simulation.bam:
 
 
 clean :
-	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff
+	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff logmask filterlog msa2singlefreq
 	make -C splitEndoVsCont/ clean
 	make -C libgab/ clean
 

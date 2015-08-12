@@ -1,5 +1,5 @@
 
-CXX      = g++
+CXX      = g++ -g -pg
 BAMTOOLS = ../bamtools/
 LIBGAB   = ../libgab/
 

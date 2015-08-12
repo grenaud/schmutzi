@@ -167,16 +167,19 @@ char   offsetQual=33;
 long double LOGRATIOFORINDEL=50;
 double likeMatch[MAXMAPPINGQUAL];
 double likeMismatch[MAXMAPPINGQUAL];
-double likeMatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
-double likeMismatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+// double likeMatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+// double likeMismatchMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
 
 double likeMatchProb[MAXMAPPINGQUAL];
 double likeMismatchProb[MAXMAPPINGQUAL];
-double likeMatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
-double likeMismatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+// double likeMatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
+// double likeMismatchProbMQ[MAXMAPPINGQUAL][MAXMAPPINGQUAL];
 
 double probMapping[MAXMAPPINGQUAL];
 double probMismapping[MAXMAPPINGQUAL];
+double probMappingCP[MAXMAPPINGQUAL];
+double probMismappingCP[MAXMAPPINGQUAL];
+
 
 
 double probLengthEndo[1000];
@@ -861,7 +864,7 @@ void deletionInSample(const int i,
 		if(setFlags){
 		    return ;
 		}
-		long double qualDelToPrint = -10.0*( (infoPPos[i].llikNoDeletion - oplus(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0));
+		long double qualDelToPrint = -10.0*( (infoPPos[i].llikNoDeletion - oplusInit(infoPPos[i].llikDeletion,infoPPos[i].llikNoDeletion))/log(10.0));
 
 		(*logToPrint)<<(i+1)<<"\t"<<genomeRef[i]<<"\t"<<"D"<<"\t"<<qualDelToPrint<<"\t"<<infoPPos[i].mapqAvg<<"\t"<<infoPPos[i].cov<<"\t"<<infoPPos[i].numDel<<"\t0.0\t0.0\t0.0\t0.0"<<endl;
 		
@@ -2439,12 +2442,12 @@ public:
 	    if(ignoreMQ){ //ignore MQ
 		probFinal = (               probBase                          );
 	    }else{
-		probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+		probFinal = (probMappingCP[m]*probBase + probMismappingCP[m]*0.25);
 	    }
 	    //flat prior nuc/4 + (1/4)*(1/4) 
 	    //-------------------------------
 	    //             2 (to scale)
-	    probFinal=probFinal*0.125+0.03125; 
+	    //probFinal=probFinal*0.125+0.03125; 
 	    
 
 	    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc]               += log(probFinal)/log(10);
@@ -2533,9 +2536,9 @@ public:
 	  if(ignoreMQ){ //ignore MQ
 	    probFinal = (               probBase                          );
 	  }else{
-	    probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
+	    probFinal = (probMappingCP[m]*probBase + probMismappingCP[m]*0.25);
 	  }
-	  probFinal=probFinal/4.0 + 0.25;//flat prior			
+	  //probFinal=probFinal/4.0 + 0.25;//flat prior			
 			
 	  m_infoPPos->at(posVector).likeBaseNoindel[nuc]               += log(probFinal)/log(10);
 
@@ -3309,35 +3312,42 @@ void initScores(){
 	
 	probMapping[m]    = correctMappingProb;    //1-m
 	probMismapping[m] = incorrectMappingProb;  //m
+    //assuming average 1 out of 10 fragment is nuMT/mismapped
+    int mcapped=min(m,9);
+	double incorrectMappingProbCP   =     pow(10.0,mcapped/-10.0); //m
+	double correctMappingProbCP     = 1.0-pow(10.0,mcapped/-10.0); //1-m
+	
+	probMappingCP[m]    = correctMappingProbCP;    //1-m
+	probMismappingCP[m] = incorrectMappingProbCP;  //m
 
 #ifdef DEBUG1
 	cerr<<"m\t"<<m<<"\t"<<incorrectMappingProb<<"\t"<<correctMappingProb<<endl;
 #endif
 	
-    	for(int i=0;i<2;i++){
-    	    likeMatchMQ[m][i]           = log(  correctMappingProb*(1.0-pow(10.0,2.0/-10.0)    ) + incorrectMappingProb/4.0   )/log(10);         
-    	    likeMismatchMQ[m][i]        = log(  correctMappingProb*(    pow(10.0,2.0/-10.0)/3.0) + incorrectMappingProb/4.0   )/log(10);
-    	    likeMatchProbMQ[m][i]       = correctMappingProb*(1.0-pow(10.0,2.0/-10.0)    ) + incorrectMappingProb/4.0;
-    	    likeMismatchProbMQ[m][i]    = correctMappingProb*(    pow(10.0,2.0/-10.0)/3.0) + incorrectMappingProb/4.0;
-    	}
+    	// for(int i=0;i<2;i++){
+    	//    likeMatchMQ[m][i]           = log(  correctMappingProb*(1.0-pow(10.0,2.0/-10.0)    ) + incorrectMappingProb/4.0   )/log(10);         
+    	//    likeMismatchMQ[m][i]        = log(  correctMappingProb*(    pow(10.0,2.0/-10.0)/3.0) + incorrectMappingProb/4.0   )/log(10);
+    	//    likeMatchProbMQ[m][i]       = correctMappingProb*(1.0-pow(10.0,2.0/-10.0)    ) + incorrectMappingProb/4.0;
+    	 //   likeMismatchProbMQ[m][i]    = correctMappingProb*(    pow(10.0,2.0/-10.0)/3.0) + incorrectMappingProb/4.0;
+    	//}
 
 
     	//Computing for quality scores 2 and up
-    	for(int i=2;i<MAXMAPPINGQUAL;i++){
+    	// for(int i=2;i<MAXMAPPINGQUAL;i++){
 	    //  (1-m)(1-e) + m/4  = 1-m-e+me +m/4  = 1+3m/4-e+me
-    	    likeMatchMQ[m][i]         = log(  correctMappingProb*(1.0-pow(10.0,i/-10.0)    ) + incorrectMappingProb/4.0    )/log(10);    
+    	//    likeMatchMQ[m][i]         = log(  correctMappingProb*(1.0-pow(10.0,i/-10.0)    ) + incorrectMappingProb/4.0    )/log(10);    
 	    //  (1-m)(e/3) + m/4  = e/3 -me/3 + m/4
-    	    likeMismatchMQ[m][i]      = log(  correctMappingProb*(    pow(10.0,i/-10.0)/3.0) + incorrectMappingProb/4.0    )/log(10);    
+    	//    likeMismatchMQ[m][i]      = log(  correctMappingProb*(    pow(10.0,i/-10.0)/3.0) + incorrectMappingProb/4.0    )/log(10);    
 	    
-    	    likeMatchProbMQ[m][i]           = correctMappingProb*(1.0-pow(10.0,i/-10.0)    ) + incorrectMappingProb/4.0;
-    	    likeMismatchProbMQ[m][i]        = correctMappingProb*(    pow(10.0,i/-10.0)/3.0) + incorrectMappingProb/4.0;
-    	}
+    	//    likeMatchProbMQ[m][i]           = correctMappingProb*(1.0-pow(10.0,i/-10.0)    ) + incorrectMappingProb/4.0;
+    	//    likeMismatchProbMQ[m][i]        = correctMappingProb*(    pow(10.0,i/-10.0)/3.0) + incorrectMappingProb/4.0;
+    	//}
 
 
 #ifdef DEBUG1
-    	for(int i=0;i<MAXMAPPINGQUAL;i++){
-	    cerr<<"m\t"<<m<<"\t"<<i<<"\t"<<likeMatchMQ[m][i]<<"\t"<<likeMismatchMQ[m][i]<<"\t"<<likeMatchProbMQ[m][i]<<"\t"<<likeMismatchProbMQ[m][i]<<endl;
-	}
+    //	for(int i=0;i<MAXMAPPINGQUAL;i++){
+	 //   cerr<<"m\t"<<m<<"\t"<<i<<"\t"<<likeMatchMQ[m][i]<<"\t"<<likeMismatchMQ[m][i]<<"\t"<<likeMatchProbMQ[m][i]<<"\t"<<likeMismatchProbMQ[m][i]<<endl;
+	//}
 #endif
 
     }
