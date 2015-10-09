@@ -36,8 +36,8 @@ Requirements:
    - Perl interpreter
    - R (recent version)
       -  Rscript 
-      -  The fitdistrplus R package ( install.packages("fitdistrplus") )
-      -  The MASS package ( install.packages("MASS") )
+      -  The fitdistrplus R package ( install.packages("fitdistrplus") or install.packages("fitdistrplus", repos="http://R-Forge.R-project.org") on more recent versions of R)
+      -  The MASS package, normally installed automatically with fitdistrplus ( install.packages("MASS") )
 
 On Ubuntu, these dependencies can be resolved using :
 
@@ -48,7 +48,7 @@ On Ubuntu, these dependencies can be resolved using :
 	sudo apt-get install zlib
 	sudo apt-get install zlib1g-dev
 	sudo apt-get install r-base-core
-  
+
 
 
 Installation:
