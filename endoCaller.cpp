@@ -1976,8 +1976,6 @@ public:
 
 		    
 	    if(singleCont){
-		// m_infoPPos->at(posVector).insertion2loglike[insert]     += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		// m_infoPPos->at(posVector).insertion2loglikeCont[insert] += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
 
 
 		for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
@@ -2001,53 +1999,8 @@ public:
 		    //}
 		}
 
-		// //both endo and cont have the insert, both right
-		// if(1){
-		//     pair<string,string> keytouse (insert,insert);
-		//     m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	log( (           probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-		// }
-
-		// //only endo has the insert, endo has it right, cont has is wrong
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert){
-		// 	pair<string,string> keytouse (insert,*it);
-		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	    log( (   probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-		//     }
-			    
-		// }
 			
-		// //only cont has the insert, endo has it wrong, cont has is cont
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert){
-		// 	pair<string,string> keytouse (*it   ,insert);
-		// 	m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 	    log( (   probEndogenous)*probMapping[m]*(    INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB)  )/log(10);
-		//     }
-			    
-		// }
 			
-		// //none have the insert, both have it wrong
-		// for(set<string>::const_iterator it1 = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it1 != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it1) {
-		//     if( *it1 != insert){
-		// 	for(set<string>::const_iterator it2 = m_infoPPos->at(posVector).allInserts.begin(); 
-		// 	    it2 != m_infoPPos->at(posVector).allInserts.end(); 
-		// 	    ++it2) {
-		// 	    if( *it2 != insert){
-		// 		pair<string,string> keytouse (*it1  ,*it2);
-		// 		m_infoPPos->at(posVector).insertion2loglikeEndoCont [ keytouse ] += 
-		// 		    log((probEndogenous)*probMapping[m]*(INDELERRORPROB) + (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB)  )/log(10);
-		// 	    }
-		// 	}
-		//     }
-		// }
 			
 			
 	    }else{ //not single cont
@@ -2060,23 +2013,12 @@ public:
 										    ( probMismapping[m]*(1.0/( (long double)( m_infoPPos->at(posVector).allInserts.size() ))) )
 										     )/log(10);
 		}
-		//got it right for the insert
-		// m_infoPPos->at(posVector).insertion2loglike[insert]         += log( (    probEndogenous)*probMapping[m]*(1.0-INDELERRORPROB))/log(10);
-		// //The remaining insertions have it wrong
-		// for(set<string>::const_iterator it = m_infoPPos->at(posVector).allInserts.begin(); 
-		//     it != m_infoPPos->at(posVector).allInserts.end(); 
-		//     ++it) {
-		//     if( *it != insert)
-		// 	m_infoPPos->at(posVector).insertion2loglike[*it]    += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		// }
 	    }
 		    
 	}else{ //DOES NOT HAVE INSERT BUT BASES, COMPUTE LIKELIHOOD FOR NO INSERT
 	    string insert=""; //model is no insert
 	    //push none
 	    if(singleCont){
-		// m_infoPPos->at(posVector).insertion2loglike[""]         += log( (    probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
-		// m_infoPPos->at(posVector).insertion2loglikeCont[""]     += log( (1.0-probEndogenous)*probMapping[m]*(    INDELERRORPROB))/log(10);
 	    
 #ifdef DEBUGINS
 	    
@@ -2444,10 +2386,6 @@ public:
 	    }else{
 		probFinal = (probMappingCP[m]*probBase + probMismappingCP[m]*0.25);
 	    }
-	    //flat prior nuc/4 + (1/4)*(1/4) 
-	    //-------------------------------
-	    //             2 (to scale)
-	    //probFinal=probFinal*0.125+0.03125; 
 	    
 
 	    m_infoPPos->at(posVector).likeBaseNoindelCont[nuce][nucc]               += log(probFinal)/log(10);
@@ -3012,262 +2950,6 @@ void computePriorOnReads(const string bamfiletopen,
 #ifdef DEBUGPRIORENDO
 	cout<<"priorbefore1\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\tpe="<<probEndo<<"\tpdu="<<probDeamUnscaled<<"\tpler="<<probLengthEndoForRead<<"\tpep="<<probEndoProd<<"\tpcp="<<probContProd<<endl;
 #endif
-
-	
-	read2endoProb[ al.Name+"#"+ stringify(al.AlignmentFlag) ] = probEndo;
-
-    } //for each read
-
-} //end computePriorOnReads()
-
-
-#else
-//! A method to compute the prior for a single read of being contaminant or endogenous
-/*!
-  This method is called by the main. After the first round, it is called and will use either the deamination profile information or the length distribution to set a prior on each read of being endogenous.
-
-  \param bamfiletopen : The string for the filename for the BAM file
-  \param deamread: Boolean to know if we will use deamination pattern in the calculation
-  \param useLengthPrior: Boolean to know if we will use sequence length information 
-  \param contaminationPrior: Prior on the contamination rate
-*/
-void computePriorOnReads(const string bamfiletopen,
-			 const bool deamread,
-			 const bool useLengthPrior,
-			 const long double contaminationPrior
-			 ){
-
-    //iterate over the reads once again and compute prob of deam
-	
-    cerr<<"Reading BAM to set priors for each read ..."<<endl;
-    BamReader reader;
-    BamAlignment al;
-    if ( !reader.Open(bamfiletopen) ) {
-	cerr << "Could not open input BAM files " <<bamfiletopen<< endl;
-	exit(1);
-    }
-    unsigned int skipped      =0;
-
-    while ( reader.GetNextAlignment(al) ) { //for each read
-	//cout<<al.Name<<endl;
-	//those reads are ignored later anyway..
-	if(!al.IsMapped()){   continue; }
-	if( al.IsFailedQC()){ continue; }
-
-	pair< string,vector<int> > reconstructedReference = reconstructRefWithPos(&al);
-	    
-	if( skipAlign(reconstructedReference.first,&al,&skipped) ){ 
-	    // cout<<al.QueryBases<<endl<<reconstructedReference.first<<endl<<endl;
-	    continue; 
-	}
-
-	if(al.QueryBases.size() != reconstructedReference.first.size()){
-	    cerr<<"Query bases line is not the same size as the reconstructed reference for read "<<al.Name<<endl;
-	    // return 1;
-	    exit(1);
-	}
-
-	if(al.QueryBases.size() != reconstructedReference.second.size()){
-	    cerr<<"Query bases line is not the same size as the reconstructed positions on the reference for read "<<al.Name<<endl;
-	    exit(1);
-	    // return 1;
-	}
-
-	// for(unsigned int i=0;i<reconstructedReference.first.size();i++){
-	// 	cout<<reconstructedReference.first[i]<<"\t"<<reconstructedReference.second[i]<<endl;
-	// }
-
-
-	long double deamLogLike=0.0;
-	long double nullLogLike=0.0;
-
-	if(deamread){ //if we use deamination
-	  for(unsigned int i=0;i<al.QueryBases.size();i++){//for each base
-		
-	    char refeBase =toupper(reconstructedReference.first[i]);
-	    char readBase =toupper(         al.QueryBases[i]);
-	    char q        = al.Qualities[i]-offsetQual;
-
-
-	    int pos       = reconstructedReference.second[i]+1;
-	    // cout<<i<<"\t"<<reconstructedReference.second[i]<<endl;
-	    transformRef(&refeBase,&readBase);
-
-	    if(refeBase == 'I'   ){
-	      continue;
-	    }
-
-	    if(refeBase == 'N' ){
-	      continue;
-	    }
-
-	    if(readBase == 'N' ){
-	      continue;
-	    }
-
-	    if(pos2phredgeno[ pos ].consensus == 'D'){//skip deletions
-	      continue;
-	    }
-
-
-	   	    
-	    if(pos2phredgeno[ pos ].ref != refeBase){
-	      cerr<<"Query reference base is not the same for read "<<al.Name<<" pos "<<pos<<endl;
-
-	      cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
-	      for(unsigned int j=0;j<al.QueryBases.size();j++){
-		cout<<j<<"\t"<<reconstructedReference.first[j]<<"\t"<<reconstructedReference.second[j]<<endl;
-	      }
-
-	      //return 1;
-	      exit(1);
-	    }
-	    
-	    //deam model
-		
-
-		
-	    int dist5p=-1;
-	    int dist3p=-1;
-
-	    if( al.IsReverseStrand() ){
-	      dist5p = int(al.QueryBases.size()) - int(i)-1;
-	      dist3p = int(i);
-	    }else{
-	      dist5p = int(i);
-	      dist3p = int(al.QueryBases.size()) - int(i)-1;
-	    }
-		    		    
-	    probSubstition * probSubMatchDeam = &defaultSubMatch ;
-	    probSubstition * probSubMatchNull = &defaultSubMatch ;
-
-	    if(dist5p <= (int(sub5p.size()) -1)){
-	      probSubMatchDeam = &sub5p[ dist5p ];			
-	    }
-		    
-	    if(dist3p <= (int(sub3p.size()) -1)){
-	      probSubMatchDeam = &sub3p[ dist3p ];
-	    }
-		    
-	    //we have substitution probabilities for both... take the closest
-	    if(dist5p <= (sub5p.size() -1) &&
-	       dist3p <= (sub3p.size() -1) ){
-	      
-	      if(dist5p < dist3p){
-		probSubMatchDeam = &sub5p[ dist5p ];			
-	      }else{
-		probSubMatchDeam = &sub3p[ dist3p ];
-	      }
-			
-	    }
-
-
-	    // cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<"\t"<<dist5p<<"\t"<<dist3p<<endl;
-		
-	    // b   is the observed
-	    // nuc is the model
-		
-	    int obsReadInt;
-	    if( al.IsReverseStrand() ){
-	      obsReadInt = baseResolved2int(complement(readBase));
-	    }else{
-	      obsReadInt = baseResolved2int(readBase);
-	    }
-
-	    long double probBaseDeam = 0.0;
-	    long double probBaseNull = 0.0;
-
-	    for(unsigned int nuc=0;nuc<4;nuc++){
-
-
-	      int dinucIndex;
-	      if( al.IsReverseStrand() ){
-		dinucIndex= (3-nuc)*4+obsReadInt;
-	      }else{
-		dinucIndex=     nuc*4+obsReadInt;
-	      }
-	      probBaseDeam +=
-		(1-pos2phredgeno[ pos ].perror[nuc])
-		*
-			//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
-		(likeMatchProb[int(q)]  * (probSubMatchDeam->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex]));
-
-
-	      probBaseNull +=
-		(1-pos2phredgeno[ pos ].perror[nuc])
-		*
-		//      (1-e)           *  p(sub|1-e)                         + (e)                          *  p(sub|1-e)
-		(likeMatchProb[int(q)]  * (probSubMatchNull->s[dinucIndex] )  + (1.0 - likeMatchProb[int(q)])*(illuminaErrorsProb.s[dinucIndex])); 
-
-			
-
-
-	    }//end for each possible base
-
-	    deamLogLike+=log(probBaseDeam)/log(10);
-	    nullLogLike+=log(probBaseNull)/log(10);
-
-	
-	    //m_infoPPos->at(posVector).likeBaseNoindel[nuc] += 
-	    // double probFinal;
-	    
-	    // if(ignoreMQ){ //ignore MQ
-	    //     probFinal = (               probBase                          );
-	    // }else{
-	    //     probFinal = (probMapping[m]*probBase + probMismapping[m]*0.25);
-	    // }
-		    
-
-	    //null model
-	    
-	  }//end for all bases
-
-	}else{//if we use do not use deamination 
-	  //this means the read is equally likely to be deaminated or not, we will revert to our prior
-	  deamLogLike=0.5;
-	  nullLogLike=0.5;
-	}
-	    
-
-
-
-	long double probDeamUnscaled = 
-	    pow(10.0,deamLogLike)
-	    /
-	    (    pow(10.0,deamLogLike) + pow(10.0,nullLogLike) );
-	    
-	//probLengthEndo[max(al.QueryBases.size(),1000)];
-	long double probEndoProd;
-	long double probContProd;
-	long double probLengthEndoForRead;
-	    
-	if(useLengthPrior){ // if we use do  use length
-	  probLengthEndoForRead = probLengthEndo[min(int(al.QueryBases.size()),999)];
-	}else{ //              if we use do not use length
-	  //this means the read is equally likely to be generated by either 
-	  //distribution, we will revert to our prior
-	  probLengthEndoForRead = 0.5;
-	}
-
-	//if(useLengthPrior){
-	probEndoProd   =      probDeamUnscaled  *      probLengthEndoForRead;
-	probContProd   = (1.0-probDeamUnscaled) * (1.0-probLengthEndoForRead);
-	// }else{
-	// 	probEndoProd   = 0.5;
-	// 	probContProd   = 0.5;
-
-	// }
-	long double probEndo         = 
-	    (1-contaminationPrior)*probEndoProd
-	    /
-	    (  ((1-contaminationPrior)*probEndoProd) + contaminationPrior*probContProd );
-
-	//long double probEndo         = boost::math::ibeta(contaminationPrior,1.0-contaminationPrior,probDeamUnscaled);
-	//cout<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
-#ifdef DEBUGPRIORENDO
-	cout<<"priorafter2\t"<<al.Name<<"\t"<<int(al.QueryBases.size())<<"\t"<<probEndo<<"\t"<<probDeamUnscaled<<"\t"<<probLengthEndoForRead<<"\t"<<probEndoProd<<"\t"<<probContProd<<endl;
-#endif
-
 
 	
 	read2endoProb[ al.Name+"#"+ stringify(al.AlignmentFlag) ] = probEndo;

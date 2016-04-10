@@ -494,7 +494,11 @@ int main (int argc, char *argv[]) {
     file5pFP.close();
 
     ofstream file3pFP;
-    file3pFP.open(file3p.c_str());
+    if(file3p == "/dev/stdout"){
+	file3pFP.open(file3p.c_str(), ofstream::out | ofstream::app);
+    }else{
+	file3pFP.open(file3p.c_str());
+    }
 
     if (!file3pFP.is_open()){
 	cerr << "Unable to write to 3p file "<<file3p<<endl;
