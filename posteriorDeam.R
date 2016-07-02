@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript-3.2.0
 
 #usage RSCRIPT [data log] [pdf out] <title> <expected contamination> 
 
