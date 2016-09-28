@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript-3.2.0
+#!/usr/bin/env Rscript
 library(fitdistrplus)
 library(MASS)
 

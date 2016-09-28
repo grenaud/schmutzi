@@ -48,7 +48,7 @@ my $pathdir = join("/",@arraycwd);
 sub usage
 {
   print "Unknown option: @_\n" if ( @_ );
-  print "\n\nThis script calls shrimp and bam-rewrap for a given mitochondrial reference.\n\nusage:\t".$0." <options> [output prefix] [reference fasta] [input in bam]\n\n".
+  print "\n\nThis script calls shrimp and bam-rewrap for a given mitochondrial reference.\n\nusage:\t".$0." <options> [output prefix] [reference fasta] [input in bam/in fastq.gz]\n\n".
 "Options:\n".
 "\nYou can also define the following executables manually:\n".
   "\n\t--gmapper    [path to gmapper]\t\t\tPath to gmapper from shrimp".
@@ -154,6 +154,15 @@ my $outPrefix      = $ARGV[ $#ARGV-2  ];
 my $referenceFasta = $ARGV[ $#ARGV-1  ];
 my $inBAM          = $ARGV[ $#ARGV-0 ];
 
+
+my $infq=0;
+
+if($inBAM =~ /fastq.gz$/){
+    $infq=1;
+}
+
+
+
 my $id;
 my $seq;
 my $numIDFound=0;
@@ -205,7 +214,16 @@ runcmd($cmd1);
 #runcmd($cmd6);
 
 
-my $cmd2 = $gmapper." -N $threads -o 1 --single-best-mapping --sam-unaligned --fastq --sam --no-qv-check  --qv-offset 33  <( $samtools bam2fq $inBAM   )  $referenceFastaWrapped | $samtools view -bS  -F4 /dev/stdin | ".$samtools." fillmd -b  /dev/stdin  $referenceFastaWrapped   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort1 /dev/stdin | ".$bamrewrap." \"mtref:".$refLength."\"   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort2  /dev/stdin    > ".$outPrefix.".bam";
+my $cmd2 = $gmapper." -N $threads -o 1 --single-best-mapping --sam-unaligned --fastq --sam --no-qv-check  --qv-offset 33  ";
+
+
+if($infq){
+    $cmd2=$cmd2."  $inBAM     ";
+}else{
+    $cmd2=$cmd2." <( $samtools bam2fq $inBAM   )  ";
+}
+
+$cmd2=$cmd2."$referenceFastaWrapped | $samtools view -bS  -F4 /dev/stdin | ".$samtools." fillmd -b  /dev/stdin  $referenceFastaWrapped   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort1 /dev/stdin | ".$bamrewrap." \"mtref:".$refLength."\"   | ".$samtools." sort -O bam  -T ".$outPrefix.".sort2  /dev/stdin    > ".$outPrefix.".bam";
 runcmd($cmd2);
 
 
