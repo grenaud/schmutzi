@@ -455,9 +455,9 @@ consensus genome and a contamination estimate given aligned
 mitochondrial data and a set of putative contaminants. This script
 takes the ouput of the contDeam.pl script and calls iteratively
 the module that produces an endogenous consensus and the one that
-estimates contamination. For non-hominin samples without risk of
-human contamination where the mitochondrial consensus is needed,
-call endoCaller directly (see README.md).
+estimates contamination. For non-hominin samples where the is no
+risk of human contamination where the mitochondrial consensus is
+needed, call endoCaller directly (see README.md).
 
 \n\nusage:\t".$0." <options> [output prefix from contDeam.pl] [directory with *freq file] input.bam\n\n".
 
@@ -839,14 +839,37 @@ while(1){
       #count pos in .pos
       my $countPosFound=computeAmountOfPositions($outputPrefix."_".$numberIteration."_split.pos");
       if ($countPosFound<5) {
-	die "Unable to find more than 5 positions that are different in  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log\n".
-	  "Either your sample has little or no contamination or too much, either case, we cannot split according to segrating positions. Try running without --useLength and --estdeam ";
+	warn "Unable to find more than 5 positions that are different in  ".$outputPrefix."_".$numberIteration."_endo.log ".$outputPrefix."_".$numberIteration."_cont.log\n".
+	  "Either your sample has little or no contamination or too much, either case, we cannot split according to segrating positions.\n".
+	  "WARNING: We will keep running without using --useLength nor --estdeam\n";
+	$estdeam   = 0;
+	$useLength = 0;
+	goto SKIPESTLENGTH;
       }
 
       # split according to seg sites
       my $cmdBamSplit = $splitEndo."  ".$outputPrefix."_".$numberIteration."_split.pos  $inbam ".$outputPrefix."_".($numberIteration)."_split > ".$outputPrefix."_split.log 2> /dev/null ";
-      runcmd($cmdBamSplit);
+      #runcmd($cmdBamSplit);
+      my @argsBamSplit = ( "bash", "-c", $cmdBamSplit );
 
+      if(system(@argsBamSplit) != 0){
+	warn "system  cmd $cmdBamSplit failed with code: $?";
+
+	if ($? == -1) {
+	  die "ERROR: failed to execute: $!\n";
+	}elsif ($? & 127) {
+	  warn "The following command: ".$cmdBamSplit." caused a segfault\n".
+	    "Please run the program again with a higher stack/heap limit.\n".
+	    "WARNING: We will keep running without using --useLength nor --estdeam\n";
+	  $estdeam   = 0;
+	  $useLength = 0;
+	  goto SKIPESTLENGTH;
+	}else {
+	  die "ERROR: failed to execute: $!\n";
+	}
+
+      }else{
+      }
 
       #re-measure deam rateS
       if ( $estdeam  ) {   # re-estimate deamination at each iteration
@@ -913,6 +936,7 @@ while(1){
 
     } else { #if we do not use the length or re-estimate deamintion, we will re-use the deamintion profile from contDeam.pl
 
+    SKIPESTLENGTH:
       copycmd(  $outputPrefix."_".$numberIteration."_endo.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.5p.prof" );
       copycmd(  $outputPrefix."_".$numberIteration."_endo.3p.prof" ,$outputPrefix."_".($numberIteration+1)."_endo.3p.prof" );
       copycmd(  $outputPrefix."_".$numberIteration."_cont.5p.prof" ,$outputPrefix."_".($numberIteration+1)."_cont.5p.prof" );
