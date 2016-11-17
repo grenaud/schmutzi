@@ -1004,7 +1004,7 @@ int main (int argc, char *argv[]) {
 			      " [options]  [endogenous consensus file] [reference fasta file] [bam file] [cont file1] [cont file2] ..."+"\n\n"+
 			      
 			      "\n\tOutput options:\n"+	
-			      "\t\t"+"-v" +"\t\t"+"Verbose output, print the MAP value for each contaminant in increasing order of likelihood"+"\n"+
+			      "\t\t"+"-v" +"\t\t\t\t"+"Verbose output, print the MAP value for each contaminant in increasing order of likelihood"+"\n"+
 			      "\t\t"+"-o  [output log]" +"\t\t"+"Output log (default: stdout)"+"\n"+
 
 
@@ -1024,7 +1024,7 @@ int main (int argc, char *argv[]) {
 			      "\t\t"+"-step" +"\t\t\t\t"+"Step for reporting the contamination estimate (default: "+stringify(stepContEst)+")"+"\n"+
 			      "\t\t"+"-err" +"\t\t\t\t"+"Illumina error profile (default: "+errFile+")"+"\n"+
 			      "\t\t"+"-nomq" +"\t\t\t\t"+"Ignore mapping quality (default: "+booleanAsString(ignoreMQ)+")"+"\n"+
-			      "\t\t"+"--phred64" +"\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
+			      "\t\t"+"--phred64" +"\t\t\t"+"Use PHRED 64 as the offset for QC scores (default : PHRED33)"+"\n"+
 
 			      "\n\tMisc. options:\n"+	
 			      "\t\t"+"-t" +"\t\t\t\t"+"Number of cores to use (default: "+stringify(numberOfThreads)+")"+"\n"+

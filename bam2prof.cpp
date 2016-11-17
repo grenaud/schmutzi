@@ -255,7 +255,7 @@ int main (int argc, char *argv[]) {
 			"\n\n\tOutput options:\n"+
 			"\t\t"+"-5p\t[output file]\tOutput profile for the 5' end (Default: "+stringify(file5p)+")\n"+
 			"\t\t"+"-3p\t[output file]\tOutput profile for the 3' end (Default: "+stringify(file3p)+")\n"+
-			"\t\t"+"-dp\t\tOutput in damage-patterns format (Default: "+booleanAsString(dpFormat)+")\n"+
+			"\t\t"+"-dp\t\t\tOutput in damage-patterns format (Default: "+booleanAsString(dpFormat)+")\n"+
 		       
 			"\n");
 
@@ -445,7 +445,7 @@ int main (int argc, char *argv[]) {
 
     //cout<<"cycle\tmatches\tmismatches\tmismatches%\tA>C\tA>C%\tA>G\tA>G%\tA>T\tA>T%\tC>A\tC>A%\tC>G\tC>G%\tC>T\tC>T%\tG>A\tG>A%\tG>C\tG>C%\tG>T\tG>T%\tT>A\tT>A%\tT>C\tT>C%\tT>G\tT>G%"<<endl;
     if(dpFormat)
-	file5pFP<<"\t"<<endl;
+	file5pFP<<"\t";
     file5pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
   
 
@@ -551,7 +551,7 @@ int main (int argc, char *argv[]) {
     }
 
     if(dpFormat)
-	file3pFP<<"\t"<<endl;
+	file3pFP<<"\t";
 
     file3pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
 
@@ -567,19 +567,18 @@ int main (int argc, char *argv[]) {
 	typesOfDimer3pToUse = &typesOfDimer3p;
     }
 
-    int lbegin=0;
-    int lend  =lengthMaxToPrint;
-    int lstep =1;
-    if(dpFormat){
-	lbegin=lengthMaxToPrint;
-	lend  =0;
-	lstep =-1;
-    }
 
 
-    for(int l=lbegin;l<lend;l+=lstep){
-	if(dpFormat)
-	    file3pFP<<l<<"\t";	    
+    for(int le=0;le<lengthMaxToPrint;le++){
+
+	int l=le;
+	if(dpFormat){
+	    l=lengthMaxToPrint-1-le;
+	    if(l==0)
+		file3pFP<<""<<l<<"\t";	    
+	    else
+		file3pFP<<"-"<<l<<"\t";	    
+	}
 
 	for(int n1=0;n1<4;n1++){   
 	    int totalObs=0;
