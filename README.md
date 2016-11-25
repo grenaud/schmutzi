@@ -135,6 +135,44 @@ Also, the various subparts of schmutzi can be called directly:
 |contOut2ContEst.pl  |	Take the output of mtcont and get a point estimate                                         |
 
 
+Quick start guide:
+-------------------------------------------------------------------------------------
+
+Before you start, make sure you have a BAM file that has been:
+- where all the fragments have been mapped to the mitochondrial genome only
+- sorted
+- indexed
+
+First determine if you the library used was double-stranded or single-stranded. Then call:
+   
+    contDeam.pl --lengthDeam [length] --library [library type] --out [output prefix] [mt reference] [input bam file]
+
+where [length] is the # of bp considered and [library type] is the library type (either double or single). If the deamination is seen for a many bases far from the 5'/3' ends, use maybe --lengthDeam 40. If you have USER treatment or single-stranded libraries and low amounts of deamination further away from the ends, you can use --lengthDeam 2 or 5.
+
+Then run the iterative procedure without the prediction of the contaminant:
+
+    schmutzi.pl --notusepredC --uselength --ref [mt reference] --out [out prefix]_npred [output prefix] [path to schmutzi]/eurasian/freqs/ [input bam file]
+
+then run it again with the prediction of the contaminant:
+
+    schmutzi.pl               --uselength --ref [mt reference] --out [out prefix]_wpred [output prefix] [path to schmutzi]/eurasian/freqs/ [input bam file]
+
+Those commands will create output files with the [out prefix]_npred and [out prefix]_wpred prefixes. 
+
+If the iterative procedure is successful, it will some files with the following suffixes:
+
+- _final.cont.est for the final estimate present-day human contamination (format: estimate estimate_low estimate_high)
+- _final.cont.pdf plot for the posterior probability
+- _final_mtcont.out log for mtCont (contamination estimate) allows the most likely haplogroup for the contaminant
+- _final_endo.fa for the  unfiltered fasta prediction
+- _final_endo.log log file with the per-base likelihood for each position for each base of of being the endogenous base. 
+
+We highly recommend users to use log2fasta on _final_endo.log to obtain a consensus at various quality cutoffs. 
+
+
+
+
+
 Test Data:
 -------------------------------------------------------------------------------------
 
