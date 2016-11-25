@@ -855,18 +855,25 @@ while(1){
       if(system(@argsBamSplit) != 0){
 	warn "system  cmd $cmdBamSplit failed with code: $?";
 
-	if ($? == -1) {
-	  die "ERROR: failed to execute: $!\n";
-	}elsif ($? & 127) {
-	  warn "The following command: ".$cmdBamSplit." caused a segfault\n".
-	    "Please run the program again with a higher stack/heap limit.\n".
-	    "WARNING: We will keep running without using --useLength nor --estdeam\n";
-	  $estdeam   = 0;
-	  $useLength = 0;
-	  goto SKIPESTLENGTH;
-	}else {
-	  die "ERROR: failed to execute: $!\n";
-	}
+	warn "The following command: ".$cmdBamSplit." caused a segfault\n".
+	  "Please run the program again with a higher stack/heap limit.\n".
+	  "WARNING: We will keep running without using --useLength nor --estdeam\n";
+	$estdeam   = 0;
+	$useLength = 0;
+	goto SKIPESTLENGTH;
+
+	#if ($? == -1) {
+	#  die "ERROR: failed to execute: $!\n";
+	#}elsif ($? & 127) {
+	#  warn "The following command: ".$cmdBamSplit." caused a segfault\n".
+	#    "Please run the program again with a higher stack/heap limit.\n".
+	#    "WARNING: We will keep running without using --useLength nor --estdeam\n";
+	#  $estdeam   = 0;
+	#  $useLength = 0;
+	#  goto SKIPESTLENGTH;
+	#}else {
+	#  die "ERROR: failed to execute: $!\n";
+	#}
 
       }else{
       }
