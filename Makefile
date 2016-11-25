@@ -1,4 +1,4 @@
-CXX      = g++ #-g -pg
+CXX      = /usr/bin/g++ #-g -pg
 BAMTOOLS= bamtools/
 LIBGAB   = libgab/
 
