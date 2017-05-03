@@ -433,14 +433,11 @@ Frequently asked questions:
 
 - I run contDeam.pl on my BAM file and get nan errors:
 
-	./contDeam.pl  --library double --out outputdir/test testdata/test.bam 
-
-	running cmd bam2prof -length  2 -endo -double -5p outputdir/test.endo.5p.prof  -3p outputdir/test.endo.3p.prof testdata/test.bam
-
-	running cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam
-	
-	Utils.cpp: destringify() Unable to convert string="-nan"
-	system  cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam failed: 256 at ./contDeam.pl line 22.
+        ./contDeam.pl  --library double --out outputdir/test testdata/test.bam 
+        running cmd bam2prof -length  2 -endo -double -5p outputdir/test.endo.5p.prof  -3p outputdir/test.endo.3p.prof testdata/test.bam
+        running cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam
+        Utils.cpp: destringify() Unable to convert string="-nan"
+        system  cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam failed: 256 at ./contDeam.pl line 22.
 
   * This could be due to two factors:
      1. The number of aDNA fragments is too low to get an estimate of misincorporation patterns due to deamination. Less than 1X for example.
