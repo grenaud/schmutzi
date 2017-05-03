@@ -1,4 +1,4 @@
-=====================================================================================
+
   schmutzi: Bayesian maximum a posteriori contamination estimate for ancient samples
 =====================================================================================
 
@@ -429,3 +429,25 @@ Frequently asked questions:
               ...
 
         Until there is no difference
+
+
+- I run contDeam.pl on my BAM file and get nan errors:
+
+	./contDeam.pl  --library double --out outputdir/test testdata/test.bam 
+
+	running cmd bam2prof -length  2 -endo -double -5p outputdir/test.endo.5p.prof  -3p outputdir/test.endo.3p.prof testdata/test.bam
+
+	running cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam
+	
+	Utils.cpp: destringify() Unable to convert string="-nan"
+	system  cmd contDeam  -deamread -deam5p outputdir/test.endo.5p.prof  -deam3p outputdir/test.endo.3p.prof  -log  outputdir/test.cont.deam   testdata/test.bam failed: 256 at ./contDeam.pl line 22.
+
+  * This could be due to two factors:
+     1. The number of aDNA fragments is too low to get an estimate of misincorporation patterns due to deamination. Less than 1X for example.
+     2. There is no deamination present hence no measurable misincorporation patterns.
+
+  Problem #1 cannot be solved per se. It is possible that the iterative procedure will not work either. Problem #2 requires a bit of thinking. I suggest running mapDamage and check if you have fragmentation and misincorporation patterns. If so, was USER/UDG treatment used hence explaining the lack of deamination patterns? If you are confident that you have no deamination pattern, please note that is it very difficult to infer the endogenous base and therefore to estimate present-day contamination in the absence of deamination patterns. I recommend using endoCaller and call mtCont manually just once instead of iteratively.   
+     
+     
+
+
