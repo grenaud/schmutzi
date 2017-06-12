@@ -21,7 +21,7 @@ my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   "\t--threads [num]\t\t\t\tUse [num] of threads (default $threads)\n".
   "\t--nice\t\t\t\tUse nice\n";
 
-if($#ARGV == 0){
+if($#ARGV == -1){
   die $usage;
 }
 
