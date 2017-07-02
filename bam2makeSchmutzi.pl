@@ -172,14 +172,14 @@ foreach my $filebam (@ARGV){
       push(@arrayOfTargetsClean,   $name."_".$type."_final_endo.q".$q.".hsd");
       push(@arrayOfTargetsHSD,     $name."_".$type."_final_endo.q".$q.".hsd");
 
-      $stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$outprefix."_".$type."_final_endo.q".$q.".hsd\n\n";
+      $stringToPrint.="".$name."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$name."_".$type."_final_endo.q".$q.".hsd\n\n";
     }
   }
 
   push(@arrayOfTargets,        $name."_results.txt");
   push(@arrayOfTargetsClean,   $name."_results.txt");
 
-  $stringToPrint.="".$outprefix."_results.txt: ".join(" ",@arrayOfTargetsHSD)."\n\t".$installDir."/parseSchmutzi.pl ".$name." ".$name."  > ".$outprefix."_results.txt\n\n";
+  $stringToPrint.="".$name."_results.txt: ".join(" ",@arrayOfTargetsHSD)."\n\t".$installDir."/parseSchmutzi.pl ".$outprefix." ".$name."  > ".$name."_results.txt\n\n";
   #python ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$name."_".$type."_final_endo.q".$q.".fa > ".$name."_".$type."_final_endo.q".$q.".hsd\n\n";
 
   
