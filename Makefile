@@ -7,11 +7,10 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
-
 
 libgab/utils.h:
 	rm -rf libgab/
@@ -69,6 +68,12 @@ bam2prof.o:	libgab/utils.o bam2prof.cpp
 bam2prof:	libgab/utils.o miscfunc.o bam2prof.o ${LIBGAB}utils.o  ${LIBGAB}/ReconsReferenceBAM.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
+subSampleBAM.o:	libgab/utils.o subSampleBAM.cpp 
+	${CXX} ${CXXFLAGS} subSampleBAM.cpp
+
+subSampleBAM:	libgab/utils.o subSampleBAM.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
 contDeam.o:	libgab/utils.o contDeam.cpp 
 	${CXX} ${CXXFLAGS} contDeam.cpp
 
@@ -106,13 +111,11 @@ logs2pos.o:	libgab/utils.o logs2pos.cpp
 logs2pos:	libgab/utils.o logs2pos.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
-
 log2ConsensusLog.o:	libgab/utils.o log2ConsensusLog.cpp
 	${CXX} ${CXXFLAGS} log2ConsensusLog.cpp
 
 log2ConsensusLog:	libgab/utils.o log2ConsensusLog.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
-
 
 logdiff.o:	libgab/utils.o logdiff.cpp
 	${CXX} ${CXXFLAGS} logdiff.cpp
@@ -167,7 +170,7 @@ testdata/simulation.bam:
 
 
 clean :
-	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff logmask filterlog msa2singlefreq
+	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof subSampleBAM insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff logmask filterlog msa2singlefreq
 	make -C splitEndoVsCont/ clean
 	make -C libgab/ clean
 
