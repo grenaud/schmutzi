@@ -168,11 +168,11 @@ foreach my $filebam (@ARGV){
 
   for (my $q=10;$q<=50;$q+=20) {
     foreach my $type ("wtpred","nopred") {
-      push(@arrayOfTargets,        $name."_".$type."_final_endo.q".$q.".hsd");
-      push(@arrayOfTargetsClean,   $name."_".$type."_final_endo.q".$q.".hsd");
-      push(@arrayOfTargetsHSD,     $name."_".$type."_final_endo.q".$q.".hsd");
+      push(@arrayOfTargets,        $outprefix."_".$type."_final_endo.q".$q.".hsd");
+      push(@arrayOfTargetsClean,   $outprefix."_".$type."_final_endo.q".$q.".hsd");
+      push(@arrayOfTargetsHSD,     $outprefix."_".$type."_final_endo.q".$q.".hsd");
 
-      $stringToPrint.="".$name."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$name."_".$type."_final_endo.q".$q.".hsd\n\n";
+      $stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$outprefix."_".$type."_final_endo.q".$q.".hsd\n\n";
     }
   }
 

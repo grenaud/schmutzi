@@ -157,8 +157,9 @@ my $inBAM          = $ARGV[ $#ARGV-0 ];
 
 my $infq=0;
 
-if($inBAM =~ /fastq.gz$/){
-    $infq=1;
+if( ($inBAM =~ /fq.gz$/)    ||
+    ($inBAM =~ /fastq.gz$/) ){
+  $infq=1;
 }
 
 
