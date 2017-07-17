@@ -139,7 +139,11 @@ foreach my $filebam (@ARGV){
   push(@arrayOfTargets,     $outprefix.".bai");
   push(@arrayOfTargetsClean,$outprefix.".bai");
 
-  $stringToPrint.="".$outprefix.".bai:\n\tsamtools index ".$outprefix.".bam\n\n";
+  $stringToPrint.="".$outprefix.".bai:";
+  if( $subsample != -1){
+    $stringToPrint.=" ".$outprefix.".bam";
+  }
+  $stringToPrint.="\n\tsamtools index ".$outprefix.".bam\n\n";
 
   push(@arrayOfTargets,     $outprefix.".cont.est");
   push(@arrayOfTargetsClean,$outprefix.".cont*");
