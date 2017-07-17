@@ -25,12 +25,14 @@ my @arraycwd=split("/",abs_path($0));
 pop(@arraycwd);
 my $pathdir = join("/",@arraycwd);
 my $skipContDeam=0;
+my $skipPred=0;
 my $subsample=-1;
 my $nice="";
 
 #my $installDirToFastaHaplogrep="/home/gabriel/scripts/fasta2haplogrep/";
 my $installDirToFastaHaplogrep = $pathdir;
 my $installDir = $pathdir;#"/home/gabriel/projects/schmutzi";
+my $iterations=5;
 
 print STDERR  "        ~~~~ Please read carefully ~~~~\n";
 print STDERR  "using script path: ".$installDir."/projects/schmutzi/schmutzi.pl"."\n";
@@ -40,10 +42,12 @@ print STDERR  "Also, fasta2haplogrep.py uses haplogrep-cmd.jar, please hard code
 
 my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   " Options:\n".
+  "\t--skippred\t\t\t\tSkip contamination estimate using prediction of the contaminant (useful for low cont. samples)\n".
   "\t--nodeam\t\t\t\tSkip contamination based on deamination, useful for UDG treated\n".
   "\t--single\t\t\t\tUse single stranded library damage (just C->T on both ends)\n".
-  "\t--subsample [XXX]\t\t\tSubsample the BAM file down to XXX, 100-300 depending on how difficult the target is are good\n".
-  "\t--threads   [num]\t\t\tUse [num] of threads (default $threads)\n".
+  "\t--subsample  [XXX]\t\t\tSubsample the BAM file down to XXX, 100-300 depending on how difficult the target is are good\n".
+  "\t--threads    [num]\t\t\tUse [num] of threads (default $threads)\n".
+  "\t--iterations [num]\t\t\tMaximum number of iterations (default $iterations)\n".
   "\t--nice\t\t\t\t\tUse nice\n\n\n";
 
 if($#ARGV == -1){
@@ -63,6 +67,11 @@ foreach my $filebam (@ARGV){
   if($filebam =~ /^--/){
     if($filebam eq "--nodeam"){
       $skipContDeam=1;
+      next;
+    }
+
+    if($filebam eq "--skippred"){
+      $skipPred=1;
       next;
     }
 
@@ -90,6 +99,15 @@ foreach my $filebam (@ARGV){
 	die "Wrong --subsample parameter ".$ARGV[$i]."\n";
       }
       $subsample=$ARGV[$i];
+      next;
+    }
+
+
+    if($filebam eq "--iterations"){
+      if($ARGV[$i] !~ /^\d+$/){
+	die "Wrong --iterations parameter ".$ARGV[$i]."\n";
+      }
+      $iterations=$ARGV[$i];
       next;
     }
 
@@ -134,21 +152,27 @@ foreach my $filebam (@ARGV){
   }else{
     $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\tif  ".$installDir."/contDeam.pl   --library ".$library." --lengthDeam 30 --out ".$outprefix." ".$outprefix.".bam; then echo \"command contDeam finished\"; else echo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est; fi\n\n";
   }
-  push(@arrayOfTargets,     $outprefix."_wtpred_final.cont.est");
-  push(@arrayOfTargetsClean,$outprefix."_wtpred*");
 
-  $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations 5                 -t $threads    --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  if (!$skipPred ) {
+    push(@arrayOfTargets,     $outprefix."_wtpred_final.cont.est");
+    push(@arrayOfTargetsClean,$outprefix."_wtpred*");
 
+    $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations $iterations                 -t $threads    --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  }
 
   push(@arrayOfTargets,     $outprefix."_nopred_final.cont.est");
   push(@arrayOfTargetsClean,$outprefix."_nopred*");
 
-  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations 5   --notusepredC -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
 
 
+  my @typeOfTargets = ("wtpred","nopred");
+  if($skipPred){
+    @typeOfTargets = ("nopred");
+  }
 
   for (my $q=10;$q<=50;$q+=20) {
-    foreach my $type ("wtpred","nopred") {
+    foreach my $type (@typeOfTargets) {
 
       push(@arrayOfTargets,     $outprefix."_".$type."_final_endo.q".$q.".fa");
       push(@arrayOfTargetsClean,$outprefix."_".$type."_final_endo.q".$q.".fa");
@@ -167,7 +191,7 @@ foreach my $filebam (@ARGV){
   my @arrayOfTargetsHSD;
 
   for (my $q=10;$q<=50;$q+=20) {
-    foreach my $type ("wtpred","nopred") {
+    foreach my $type (@typeOfTargets){
       push(@arrayOfTargets,        $outprefix."_".$type."_final_endo.q".$q.".hsd");
       push(@arrayOfTargetsClean,   $outprefix."_".$type."_final_endo.q".$q.".hsd");
       push(@arrayOfTargetsHSD,     $outprefix."_".$type."_final_endo.q".$q.".hsd");
