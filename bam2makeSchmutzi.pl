@@ -43,7 +43,8 @@ print STDERR  "Also, fasta2haplogrep.py uses haplogrep-cmd.jar, please hard code
 my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   " Options:\n".
   "\t--skippred\t\t\t\tSkip contamination estimate using prediction of the contaminant (useful for low cont. samples)\n".
-  "\t--nodeam\t\t\t\tSkip contamination based on deamination, useful for UDG treated\n".
+  "\t--nodeam [cont]\t\t\t\tSkip contamination based on deamination, useful for UDG treated\n".
+  "\t\t\t\t\t\tuse [cont] as prior instead, must be between 0.01 and 0.99\n".
   "\t--single\t\t\t\tUse single stranded library damage (just C->T on both ends)\n".
   "\t--subsample  [XXX]\t\t\tSubsample the BAM file down to XXX, 100-300 depending on how difficult the target is are good\n".
   "\t--threads    [num]\t\t\tUse [num] of threads (default $threads)\n".
@@ -54,7 +55,7 @@ if($#ARGV == -1){
   die $usage;
 }
 
-
+my $nodeamContPrior;
 my @arrayOfTargets;
 my @arrayOfTargetsClean;
 
@@ -65,10 +66,10 @@ foreach my $filebam (@ARGV){
   $i++;
 
   if($filebam =~ /^--/){
-    if($filebam eq "--nodeam"){
-      $skipContDeam=1;
-      next;
-    }
+#    if($filebam eq "--nodeam"){
+#      $skipContDeam=1;
+#      next;
+#    }
 
     if($filebam eq "--skippred"){
       $skipPred=1;
@@ -85,6 +86,15 @@ foreach my $filebam (@ARGV){
       next;
     }
 
+    if($filebam eq "--nodeam"){
+      if($ARGV[$i] !~ /^0.\d+$/){
+	die "Wrong --nodeam parameter ".$ARGV[$i]."\n";
+      }
+      $skipContDeam   = 1;
+      $nodeamContPrior= $ARGV[$i];
+      next;
+    }
+
     if($filebam eq "--threads"){
       if($ARGV[$i] !~ /^\d+$/){
 	die "Wrong --threads parameter ".$ARGV[$i]."\n";
@@ -92,6 +102,7 @@ foreach my $filebam (@ARGV){
       $threads=$ARGV[$i];
       next;
     }
+
 
 
     if($filebam eq "--subsample"){
@@ -112,10 +123,13 @@ foreach my $filebam (@ARGV){
     }
 
 
-
     die "Unknown option ".$filebam."\n";
   }
-
+  if($skipContDeam   == 1){
+    if($nodeamContPrior<0.01 or $nodeamContPrior>0.99){
+      die "The contamination prior must be between 0.01 and 0.99 found: ".$nodeamContPrior."\n";
+    }
+  }
   if($filebam !~ /.bam$/){
     next;
   }
@@ -161,13 +175,21 @@ foreach my $filebam (@ARGV){
     push(@arrayOfTargets,     $outprefix."_wtpred_final.cont.est");
     push(@arrayOfTargetsClean,$outprefix."_wtpred*");
 
-    $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations $iterations                 -t $threads    --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+    $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  ";
+    if($skipContDeam==1){
+      $stringToPrint.= " --contprior ".$nodeamContPrior." ";
+    }
+    $stringToPrint.=" --iterations $iterations                  -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
   }
 
   push(@arrayOfTargets,     $outprefix."_nopred_final.cont.est");
   push(@arrayOfTargetsClean,$outprefix."_nopred*");
 
-  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  ";
+  if($skipContDeam==1){
+    $stringToPrint.= " --contprior ".$nodeamContPrior." ";
+  }
+  $stringToPrint.= " --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
 
 
   my @typeOfTargets = ("wtpred","nopred");
