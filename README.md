@@ -449,7 +449,7 @@ Frequently asked questions:
      
 - When endoCaller is run, get: Query reference base is not the same for read XXXX pos 3107
  
- Make sure you have used "samtools calmd" (or samtools fillmd for earlier versions).
+  Make sure you have used "samtools calmd" (or samtools fillmd for earlier versions).
 
 
 
