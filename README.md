@@ -139,9 +139,11 @@ Quick start guide:
 -------------------------------------------------------------------------------------
 
 Before you start, make sure you have a BAM file that has been:
-- where all the fragments have been mapped to the mitochondrial genome only
+
+- where ALL the fragments have been mapped to the mitochondrial genome only. 
 - sorted
 - indexed
+- fillmd/calmd has been run to fix the MD field
 
 First determine if you the library used was double-stranded or single-stranded. Then call:
    
@@ -445,6 +447,9 @@ Frequently asked questions:
 
   Problem #1 cannot be solved per se. It is possible that the iterative procedure will not work either. Problem #2 requires a bit of thinking. I suggest running mapDamage and check if you have fragmentation and misincorporation patterns. If so, was USER/UDG treatment used hence explaining the lack of deamination patterns? If you are confident that you have no deamination pattern, please note that is it very difficult to infer the endogenous base and therefore to estimate present-day contamination in the absence of deamination patterns. I recommend using endoCaller and call mtCont manually just once instead of iteratively.   
      
-     
+- When endoCaller is run, get: Query reference base is not the same for read XXXX pos 3107
+ 
+ Make sure you have used "samtools calmd" (or samtools fillmd for earlier versions).
+
 
 
