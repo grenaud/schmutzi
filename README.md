@@ -253,8 +253,9 @@ Recommended workflow for ancient samples:
 -------------------------------------------------------------------------------------
 
 - Nuclear
+  I recommend DICE (http://grenaud.github.io/dice) for nuclear samples. 
   The only thing schmutzi can do for nuclear data is to estimate contamination rates 
-  using deamination patterns. Simply use "contDeam.pl" 
+  using deamination patterns. 
   
   However, use this at your own risk, we know three factors that lead to wrong estimates:
 
@@ -263,7 +264,7 @@ Recommended workflow for ancient samples:
   3. No or very little deamination of the contaminant fragments
   4. Since we need to condition on one end to measure deamination on the other, we need independence between 5' and 3' deamination rates 
 
-  So use at your own risk. For mt, we can at least double check using "mtCont" but not for nuclear
+  This method is implemented in "contDeam.pl". For mt, we can at least cross validate the contamination estimate using "mtCont" but not for nuclear data.
   If you have a contaminant that is deaminated this will lead to an underestimate. 
   Lack of independence between the 5' and 3' deamination rates can lead to overestimated
   deamination rates for the endogenous portion and an overestimate. To test this, two programs were added as part of the package:
@@ -278,18 +279,53 @@ Recommended workflow for ancient samples:
 
   If you get low p-values, the method should be safe to use, you only have to worry about a deaminated contaminant.
 
-
 - MT
 
   1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using  a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
   2. run samtools sort on your aligned bam file
-  3. run samtools index on your sorted and aligned bam file
-  4. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/udo-stenzel/biohazard  this step is not necessary but produces equal coverage and resolution at the boundaries
-  5. Estimate your initial contamination and deamination rates using "contDeam.pl"
-  6. Run schmutzi.pl once with default parameters
-  7. Run schmutzi.pl again  with "--usepredC"
-  8. If contamination is more than a few percent re-run using the "--uselength" option
+  3. run samtools calmd/fillmd on your aligned bam file
+  4. run samtools index on your sorted and aligned bam file
+  5. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/udo-stenzel/biohazard  this step is not necessary but produces equal coverage and resolution at the boundaries
+  6. Estimate your initial contamination and deamination rates using "contDeam.pl"
+  7. Run schmutzi.pl once with default parameters
+  8. Run schmutzi.pl again  with "--usepredC"
+  9. If contamination is more than a few percent re-run using the "--uselength" option
      
+If you have a large number of samples, I recommend using bam2makeSchmutzi.pl which creates a makefile and automates the of using contDeam.pl followed by schmutzi.pl
+
+
+
+Interpreting the output:
+-------------------------------------------------------------------------------------
+
+Here is a list of the different meaningful output files and their meaning. 
+
+From contDeam.pl:
+
+| file                      | content                                                                            |
+| ------------------------- | -----------------------------------------------------------------------------------|
+| [out].cont.pdf            | Plot of the posterior probability for contamination based on deamination           |
+| [out].cont.est            | Estimate for contamination based on deamination. format: estimate est.low est.high  |           
+
+
+From schmutzi.pl for the contamination estimate:
+
+
+| file                      | content                                                                            |
+| ------------------------- | -----------------------------------------------------------------------------------|
+| [out]_final.cont.est	    | Contamination estimates for the most likely sample with confidence intervals. format: estimate est.low est.high      |
+| [out]_final_mtcont.out    | Contamination estimates for all records in the database format: record contamination log.posterior |
+| [out]_final.cont          | Contamination estimates for the record in the database with the highest likelihood. format: record contamination log.posterior |
+| [out]_final.cont.pdf	    | Posterior probability on the contamination for the most likely sample              |
+
+From schmutzi.pl for the endogenous/contaminant:
+
+| file                      | content                                                                            |
+| ------------------------- | -----------------------------------------------------------------------------------|
+| [out]_final_endo.fa	    |	Endogenous mitochondrial genome as fasta, this contains all the bases and has not been filtered for high-quality bases                                         |
+| [out]_final_endo.log	    |	Endogenous mitochondrial genome as a log file with likelihoods on a PHRED scale. format: position	reference.base	predicted.base	quality(PHRED)	average.mappping.quality	coverage	support.for.predicted.base	p[base=a]	p[base=c]	p[base=g]	p[base=t] |
+| [out]_final_cont.fa	    |	Contaminant mitochondrial genome as fasta, this contains all the bases and has not been filtered for high-quality bases                                         |
+| [out]_final_cont.log	    |	Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale |
 
 
 Frequently asked questions:
