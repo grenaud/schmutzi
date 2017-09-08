@@ -232,6 +232,7 @@ int main (int argc, char *argv[]) {
     int minQualBase      = 0;
 
     bool dpFormat=false;
+    bool hFormat=false;
 
     string usage=string(""+string(argv[0])+" <options>  [in BAM file]"+
 			"\nThis program reads a BAM file and produces a deamination profile for the\n"+
@@ -256,6 +257,7 @@ int main (int argc, char *argv[]) {
 			"\t\t"+"-5p\t[output file]\tOutput profile for the 5' end (Default: "+stringify(file5p)+")\n"+
 			"\t\t"+"-3p\t[output file]\tOutput profile for the 3' end (Default: "+stringify(file3p)+")\n"+
 			"\t\t"+"-dp\t\t\tOutput in damage-patterns format (Default: "+booleanAsString(dpFormat)+")\n"+
+			"\t\t"+"-h\t\t\tMore human readible output (Default: "+booleanAsString(hFormat)+")\n"+
 		       
 			"\n");
 
@@ -271,6 +273,11 @@ int main (int argc, char *argv[]) {
 
         if(string(argv[i]) == "-dp"  ){
             dpFormat=true;
+            continue;
+        }
+
+        if(string(argv[i]) == "-h"  ){
+            hFormat=true;
             continue;
         }
 
@@ -336,6 +343,11 @@ int main (int argc, char *argv[]) {
 
 
 	cerr<<"Error: unknown option "<<string(argv[i])<<endl;
+	return 1;
+    }
+
+    if(dpFormat && hFormat){
+	cerr<<"Error: cannot specify both -dp and -h"<<endl;
 	return 1;
     }
 
@@ -442,10 +454,11 @@ int main (int argc, char *argv[]) {
 
 
 
-
     //cout<<"cycle\tmatches\tmismatches\tmismatches%\tA>C\tA>C%\tA>G\tA>G%\tA>T\tA>T%\tC>A\tC>A%\tC>G\tC>G%\tC>T\tC>T%\tG>A\tG>A%\tG>C\tG>C%\tG>T\tG>T%\tT>A\tT>A%\tT>C\tT>C%\tT>G\tT>G%"<<endl;
     if(dpFormat)
 	file5pFP<<"\t";
+    if(hFormat)
+	file5pFP<<"pos\t";
     file5pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
   
 
@@ -464,6 +477,9 @@ int main (int argc, char *argv[]) {
 	if(dpFormat)
 	    file5pFP<<l<<"\t";
 
+	if(hFormat)
+	    file5pFP<<printIntAsWhitePaddedString(l,int(log10(lengthMaxToPrint))+1)<<"\t";
+	
 	for(int n1=0;n1<4;n1++){   
 	    int totalObs=0;
 	    for(int n2=0;n2<4;n2++){   
@@ -477,19 +493,28 @@ int main (int argc, char *argv[]) {
 		    if(dpFormat)
 			file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]";
 		    else
-			file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs);		    
+			if(hFormat)
+			    file5pFP<<printDoubleAsWhitePaddedString(double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs),1,5);
+			else
+			    file5pFP<<double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs);		    
 		}else{ 
 		    if(singAnddoubleStr){
 			if(         (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { 
 			    if(dpFormat)
 				file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]";
 			    else
-				file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
+				if(hFormat)
+				    file5pFP<<printDoubleAsWhitePaddedString(double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs),1,5);
+				else
+				    file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
 			} else { 
 			    if(dpFormat)
 				file5pFP<<"0.0"<<" [0..0]";
 			    else
-				file5pFP<<"0.0"<<"";
+				if(hFormat)
+				    file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
+				else
+				    file5pFP<<"0.0"<<"";
 			}
 
 		    }else{
@@ -499,12 +524,18 @@ int main (int argc, char *argv[]) {
 				if(dpFormat)
 				    file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]";
 				else
-				    file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
+				    if(hFormat)
+					file5pFP<<printDoubleAsWhitePaddedString(double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs),1,5); 
+				    else
+					file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
 			    } else { 
 				if(dpFormat)
 				    file5pFP<<"0.0"<<" [0..0]";
 				else
-				    file5pFP<<"0.0"; 
+				    if(hFormat)
+					file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
+				    else					
+					file5pFP<<"0.0"; 
 			    }
 			}else{ 
 			    if(singleStr){
@@ -513,12 +544,19 @@ int main (int argc, char *argv[]) {
 				    if(dpFormat)
 					file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]"; 
 				    else
-					file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
+					if(hFormat)
+					    file5pFP<<printDoubleAsWhitePaddedString(double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs),1,5);
+					else
+					    file5pFP<<double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs); 
+					    
 				} else { 
 				    if(dpFormat)
 					file5pFP<<"0.0"<<" [0..0]";
 				    else
-					file5pFP<<"0.0"; 
+					if(hFormat)
+					    file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
+					else										    
+					    file5pFP<<"0.0"; 
 				}
 			    }
 			}
@@ -552,6 +590,8 @@ int main (int argc, char *argv[]) {
 
     if(dpFormat)
 	file3pFP<<"\t";
+    if(hFormat)
+	file3pFP<<"pos\t";
 
     file3pFP<<"A>C\tA>G\tA>T\tC>A\tC>G\tC>T\tG>A\tG>C\tG>T\tT>A\tT>C\tT>G"<<endl;
 
@@ -580,6 +620,15 @@ int main (int argc, char *argv[]) {
 		file3pFP<<"-"<<l<<"\t";	    
 	}
 
+	if(hFormat){
+	    //l=lengthMaxToPrint-1-le;
+	    // if(l==0)
+	    // 	file3pFP<<""<<printIntAsWhitePaddedString(l,int(log10(lengthMaxToPrint)))<<"\t";	    
+	    // else
+	    // 	file3pFP<<"-"<<printIntAsWhitePaddedString(l,int(log10(lengthMaxToPrint)))<<"\t";	    
+	    file3pFP<<""<<printIntAsWhitePaddedString(l,int(log10(lengthMaxToPrint))+1)<<"\t";	    
+	}
+
 	for(int n1=0;n1<4;n1++){   
 	    int totalObs=0;
 	    for(int n2=0;n2<4;n2++){   
@@ -593,19 +642,28 @@ int main (int argc, char *argv[]) {
 		    if(dpFormat)
 			file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]";
 		    else
-			file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs);
+			if(hFormat)
+			    file3pFP<<printDoubleAsWhitePaddedString( double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs) ,1,5);
+			else
+			    file3pFP<<double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs);
 		}else{ 
 		    if(singAnddoubleStr){			
 			if(   (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { 
 			    if(dpFormat)
 				file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]"; 
 			    else
-				file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
+				if(hFormat)
+				    file3pFP<<printDoubleAsWhitePaddedString(double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs) ,1,5);
+				else
+				    file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
 			} else { 
 			    if(dpFormat)
 				file3pFP<<"0.0 [0..0]"; 
 			    else
-				file3pFP<<"0.0"; 
+				if(hFormat)
+				    file3pFP<<printDoubleAsWhitePaddedString(0.0 ,1,5);
+				else
+				    file3pFP<<"0.0"; 
 			}
 
 		    }else{
@@ -615,12 +673,18 @@ int main (int argc, char *argv[]) {
 				if(dpFormat)
 				    file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]"; 
 				else
-				    file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
+				    if(hFormat)
+					file3pFP<<printDoubleAsWhitePaddedString( double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs) ,1,5);
+				    else					
+					file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
 			    } else { 				
 				if(dpFormat)
 				    file3pFP<<"0.0 [0..0]"; 
 				else
-				    file3pFP<<"0.0"; 
+				    if(hFormat)
+					file3pFP<<printDoubleAsWhitePaddedString( 0.0 ,1,5);
+				    else					
+					file3pFP<<"0.0"; 
 			    }
 			}else{ 
 			    if(singleStr){
@@ -629,12 +693,18 @@ int main (int argc, char *argv[]) {
 				    if(dpFormat)
 					file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)<<" [0..0]"; 
 				    else
-					file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
+					if(hFormat)
+					    file3pFP<<printDoubleAsWhitePaddedString( double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs) ,1,5);
+					else					
+					    file3pFP<<double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs); 
 				} else { 				    
 				    if(dpFormat)
 					file3pFP<<"0.0 [0..0]"; 
 				    else
-					file3pFP<<"0.0"; 
+					if(hFormat)
+					    file3pFP<<printDoubleAsWhitePaddedString( 0.0 ,1,5);
+					else					
+					    file3pFP<<"0.0"; 
 
 				}
 				
