@@ -95,7 +95,7 @@ There are 2 main Perl scripts that drive the underlying programs written in C++.
 |              |     deamination.                                                                            |
 |              |  2) --split                                                                                 |
 |              |     Take a series of mitonchondrial diagnostic positions (positions that indicate           |
-|              |     whether the read pertains to a particular type of homonin (ex: Neandertal) or           |
+|              |     whether the read pertains to a particular type of homonin (ex: Neanderthal) or           |
 |              |     the putative contaminant homonin (ex: modern Humans) and separate the contaminant       |
 |              |     from the endogenous reads. This approach is useful when prior information on the        |
 |              |     sample is available and when enough diagnostic positions are available (case of         |
@@ -322,10 +322,10 @@ From schmutzi.pl for the endogenous/contaminant:
 
 | file                      | content                                                                            |
 | ------------------------- | -----------------------------------------------------------------------------------|
-| [out]_final_endo.fa	    |	Endogenous mitochondrial genome as fasta, this contains all the bases and has not been filtered for high-quality bases                                         |
+| [out]_final_endo.fa	    |	Endogenous mitochondrial genome as fasta, this contains all the bases and has not been filtered for high-quality bases. To produce a fasta file using a quality filter, use log2fasta                                          |
 | [out]_final_endo.log	    |	Endogenous mitochondrial genome as a log file with likelihoods on a PHRED scale. format: position	reference.base	predicted.base	quality(PHRED)	average.mappping.quality	coverage	support.for.predicted.base	p[base=a]	p[base=c]	p[base=g]	p[base=t] |
 | [out]_final_cont.fa	    |	Contaminant mitochondrial genome as fasta, this contains all the bases and has not been filtered for high-quality bases                                         |
-| [out]_final_cont.log	    |	Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale |
+| [out]_final_cont.log	    |	Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale. format: position	reference.base	predicted.base	quality(PHRED)	average.mappping.quality	coverage	support.for.predicted.base	p[base=a]	p[base=c]	p[base=g]	p[base=t] |
 
 
 Frequently asked questions:
@@ -343,7 +343,7 @@ Frequently asked questions:
   When the deamination rates for the contaminant material are negligible. To 
   verify this, one way is to use diagnostic positions on the mitochondria. If 
   you have nuclear data, please retain the reads mapping to the mitochondria. 
-  If you know in advance that the sample is either Neandertal or Denisova, you can
+  If you know in advance that the sample is either Neanderthal or Denisova, you can
   use  the precomputed diagnostic positions. If you have an modern human, you 
   will have to run schmutzi.pl and use the split BAM files produced by the script. 
   Inspect, the files called *cont.5p.prof and *cont.3p.prof. If the rates of deamination
