@@ -7,7 +7,7 @@ LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o 
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -72,6 +72,12 @@ subSampleBAM.o:	libgab/utils.o subSampleBAM.cpp
 	${CXX} ${CXXFLAGS} subSampleBAM.cpp
 
 subSampleBAM:	libgab/utils.o subSampleBAM.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
+	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+addXACircular.o:	libgab/utils.o addXACircular.cpp 
+	${CXX} ${CXXFLAGS} addXACircular.cpp
+
+addXACircular:	libgab/utils.o addXACircular.o ${LIBGAB}utils.o  ${LIBGAB}gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 contDeam.o:	libgab/utils.o contDeam.cpp 
@@ -170,7 +176,7 @@ testdata/simulation.bam:
 
 
 clean :
-	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof subSampleBAM insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff logmask filterlog msa2singlefreq
+	rm -f *.o endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq msa2log bam2prof subSampleBAM addXACircular insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble log2ConsensusLog logdiff logmask filterlog msa2singlefreq
 	make -C splitEndoVsCont/ clean
 	make -C libgab/ clean
 
