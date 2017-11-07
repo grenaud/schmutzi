@@ -3,11 +3,11 @@ BAMTOOLS= bamtools/
 LIBGAB   = libgab/
 
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
-LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lpthread -lm -lz
+LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/build/src/api/libbamtools.a -lpthread -lm -lz
 
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/lib/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords libgab/utils.o bamtools/build/src/api/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -17,15 +17,14 @@ libgab/utils.h:
 	git clone --recursive https://github.com/grenaud/libgab.git
 
 
-libgab/utils.o: bamtools/lib/libbamtools.a  libgab/utils.h
+libgab/utils.o: bamtools/build/src/api/libbamtools.a   libgab/utils.h
 	make -C libgab
 
 bamtools/src/api/BamAlignment.h:
 	rm -rf bamtools/
 	git clone --recursive https://github.com/pezmaster31/bamtools.git
 
-
-bamtools/lib/libbamtools.a: bamtools/src/api/BamAlignment.h
+bamtools/build/src/api/libbamtools.a: bamtools/src/api/BamAlignment.h
 	cd bamtools/ && mkdir -p build/  && cd build/ && cmake .. && make && cd ../..
 
 

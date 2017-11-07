@@ -4,7 +4,7 @@ BAMTOOLS = ../bamtools/
 LIBGAB   = ../libgab/
 
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB}  -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
-LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/lib/libbamtools.a -lm -lz
+LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}build/src/api/libbamtools.a -lm -lz
 
 all: poshap2splitbam 
 
