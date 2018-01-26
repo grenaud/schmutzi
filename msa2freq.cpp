@@ -27,7 +27,7 @@ using namespace std;
 int main (int argc, char *argv[]) {
 
 
-    const string usage=string("\nThis program takes an multiple sequence alignment (msa) and outputs the allele frequency for each sequence in the freqs/ directory which must be created.\n\n\t"+
+    const string usage=string("\nThis program takes an multiple sequence alignment (msa) and outputs the allele frequency for each sequence in the freqs/ directory which must be created in the current working directory.\n\n\t"+
 			      string(argv[0])+                        
                               "  [msa]  [name of human reference]"+"\n\n");
 
@@ -124,6 +124,11 @@ int main (int argc, char *argv[]) {
 
 
 	    outProf.open(filenameout.c_str());
+	    if( !outProf.is_open() ){
+		cerr<<"ERROR: cannot write to "<<filenameout<<" does the freqs/ directory exists?"<<endl;
+		return 1;
+	    }
+
 	    // int totalL=0;
 	    // int match=0;
 
