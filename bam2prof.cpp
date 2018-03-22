@@ -218,6 +218,17 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
 }
 
 
+double dbl2log(const double d,bool phred){
+    double t= -10.0*(log(d)/log(10.0));
+    // if(d == 0){
+    // 	t = 
+    // }
+    if(phred)
+	return t;
+    else 
+	return d;
+}
+
 int main (int argc, char *argv[]) {
 
     string file5p="/dev/stdout";
@@ -235,7 +246,8 @@ int main (int argc, char *argv[]) {
     bool dpFormat=false;
     bool hFormat=false;
     double errorToRemove=0.0;
-    
+    bool phred=false;
+
     string usage=string(""+string(argv[0])+" <options>  [in BAM file]"+
 			"\nThis program reads a BAM file and produces a deamination profile for the\n"+
 			"5' and 3' ends\n"+
@@ -248,6 +260,7 @@ int main (int argc, char *argv[]) {
 			"\t\t"+"-endo\t\t\tRequire the 5' end to be deaminated to compute the 3' end and vice-versa (Default: "+stringify( endo )+")\n"+
 			"\t\t"+"-length\t[length]\tDo not consider bases beyond this length  (Default: "+stringify(lengthMaxToPrint)+" ) \n"+
 			"\t\t"+"-err\t[error rate]\tSubstract [error rate] from the rates to account for sequencing errors  (Default: "+stringify(errorToRemove)+" ) \n"+
+			"\t\t"+"-log\t\t\tPrint substitutions on a PHRED logarithmic scale  (Default: "+stringify(phred)+" ) \n"+
 			
 
 			"\n\n\tYou can specify either one of the two:\n"+
@@ -276,6 +289,11 @@ int main (int argc, char *argv[]) {
 
         if(string(argv[i]) == "-dp"  ){
             dpFormat=true;
+            continue;
+        }
+
+        if(string(argv[i]) == "-log"  ){
+            phred=true;
             continue;
         }
 
@@ -352,6 +370,12 @@ int main (int argc, char *argv[]) {
 
 
 	cerr<<"Error: unknown option "<<string(argv[i])<<endl;
+	return 1;
+    }
+
+    
+    if(phred && hFormat){
+	cerr<<"Error: cannot specify both -log and -h"<<endl;
 	return 1;
     }
 
@@ -500,30 +524,30 @@ int main (int argc, char *argv[]) {
 		    continue;
 		if(allStr){
 		    if(dpFormat)
-			file5pFP<<MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]";
+			file5pFP<<dbl2log(MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]";
 		    else
 			if(hFormat)
-			    file5pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),1,5);
+			    file5pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
 			else
-			    file5pFP<<MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove);		    
+			    file5pFP<<dbl2log( MAX(0.0,double( (*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred);  
 		}else{ 
 		    if(singAnddoubleStr){
 			if(         (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { 
 			    if(dpFormat)
-				file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]";
+				file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]";
 			    else
 				if(hFormat)
-				    file5pFP<<printDoubleAsWhitePaddedString(MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),1,5);
+				    file5pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),1,5);
 				else
-				    file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+				    file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 			} else { 
 			    if(dpFormat)
-				file5pFP<<"0.0"<<" [0..0]";
+				file5pFP<<(phred?"-Inf":"0.0")<<" [0..0]";
 			    else
 				if(hFormat)
-				    file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
+				    file5pFP<<printDoubleAsWhitePaddedString( 0.0,1,5);
 				else
-				    file5pFP<<"0.0"<<"";
+				    file5pFP<<(phred?"-Inf":"0.0")<<"";
 			}
 
 		    }else{
@@ -531,41 +555,41 @@ int main (int argc, char *argv[]) {
 			    //          C        T
 			    if(         n1==1 && n2==3  ) { 
 				if(dpFormat)
-				    file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]";
+				    file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]";
 				else
 				    if(hFormat)
-					file5pFP<<printDoubleAsWhitePaddedString(MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),1,5); 
+					file5pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5); 
 				    else
-					file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+					file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 			    } else { 
 				if(dpFormat)
-				    file5pFP<<"0.0"<<" [0..0]";
+				    file5pFP<<(phred?"-Inf":"0.0")<<" [0..0]";
 				else
 				    if(hFormat)
-					file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
+					file5pFP<<printDoubleAsWhitePaddedString( 0.0,1,5);
 				    else					
-					file5pFP<<"0.0"; 
+					file5pFP<<(phred?"-Inf":"0.0"); 
 			    }
 			}else{ 
 			    if(singleStr){
 				//      C        T
 				if(     n1==1 && n2==3  ) { 
 				    if(dpFormat)
-					file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]"; 
+					file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]"; 
 				    else
 					if(hFormat)
 					    file5pFP<<printDoubleAsWhitePaddedString(MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),1,5);
 					else
-					    file5pFP<<MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+					    file5pFP<<dbl2log( MAX(0.0,double((*typesOfDimer5pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 					    
 				} else { 
 				    if(dpFormat)
-					file5pFP<<"0.0"<<" [0..0]";
+					file5pFP<<(phred?"-Inf":"0.0")<<" [0..0]";
 				    else
 					if(hFormat)
 					    file5pFP<<printDoubleAsWhitePaddedString(0.0,1,5);
 					else										    
-					    file5pFP<<"0.0"; 
+					    file5pFP<<(phred?"-Inf":"0.0"); 
 				}
 			    }
 			}
@@ -649,30 +673,30 @@ int main (int argc, char *argv[]) {
 		    continue;
 		if(allStr){
 		    if(dpFormat)
-			file3pFP<<MAX(0.0,double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]";
+			file3pFP<<dbl2log( MAX(0.0,double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]";
 		    else
 			if(hFormat)
 			    file3pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
 			else
-			    file3pFP<<MAX(0.0,double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove);
+			    file3pFP<<dbl2log( MAX(0.0,double( (*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred);
 		}else{ 
 		    if(singAnddoubleStr){			
 			if(   (n1==1 && n2==3) || (n1==2 && n2==0 )  ) { 
 			    if(dpFormat)
-				file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]"; 
+				file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]"; 
 			    else
 				if(hFormat)
-				    file3pFP<<printDoubleAsWhitePaddedString(MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
+				    file3pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
 				else
-				    file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+				    file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 			} else { 
 			    if(dpFormat)
-				file3pFP<<"0.0 [0..0]"; 
+				file3pFP<<(phred?"-Inf":"0.0")<<" [0..0]"; 
 			    else
 				if(hFormat)
-				    file3pFP<<printDoubleAsWhitePaddedString(0.0 ,1,5);
+				    file3pFP<<printDoubleAsWhitePaddedString( 0.0 ,1,5);
 				else
-				    file3pFP<<"0.0"; 
+				    file3pFP<<(phred?"-Inf":"0.0"); 
 			}
 
 		    }else{
@@ -680,40 +704,40 @@ int main (int argc, char *argv[]) {
 			    //          G        A
 			    if(         n1==2 && n2==0  ) { 
 				if(dpFormat)
-				    file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]"; 
+				    file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]"; 
 				else
 				    if(hFormat)
 					file3pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
 				    else					
-					file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+					file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 			    } else { 				
 				if(dpFormat)
-				    file3pFP<<"0.0 [0..0]"; 
+				    file3pFP<<(phred?"-Inf":"0.0")<<" [0..0]"; 
 				else
 				    if(hFormat)
-					file3pFP<<printDoubleAsWhitePaddedString( 0.0 ,1,5);
-				    else					
-					file3pFP<<"0.0"; 
+					file3pFP<<printDoubleAsWhitePaddedString(  0.0 ,1,5);
+				    else	
+					file3pFP<<(phred?"-Inf":"0.0"); 
 			    }
 			}else{ 
 			    if(singleStr){
 				//      C        T
 				if(     n1==1 && n2==3  ) { 
 				    if(dpFormat)
-					file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove)<<" [0..0]"; 
+					file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred)<<" [0..0]"; 
 				    else
 					if(hFormat)
 					    file3pFP<<printDoubleAsWhitePaddedString( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove) ,1,5);
 					else					
-					    file3pFP<<MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove); 
+					    file3pFP<<dbl2log( MAX(0.0,double((*typesOfDimer3pToUse)[l][4*n1+n2])/double(totalObs)-errorToRemove),phred); 
 				} else { 				    
 				    if(dpFormat)
-					file3pFP<<"0.0 [0..0]"; 
+					file3pFP<<(phred?"-Inf":"0.0")<<" [0..0]"; 
 				    else
 					if(hFormat)
-					    file3pFP<<printDoubleAsWhitePaddedString( 0.0 ,1,5);
-					else					
-					    file3pFP<<"0.0"; 
+					    file3pFP<<printDoubleAsWhitePaddedString(  0.0 , 1,5);
+					else	
+					    file3pFP<<(phred?"-Inf":"0.0"); 
 
 				}
 				
