@@ -309,18 +309,18 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
 	readBase=toupper(          al.QueryBases[i]);
 	qualBase=int(              al.Qualities[i])-offset;
 	//cout<<i<<"\t"<<qualBase<<"\t"<<minQualBase<<endl;
-	if(qualBase < minQualBase)
-	    continue;
 	//cout<<"-"<<i<<"\t"<<qualBase<<"\t"<<minQualBase<<endl;
+	//cout<<"i="<<i<<" j="<<j<<" "<< refeBase<<" "<<readBase<<" "<<refFromFasta[j+1]<<endl;
 	if( refeBase == 'S'){ //don't care about soft clipped or indels	    
 	    j--;
 	    continue;
 	}
 
-	//cout<<"i="<<i<<" j="<<j<<" "<< refeBase<<" "<<readBase<<" "<<refFromFasta[j+1]<<endl;
+
 	
 	if( refeBase == 'I'){ //don't care about soft clipped or indels
-	    continue;
+	  //i--;
+	  continue;
 	}
 
 
@@ -329,6 +329,9 @@ inline void increaseCounters(const BamAlignment & al,string & reconstructedRefer
 	    i--;
 	    continue;
 	}
+
+	if(qualBase < minQualBase)
+	    continue;
 	
 	if(refeBase == 'M'){//match
 	    refeBase =  readBase;
@@ -746,7 +749,8 @@ int main (int argc, char *argv[]) {
 	    // cout<<"3  "<<reconstructedReference.first<<" "<<reconstructedReference.first.size()<<endl;
 	    // //cout<<"4  "<<vectorToString(reconstructedReference.second)<<" "<<reconstructedReference.second.size()<<endl;    
 	    // cout<<endl;
-	    //st,en-st+1-sizeProbes,sizeProbes,tiling,tosend,maxVarInProbe);
+
+	    // //st,en-st+1-sizeProbes,sizeProbes,tiling,tosend,maxVarInProbe);
 	    
 	}
 	// if(al.Qualities.size() != reconstructedReference.first.size()){
