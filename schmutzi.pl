@@ -103,7 +103,7 @@ sub computeIntervalCont{
 
     while (1) {
       $il=max($il-1,              0);
-      $ih=min($ih+1, $#arrayOfValues+1 );
+      $ih=min($ih+1, $#arrayOfValues );
       #print "i ".$il."\t".$ih."\n";
       my $subsum = 0;
       for (my $i=$il;$i<=$ih;$i++) {

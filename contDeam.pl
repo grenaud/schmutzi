@@ -287,7 +287,6 @@ close(FILE);
 
 my $sum=0;
 foreach my $hashVal (@arrayOfValues){
-
   $hashVal->{'logLS'}=$hashVal->{'logL'}-$maxL;
  # print "".($hashVal->{'logLS'})."\t".(10**($hashVal->{'logLS'}))."\t".$sum."\n";
   $sum+=(10**($hashVal->{'logLS'}));
@@ -298,10 +297,11 @@ my $targetSum = 0.95 * $sum;
 
 my $il=$maxLi;
 my $ih=$maxLi;
-
+#find the indices $il index low and $ih index high
+#that contain a sum of the likelihood of 0.95*$sum
 while(1){
   $il=max($il-1,              0);
-  $ih=min($ih+1, $#arrayOfValues+1 );
+  $ih=min($ih+1, $#arrayOfValues );
   #print "i ".$il."\t".$ih."\n";
   my $subsum = 0;
   for(my $i=$il;$i<=$ih;$i++){
