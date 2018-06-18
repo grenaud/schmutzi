@@ -223,7 +223,7 @@ foreach my $filebam (@ARGV){
       push(@arrayOfTargetsClean,   $outprefix."_".$type."_final_endo.q".$q.".hsd");
       push(@arrayOfTargetsHSD,     $outprefix."_".$type."_final_endo.q".$q.".hsd");
 
-$stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tjava -jar ~/Dropbox/haplogrep-2.2-beta.jar --format fasta --in ".$outprefix."_".$type."_final_endo.q".$q.".fa --out ".$outprefix."_".$type."_final_endo.q".$q.".hsd --phylotree 17\n\n";
+$stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tjava -jar ".$installDirToHaplogrep." --format fasta --in ".$outprefix."_".$type."_final_endo.q".$q.".fa --out ".$outprefix."_".$type."_final_endo.q".$q.".hsd --phylotree 17\n\n";
       #$stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$outprefix."_".$type."_final_endo.q".$q.".hsd\n\n";
     }
   }
