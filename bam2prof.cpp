@@ -707,6 +707,7 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
+	//cout<<al.Name<<endl;
 	//string reconstructedReference = reconstructRef(&al);
 	pair< string, vector<int> >  reconstructedReference = reconstructRefWithPosOnRead(&al);
 

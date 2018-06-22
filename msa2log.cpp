@@ -68,8 +68,8 @@ int main (int argc, char *argv[]) {
     }
 
 
-
-    FastQParser fqp (string(argv[argc-2]),true );
+    string fqfilename = string(argv[argc-2]);
+    FastQParser fqp (fqfilename,true );
     string IDREF   = string(argv[argc-1]);
 
     if(!strBeginsWith(IDREF,">")){
