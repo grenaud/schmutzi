@@ -153,11 +153,11 @@ where [length] is the # of bp considered and [library type] is the library type 
 
 Then run the iterative procedure without the prediction of the contaminant:
 
-    schmutzi.pl --notusepredC --uselength --ref [mt reference] --out [out prefix]_npred [output prefix] [path to schmutzi]/eurasian/freqs/ [input bam file]
+    schmutzi.pl --notusepredC --uselength --ref [mt reference] --out [out prefix]_npred [output prefix] [path to schmutzi]/share/schmutzi/alleleFreqMT/eurasian/freqs/ [input bam file]
 
 then run it again with the prediction of the contaminant:
 
-    schmutzi.pl               --uselength --ref [mt reference] --out [out prefix]_wpred [output prefix] [path to schmutzi]/eurasian/freqs/ [input bam file]
+    schmutzi.pl               --uselength --ref [mt reference] --out [out prefix]_wpred [output prefix] [path to schmutzi]/share/schmutzi/alleleFreqMT/eurasian/freqs/ [input bam file]
 
 Those commands will create output files with the [out prefix]_npred and [out prefix]_wpred prefixes. 
 
@@ -214,15 +214,15 @@ This will produce the files:
 
 Then run the following to produce the endogenous consensus and the contamination estimate:
 
-        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/mez   alleleFreqMT/197/freqs/  testdata/mezB9687.bam
-        ./schmutzi.pl       --uselength   --ref refs/human_MT_wrapped.fa         outputdir/sim   alleleFreqMT/197/freqs/  testdata/simulation.bam
+        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/mez   share/schmutzi/alleleFreqMT/alleleFreqMT/197/freqs/  testdata/mezB9687.bam
+        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/sim   share/schmutzi/alleleFreqMT/alleleFreqMT/197/freqs/  testdata/simulation.bam
 
 
         --uselength tells the program to use the length of the molecules
         --ref is for the reference
 
        outputdir/mez is the output from contDeam
-       alleleFreqMT/197/freqs/ is the database of putative contaminants 
+       share/schmutzi/alleleFreqMT/197/freqs/ is the database of putative contaminants 
        testdata/mezB9687.bam is the input bam file
   
 The first dataset is an empirical dataset with about 40-45% contamination and the second is a simulated dataset with 20% contamination

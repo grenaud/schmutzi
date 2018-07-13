@@ -1,7 +1,7 @@
 
 CXX      = /usr/bin/g++ # -g -pg
-BAMTOOLS = ../bamtools/
-LIBGAB   = ../libgab/
+BAMTOOLS = ../../lib/bamtools/
+LIBGAB   = ../../lib/libgab/
 
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB}  -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}build/src/api/libbamtools.a -lm -lz

@@ -912,7 +912,7 @@ int main (int argc, char *argv[]) {
     // string outSeq  = "/dev/stdout";
     string outLog  = "/dev/stdout";
     // string nameMT  = "MT";
-    string fileFreq = "alleleFreqMT/1000g/freqHumans.dat";
+    //string fileFreq = "alleleFreqMT/1000g/freqHumans.dat";
 
     // ofstream outSeqFP ;
     ofstream outLogFP;
@@ -994,9 +994,9 @@ int main (int argc, char *argv[]) {
     /////////////////////////////////////////
 
     //    return 1;
-    string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
-    string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
-    string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string errFile    = getCWD(argv[0])+"../share/schmutzi/illuminaProf/error.prof";
+    string deam5pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
+    string deam3pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
     bool verbose      = false;
     bool printPosToskip      = false;
 

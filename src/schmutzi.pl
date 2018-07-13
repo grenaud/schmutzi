@@ -394,6 +394,22 @@ sub fileExists{
       die "Executable ".$$exeFile." does not exist\n";
     }
   }
+
+}
+
+sub doesFileExists{
+  my ($exeFile) = @_;
+
+  if (!( -e $$exeFile)) {
+    if ( ( -e (($$exeFile).".exe")) ) {
+      return 1;
+    }else{
+      return 0;
+    }
+  }else{
+    return   1;
+  }
+
 }
 
 my @arraycwd=split("/",abs_path($0));
@@ -424,6 +440,11 @@ fileExists(\$log2freq);
 fileExists(\$logs2pos);
 fileExists(\$contDeam);
 fileExists(\$contDeamR);
+
+if(doesFileExists(\$splitEndo)){
+  $splitEndo  = $pathdir."/poshap2splitbam";
+}
+
 fileExists(\$splitEndo);
 
 

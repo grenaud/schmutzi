@@ -1596,9 +1596,9 @@ int main (int argc, char *argv[]) {
     ////////////////////////////////////
 
     //    return 1;
-    string errFile    = getCWD(argv[0])+"illuminaProf/error.prof";
-    string deam5pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
-    string deam3pfreq = getCWD(argv[0])+"deaminationProfile/none.prof";
+    string errFile    = getCWD(argv[0])+"../share/schmutzi/illuminaProf/error.prof";
+    string deam5pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
+    string deam3pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
     // substitutionRates freqIlluminaError;
     vector<substitutionRates>    deam5Psub;
     vector<substitutionRates>    deam3Psub;
