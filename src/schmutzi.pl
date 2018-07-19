@@ -441,7 +441,7 @@ fileExists(\$logs2pos);
 fileExists(\$contDeam);
 fileExists(\$contDeamR);
 
-if(doesFileExists(\$splitEndo)){
+if(!doesFileExists(\$splitEndo)){
   $splitEndo  = $pathdir."/poshap2splitbam";
 }
 
