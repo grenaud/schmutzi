@@ -46,7 +46,7 @@ my %outputprefixUnique;
 my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   " Options:\n".
 
-  "\t--out\t\t\t\tUse this folder as the output (default: same path as input)\n".
+  "\t--out\t\t\t\t\tUse this folder as the output (default: same path as input)\n".
   "\t--skippred\t\t\t\tSkip contamination estimate using prediction of the contaminant (useful for low cont. samples)\n".
   "\t--nodeam [cont]\t\t\t\tSkip contamination based on deamination, useful for UDG treated\n".
   "\t\t\t\t\t\tuse [cont] as prior instead, must be between 0.01 and 0.99\n".
