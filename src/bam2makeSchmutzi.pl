@@ -178,7 +178,7 @@ foreach my $filebam (@ARGV){
     }
     warn "otpf: ".$outprefix;
 
-    $stringToPrint.="".$outprefix.".bam:\n\t"."ln -s  $filebam ".$outprefix.".bam\n\n";
+    $stringToPrint.="".$outprefix.".bam:\n\t"."ln -r -s  $filebam ".$outprefix.".bam\n\n";
 
     push(@arrayOfTargets,     $outprefix.".bam");
 
