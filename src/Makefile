@@ -16,12 +16,11 @@ ${LIBGAB}/utils.h:
 	rm -rf ${LIBGAB}
 	git clone --recursive https://github.com/grenaud/libgab.git ${LIBGAB}
 
-
 ${LIBGAB}/utils.o: ${BAMTOOLS}/build/src/api/libbamtools.a   ${LIBGAB}/utils.h
 	make -C ${LIBGAB}
 
-../lib/bamtools/src/api/BamAlignment.h:
-	rm -rf ../lib/bamtools/
+${BAMTOOLS}/src/api/BamAlignment.h:
+	rm -rf ${BAMTOOLS}
 	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/
 
 ${BAMTOOLS}/build/src/api/libbamtools.a: ${BAMTOOLS}/src/api/BamAlignment.h
