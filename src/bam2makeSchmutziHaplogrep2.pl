@@ -26,6 +26,8 @@ pop(@arraycwd);
 my $pathdir = join("/",@arraycwd);
 my $skipContDeam=0;
 my $skipPred=0;
+my $outputprefixUSER="";
+
 my $subsample=-1;
 my $nice="";
 
@@ -41,8 +43,11 @@ print STDERR  "using haplogred  : ".$installDirToHaplogrep.""."\n";
 print STDERR  "if these paths are incorrect, change them in the Perl script\n";
 print STDERR  "Also, ".$installDirToHaplogrep.", uses java 1.8 and above\n";
 
+my %outputprefixUnique;
 my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   " Options:\n".
+
+  "\t--out\t\t\t\t\tUse this folder as the output (default: same path as input)\n".
   "\t--skippred\t\t\t\tSkip contamination estimate using prediction of the contaminant (useful for low cont. samples)\n".
   "\t--nodeam [cont]\t\t\t\tSkip contamination based on deamination, useful for UDG treated\n".
   "\t\t\t\t\t\tuse [cont] as prior instead, must be between 0.01 and 0.99\n".
@@ -71,6 +76,19 @@ foreach my $filebam (@ARGV){
 #      $skipContDeam=1;
 #      next;
 #    }
+
+    if($filebam eq "--out"){
+      $outputprefixUSER=$ARGV[$i];
+      if( substr($outputprefixUSER,length($outputprefixUSER)-1,1) ne "/"){
+	$outputprefixUSER= $outputprefixUSER."/";
+      }
+      if (-d $outputprefixUSER) {
+	#ok
+      }else{
+	die "Directory $outputprefixUSER does not exist\n";
+      }
+      next;
+    }
 
     if($filebam eq "--skippred"){
       $skipPred=1;
@@ -142,6 +160,31 @@ foreach my $filebam (@ARGV){
 
   my $name      = substr($filebamname,0,-4);
   my $outprefix = substr($filebam,0,-4);#path without extension
+  #print "#".$name."#\n";
+
+  if($outputprefixUSER ne ""){
+    my @arraySplit = split("/",$outprefix);
+    $outprefix     = $outputprefixUSER."".$name;
+
+    if(exists $outputprefixUnique{$name}){
+      $outputprefixUnique{$name} = $outputprefixUnique{$name}+1;
+      my $suff                   = $outputprefixUnique{$name};
+      $outprefix                 = $outprefix."_".$suff;
+      warn "otpf ".$outprefix;
+      warn "name ".$name;
+      warn "suff ".$suff;
+      $name                      = $name        ."_".$suff;
+    }else{
+      $outputprefixUnique{$name}=0;
+    }
+    warn "otpf: ".$outprefix;
+
+    $stringToPrint.="".$outprefix.".bam:\n\t"."ln -r -s  $filebam ".$outprefix.".bam\n\n";
+
+    push(@arrayOfTargets,     $outprefix.".bam");
+
+
+  }
 
   #my $prefixFilename = 
   if( $subsample != -1){
@@ -180,7 +223,7 @@ foreach my $filebam (@ARGV){
     if($skipContDeam==1){
       $stringToPrint.= " --contprior ".$nodeamContPrior." ";
     }
-    $stringToPrint.=" --iterations $iterations                  -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+    $stringToPrint.=" --iterations $iterations                  -t $threads     --uselength   --ref ".$installDir."/../share/schmutzi/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
   }
 
   push(@arrayOfTargets,     $outprefix."_nopred_final.cont.est");
@@ -190,7 +233,7 @@ foreach my $filebam (@ARGV){
   if($skipContDeam==1){
     $stringToPrint.= " --contprior ".$nodeamContPrior." ";
   }
-  $stringToPrint.= " --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  $stringToPrint.= " --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/../share/schmutzi/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
 
 
   my @typeOfTargets = ("wtpred","nopred");
@@ -223,7 +266,8 @@ foreach my $filebam (@ARGV){
       push(@arrayOfTargetsClean,   $outprefix."_".$type."_final_endo.q".$q.".hsd");
       push(@arrayOfTargetsHSD,     $outprefix."_".$type."_final_endo.q".$q.".hsd");
 
-$stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tjava -jar ".$installDirToHaplogrep." --format fasta --in ".$outprefix."_".$type."_final_endo.q".$q.".fa --out ".$outprefix."_".$type."_final_endo.q".$q.".hsd --phylotree 17\n\n";
+
+      $stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tjava -jar ".$installDirToHaplogrep." --format fasta --in ".$outprefix."_".$type."_final_endo.q".$q.".fa --out ".$outprefix."_".$type."_final_endo.q".$q.".hsd --phylotree 17\n\n";
       #$stringToPrint.="".$outprefix."_".$type."_final_endo.q".$q.".hsd: ".$outprefix."_".$type."_final_endo.q".$q.".fa\n\tpython ".$installDirToFastaHaplogrep."/fasta2haplogrep.py ".$outprefix."_".$type."_final_endo.q".$q.".fa > ".$outprefix."_".$type."_final_endo.q".$q.".hsd\n\n";
     }
   }
