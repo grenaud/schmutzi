@@ -2659,9 +2659,9 @@ void iterateOverReads(const string fastaFile,
     BamAlignment al;
     unsigned int numReads=0;
     cerr<<"Reading BAM file ..."<<endl;
-
+    
     while ( reader.GetNextAlignment(al) ) {
-	//cerr<<al.Name<<endl;
+	cerr<<numReads<<"\t"<<al.Name<<endl;
 	numReads++;
 	if(numReads !=0 && (numReads%100000)==0){
 	    cerr<<"Read "<<thousandSeparator(numReads)<<" reads"<<endl;

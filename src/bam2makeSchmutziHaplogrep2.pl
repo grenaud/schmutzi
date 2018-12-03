@@ -36,8 +36,11 @@ my $installDirToHaplogrep = "/willerslev/software/haplogrep/haplogrep-2.2-beta.j
 my $installDir            = $pathdir; #"/home/gabriel/projects/schmutzi";
 my $iterations=5;
 
+my $refs = abs_path($installDir."/../share/schmutzi/refs/human_MT.fa");
+
+
 print STDERR  "        ~~~~ Please read carefully ~~~~\n";
-print STDERR  "using script path: ".$installDir."/projects/schmutzi/schmutzi.pl"."\n";
+print STDERR  "using script path: ".$installDir."/schmutzi.pl"."\n";
 print STDERR  "using haplogred  : ".$installDirToHaplogrep.""."\n";
 
 print STDERR  "if these paths are incorrect, change them in the Perl script\n";
@@ -55,6 +58,7 @@ my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   "\t--subsample  [XXX]\t\t\tSubsample the BAM file down to XXX, 100-300 depending on how difficult the target is are good\n".
   "\t--threads    [num]\t\t\tUse [num] of threads (default $threads)\n".
   "\t--iterations [num]\t\t\tMaximum number of iterations (default $iterations)\n".
+  "\t--ref        [file]\t\t\tUse this reference instead (default ".$refs." )\n".
   "\t--nice\t\t\t\t\tUse nice\n\n\n";
 
 if($#ARGV == -1){
@@ -212,14 +216,14 @@ foreach my $filebam (@ARGV){
   if($skipContDeam == 1){
     $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\techo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est\n\t/opt/schmutzi/bam2prof -5p ".$outprefix.".endo.5p.prof -3p ".$outprefix.".endo.3p.prof ".$outprefix.".bam\n\techo -e \"library\\t".$library."\\noutputPrefix\\t".$outprefix."\\nreferenceFasta\\t\\ncontPriorKnow\\t-1\\ntextGraph\\tPosterior probability for contamination\\\\\\nusing deamination patterns\\nsplitPos\\t\\nuseLength\\t0\\nsplitDeam\\t0\" > ".$outprefix.".deam.config\n\n";
   }else{
-    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\tif  ".$installDir."/contDeam.pl   --library ".$library." --lengthDeam 30 --out ".$outprefix." ".$outprefix.".bam; then echo \"command contDeam finished\"; else echo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est; fi\n\n";
+    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\tif  ".$installDir."/contDeam.pl --ref ".$refs."  --library ".$library." --lengthDeam 30 --out ".$outprefix." ".$outprefix.".bam; then echo \"command contDeam finished\"; else echo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est; fi\n\n";
   }
 
   if (!$skipPred ) {
     push(@arrayOfTargets,     $outprefix."_wtpred_final.cont.est");
     push(@arrayOfTargetsClean,$outprefix."_wtpred*");
 
-    $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  ";
+    $stringToPrint.= "".$outprefix."_wtpred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl --ref ".$refs." ";
     if($skipContDeam==1){
       $stringToPrint.= " --contprior ".$nodeamContPrior." ";
     }
@@ -229,7 +233,7 @@ foreach my $filebam (@ARGV){
   push(@arrayOfTargets,     $outprefix."_nopred_final.cont.est");
   push(@arrayOfTargetsClean,$outprefix."_nopred*");
 
-  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl  ";
+  $stringToPrint.= "".$outprefix."_nopred_final.cont.est: ".$outprefix.".cont.est\n\tif $nice ".$installDir."/schmutzi.pl --ref ".$refs." ";
   if($skipContDeam==1){
     $stringToPrint.= " --contprior ".$nodeamContPrior." ";
   }
