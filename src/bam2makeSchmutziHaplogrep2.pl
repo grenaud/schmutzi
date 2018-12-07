@@ -42,6 +42,7 @@ my $refs = abs_path($installDir."/../share/schmutzi/refs/human_MT.fa");
 print STDERR  "        ~~~~ Please read carefully ~~~~\n";
 print STDERR  "using script path: ".$installDir."/schmutzi.pl"."\n";
 print STDERR  "using haplogred  : ".$installDirToHaplogrep.""."\n";
+print STDERR  "using reference  : ".$refs.""."\n";
 
 print STDERR  "if these paths are incorrect, change them in the Perl script\n";
 print STDERR  "Also, ".$installDirToHaplogrep.", uses java 1.8 and above\n";
@@ -59,6 +60,7 @@ my $usage= "\n\n usage:\t".$0." <options> [bam file1] [bam file2]...\n\n".
   "\t--threads    [num]\t\t\tUse [num] of threads (default $threads)\n".
   "\t--iterations [num]\t\t\tMaximum number of iterations (default $iterations)\n".
   "\t--ref        [file]\t\t\tUse this reference instead (default ".$refs." )\n".
+  "\t--haplog     [file]\t\t\tSpecify the full path to haplogrep instead (default ".$installDirToHaplogrep." )\n".
   "\t--nice\t\t\t\t\tUse nice\n\n\n";
 
 if($#ARGV == -1){
@@ -106,6 +108,16 @@ foreach my $filebam (@ARGV){
 
     if($filebam eq "--single"){
       $library="single";
+      next;
+    }
+
+    if($filebam eq "--ref"){
+      $refs= $ARGV[$i];
+      next;
+    }
+
+    if($filebam eq "--haplog"){
+      $installDirToHaplogrep= $ARGV[$i];
       next;
     }
 
@@ -214,9 +226,9 @@ foreach my $filebam (@ARGV){
   push(@arrayOfTargetsClean,$outprefix.".endo.3p.prof");
 
   if($skipContDeam == 1){
-    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\techo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est\n\t/opt/schmutzi/bam2prof -5p ".$outprefix.".endo.5p.prof -3p ".$outprefix.".endo.3p.prof ".$outprefix.".bam\n\techo -e \"library\\t".$library."\\noutputPrefix\\t".$outprefix."\\nreferenceFasta\\t\\ncontPriorKnow\\t-1\\ntextGraph\\tPosterior probability for contamination\\\\\\nusing deamination patterns\\nsplitPos\\t\\nuseLength\\t0\\nsplitDeam\\t0\" > ".$outprefix.".deam.config\n\n";
+    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\techo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est\n\t".$installDir."/bam2prof -5p ".$outprefix.".endo.5p.prof -3p ".$outprefix.".endo.3p.prof ".$outprefix.".bam\n\techo -e \"library\\t".$library."\\noutputPrefix\\t".$outprefix."\\nreferenceFasta\\t".$refs."\\ncontPriorKnow\\t-1\\ntextGraph\\tPosterior probability for contamination\\\\\\nusing deamination patterns\\nsplitPos\\t\\nuseLength\\t0\\nsplitDeam\\t0\" > ".$outprefix.".deam.config\n\n";
   }else{
-    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\tif  ".$installDir."/contDeam.pl --ref ".$refs."  --library ".$library." --lengthDeam 30 --out ".$outprefix." ".$outprefix.".bam; then echo \"command contDeam finished\"; else echo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est; fi\n\n";
+    $stringToPrint.= "".$outprefix.".cont.est: ".$outprefix.".bai\n\tif  ".$installDir."/contDeam.pl --ref ".$refs."  --library ".$library." --lengthDeam 30 --out ".$outprefix." ".$outprefix.".bam; then echo \"command contDeam finished\"; else echo \"command contDeam failed, using non informative contamination rate\"; echo -e \"0.5\t0.49\t0.51\" > ".$outprefix.".cont.est; ".$installDir."/bam2prof -5p ".$outprefix.".endo.5p.prof -3p ".$outprefix.".endo.3p.prof ".$outprefix.".bam; echo -e \"library\\t".$library."\\noutputPrefix\\t".$outprefix."\\nreferenceFasta\\t".$refs."\\ncontPriorKnow\\t-1\\ntextGraph\\tPosterior probability for contamination\\\\\\nusing deamination patterns\\nsplitPos\\t\\nuseLength\\t0\\nsplitDeam\\t0\" > ".$outprefix.".deam.config;  fi\n\n";
   }
 
   if (!$skipPred ) {
