@@ -488,4 +488,6 @@ Frequently asked questions:
   Make sure you have used "samtools calmd" (or samtools fillmd for earlier versions).
 
 
+- What is share/schmutzi/alleleFreqMT/197/freqs/
 
+  This is a very small putative contaminant database of 197 human mitogenomes using a worldwide sampling. For samples collected in Eurasia, we recommend the eurasian/ database. However, this database might be better if you suspect that your contaminant is African in origin. As ancient DNA only expanded into Africa relatively recently, we are currently making a more comprehensive curated mitogenome database with a worldwide distribution.
