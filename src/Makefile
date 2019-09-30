@@ -6,7 +6,6 @@ CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/includ
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/build/src/api/libbamtools.a -lpthread -lm -lz
 
 
-
 all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords ${LIBGAB}/utils.o ${BAMTOOLS}/build/src/api/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
 
 splitEndoVsCont/poshap2splitbam:
@@ -21,7 +20,7 @@ ${LIBGAB}/utils.o: ${BAMTOOLS}/build/src/api/libbamtools.a   ${LIBGAB}/utils.h
 
 ${BAMTOOLS}/src/api/BamAlignment.h:
 	rm -rf ${BAMTOOLS}
-	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/
+	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/ && cd ${BAMTOOLS}/ &&  git reset --hard d24d850de17134fe4e7984b26493c5c0a1844b35
 
 ${BAMTOOLS}/build/src/api/libbamtools.a: ${BAMTOOLS}/src/api/BamAlignment.h
 	cd ${BAMTOOLS}/ && mkdir -p build/  && cd build/ && cmake .. && make && cd ../../../src/
