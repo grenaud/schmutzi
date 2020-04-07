@@ -239,7 +239,7 @@ foreach my $filebam (@ARGV){
     if($skipContDeam==1){
       $stringToPrint.= " --contprior ".$nodeamContPrior." ";
     }
-    $stringToPrint.=" --iterations $iterations                  -t $threads     --uselength   --ref ".$installDir."/../share/schmutzi/refs/human_MT.fa  --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+    $stringToPrint.=" --iterations $iterations                  -t $threads     --uselength    --out  ".$outprefix."_wtpred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
   }
 
   push(@arrayOfTargets,     $outprefix."_nopred_final.cont.est");
@@ -249,7 +249,7 @@ foreach my $filebam (@ARGV){
   if($skipContDeam==1){
     $stringToPrint.= " --contprior ".$nodeamContPrior." ";
   }
-  $stringToPrint.= " --iterations  $iterations   --notusepredC -t $threads     --uselength   --ref ".$installDir."/../share/schmutzi/refs/human_MT.fa  --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
+  $stringToPrint.= " --iterations  $iterations   --notusepredC -t $threads     --uselength     --out  ".$outprefix."_nopred     ".$outprefix."      ".$installDir."/../share/schmutzi/alleleFreqMT/eurasian/freqs/  ".$outprefix.".bam; then echo \"command with pred finished\"; else echo \"command with pred stopped\"; fi\n\n";
 
 
   my @typeOfTargets = ("wtpred","nopred");
