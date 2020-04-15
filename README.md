@@ -328,6 +328,41 @@ From schmutzi.pl for the endogenous/contaminant:
 | [out]_final_cont.log	    |	Contaminant mitochondrial genome as a log file with likelihoods on a PHRED scale. format: position	reference.base	predicted.base	quality(PHRED)	average.mappping.quality	coverage	support.for.predicted.base	p[base=a]	p[base=c]	p[base=g]	p[base=t] |
 
 
+From bam2makeSchmutzi.pl:
+
+You will get a _results.txt, with different columns. I suggest concatenating the _results.txt files and sorting with respect to coverage and flag problematic samples. Here is the meaning of the different columns (DB=database of putative contaminants): 
+
+
+| column# | shorthand ID    | meaning                                                                                                |
+| ------------------------- | -------------------------------------------------------------------------------------------------------|
+| 1       | ID              | ID of the sample                                                                                       |
+| 2       | deam5p          | rate of deamination at the 5' end                                                                      |
+| 3       | deam3p          | rate of deamination at the 3' end                                                                      |
+| 4       | contDeam        | contamination estimate obtained via deamination patterns                                               |
+| 5       | contDeamL       | contamination estimate obtained via deamination patterns (lower bound)                                 |
+| 6       | contDeamH       | contamination estimate obtained via deamination patterns (upper bound)                                 |
+| 7       | contWPrd        | contamination estimate obtained by predicting the contaminant+DB of putative contaminant               |
+| 8       | contWPrdL       | contamination estimate obtained by predicting the contaminant+DB of putative contaminant (lower bound) |
+| 9       | contWPrdH       | contamination estimate obtained by predicting the contaminant+DB of putative contaminant (upper bound) |
+| 10      | contNPrd        | contamination estimate obtained by DB only                                                             | 
+| 11      | contNPrdL       | contamination estimate obtained by DB only (lower bound)                                               |
+| 12      | contNPrdH       | contamination estimate obtained by DB only (upper bound)                                               |
+| 13      | avgCov          | average coverage                                                                                       |
+| 14      | hpGrq10w        | haplogrep for endogenous consensus obtained by predicting the contaminant and QC>10 (error<1/10)       |
+| 15      | hpGrq10wq       | haplogrep quality for endogenous consensus obtained by predicting the contaminant and QC>10            |
+| 16      | hpGrq30w        | haplogrep for endogenous consensus obtained by predicting the contaminant and QC>30 (error<1/1000)     |
+| 17      | hpGrq30wq       | haplogrep quality for endogenous consensus obtained by predicting the contaminant and QC>30            |
+| 18      | hpGrq50w        | haplogrep for endogenous consensus obtained by predicting the contaminant and QC>50 (error<1/100000)   |
+| 19      | hpGrq50wq       | haplogrep quality for endogenous consensus obtained by predicting the contaminant and QC>50            |
+| 20      | hpGrq10n        | haplogrep for endogenous consensus obtained by DB alone and QC>10 (error<1/10)                         |
+| 21      | hpGrq10nq       | haplogrep quality for endogenous consensus obtained by DB alone and QC>10                              |
+| 22      | hpGrq30n        | haplogrep for endogenous consensus obtained by DB alone and QC>30 (error<1/1000)                       |
+| 23      | hpGrq30nq       | haplogrep quality for endogenous consensus obtained by DB alone and QC>30                              | 
+| 24      | hpGrq50n        | haplogrep for endogenous consensus obtained by DB alone and QC>50 (error<1/100000)                     | 
+| 25      | hpGrq50nq       | haplogrep quality for endogenous consensus obtained by DB alone and QC>50                              |
+
+
+
 Frequently asked questions:
 -------------------------------------------------------------------------------------
 
@@ -491,3 +526,10 @@ Frequently asked questions:
 - What is share/schmutzi/alleleFreqMT/197/freqs/
 
   This is a very small putative contaminant database of 197 human mitogenomes using a worldwide sampling. For samples collected in Eurasia, we recommend the eurasian/ database. However, this database might be better if you suspect that your contaminant is African in origin. As ancient DNA only expanded into Africa relatively recently, we are currently making a more comprehensive curated mitogenome database with a worldwide distribution.
+
+
+- When I run bam2makeSchmutzi.pl, I get NA columns, why?
+
+  If you're getting NA, it is likely due to a failure in one of the programs. I recommend running the programs manually (contDeam+schmutzi.pl) using the commands in the Makefile and check what you're getting. Also, check that you have all the R packages installed.
+
+
