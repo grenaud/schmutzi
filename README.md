@@ -333,8 +333,8 @@ From bam2makeSchmutzi.pl:
 You will get a _results.txt, with different columns. I suggest concatenating the _results.txt files and sorting with respect to coverage and flag problematic samples. Here is the meaning of the different columns (DB=database of putative contaminants): 
 
 
-| column# | shorthand ID    | meaning                                                                                                |
-| ------------------------- | -------------------------------------------------------------------------------------------------------|
+| column  | shorthand ID    | meaning                                                                                                |
+| ------- | --------------- | -------------------------------------------------------------------------------------------------------|
 | 1       | ID              | ID of the sample                                                                                       |
 | 2       | deam5p          | rate of deamination at the 5' end                                                                      |
 | 3       | deam3p          | rate of deamination at the 3' end                                                                      |
