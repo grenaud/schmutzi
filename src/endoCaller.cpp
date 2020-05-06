@@ -1753,6 +1753,7 @@ public:
     //for some reason, we have to do -1 on the .Position
     if ( !m_fastaReference->GetBase(pileupData.RefId, posAlign-1, referenceBase ) ) {
       cerr << "bamtools convert ERROR: pileup conversion - could not read reference base from FASTA file at chr "<<pileupData.RefId<<" position "<<(posAlign-1) << endl;
+      cerr<<"This can be normally solved by calling samtools' calmd on your bam file"<<endl;      
       exit(1);
     }
 
