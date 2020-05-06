@@ -2783,6 +2783,7 @@ void computePriorOnReads(const string bamfiletopen,
 	   	    
 	    if(pos2phredgeno[ pos ].ref != refeBase){
 	      cerr<<"Query reference base is not the same for read "<<al.Name<<" pos "<<pos<<endl;
+	      cerr<<"This can be normally solved by calling samtools' calmd on your bam file"<<endl;
 
 	      cout<<pos<<"\t"<<al.QueryBases[i]<<"\t"<<reconstructedReference.first[i]<<"\t"<<refeBase<<"\t"<<readBase<<"\tR="<<pos2phredgeno[ pos ].ref<<"\tC="<<pos2phredgeno[ pos ].consensus<<"\t"<<al.Name<<endl;
 	      for(unsigned int j=0;j<al.QueryBases.size();j++){
