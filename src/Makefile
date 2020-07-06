@@ -23,7 +23,7 @@ ${BAMTOOLS}/src/api/BamAlignment.h:
 	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/ && cd ${BAMTOOLS}/ &&  git reset --hard d24d850de17134fe4e7984b26493c5c0a1844b35
 
 ${BAMTOOLS}/build/src/api/libbamtools.a: ${BAMTOOLS}/src/api/BamAlignment.h
-	cd ${BAMTOOLS}/ && mkdir -p build/  && cd build/ && cmake .. && make && cd ../../../src/
+	cd ${BAMTOOLS}/ && mkdir -p build/  && cd build/ && if cmake ..; then echo ""; else if cmake3 ..; then echo ""; else echo "cmake failed, please install cmake v3"; fi  fi && make && cd ../../../src/
 
 miscfunc.o:	${LIBGAB}/utils.o miscfunc.cpp
 	${CXX} ${CXXFLAGS} miscfunc.cpp
