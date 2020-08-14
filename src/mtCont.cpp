@@ -10,10 +10,16 @@
 // #define DEBUGPOS 714 //position to debug
 // #define DEBUGPOS 608 //position to debug
 
-// #define DEBUGPOS 14250
-// #define DEBUGPOSEACHREAD //to debug each read
+//#define DEBUGPOS 11298
+//#define DEBUGPOS 2830
+
+//#define DEBUGPOSLOGLIKE
+//#define DEBUGPOSPRINTSINGLEPOS
+//#define DEBUGSUBPATTERN //to debug sub. pattern
+//#define DEBUGPOSEACHREAD //to debug each read
 //#define DEBUGCONTPOS  //print pos that are potential contaminants
-// #define DEBUGMTPOSSKIP
+//#define DEBUGMTPOSSKIP
+//#define DEBUGCONTRATE 0.01
 
 #define MAXCOV 5000            // beyond that coverage, we stop computing
 #define MINPRIOR 0.1         // below that prior for contamination at a given base, we give up
@@ -94,6 +100,10 @@ typedef struct{
     long double contEstHigh;
 } contRecord;
 
+struct argsptcont {
+    bool doubleDeam;
+};
+
 bool compContRecord (contRecord i, contRecord j) { return (i.logLike<j.logLike); }
 
 char        offsetQual=33;
@@ -150,7 +160,7 @@ vector<bool>  * skipPositions;    //= new vector<bool>(sizeGenome+1,false); // i
   
 
 */				
-void findPosToSkip(bool printPosToskip){
+void findPosToSkip(bool printPosToskip,bool verbose){
     queue<string>  queueFilesToRead = queueFilesToprocess;
     vector< map<int, alleleFrequency> > freqsFromFile;
     cerr<<"Finding positions to skip"<<endl;
@@ -162,7 +172,6 @@ void findPosToSkip(bool printPosToskip){
 
 	map<int, alleleFrequency> freqToAdd;
 	readMTAlleleFreq(freqFileNameToread,   freqToAdd);
-
 	// cerr<<"file2="<<freqFileNameToread<<endl;	
 
 	freqsFromFile.push_back(freqToAdd);
@@ -226,7 +235,7 @@ void findPosToSkip(bool printPosToskip){
 		
 #ifdef DEBUGPOS
 		    if(i==DEBUGPOS){
-			cout<<"MIN i"<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2]<<endl;
+			cout<<"file#"<<fileFreq<<"\tMIN i="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2]<<endl;
 		    }
 #endif
 		    if( (nuc1 != nuc2) && //){
@@ -237,7 +246,7 @@ void findPosToSkip(bool printPosToskip){
 			// #endif
 
 #ifdef DEBUGCONTPOS
-			cout<<"MIN i"<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2]<<endl;
+			cout<<"MIN i="<<i<<"\te="<<nuc1<<"\tc="<<nuc2<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqsFromFile[fileFreq][ infoPPos[i].posAlign ].f[nuc2]<<endl;
 #endif
 			hasPriorAboveThreshold=true;
 		    
@@ -258,7 +267,10 @@ void findPosToSkip(bool printPosToskip){
 	skipPositions->at(i) = (!hasPriorAboveThreshold);
 
 	if(printPosToskip && !skipPositions->at(i))
-	    cerr<<"Skipping position "<<(i+1)<<endl;
+	    cerr<<"Keeping position "<<(i+1)<<endl;
+
+	if(verbose)
+	    cerr<<(skipPositions->at(i)?"Skipping":"Keeping")<<" position "<<(i+1)<<endl;
 	    //cout<<i<<"\t"<<skipPositions->at(i)<<endl;
 	// if(i%1000==0)
 	//     skipPositions->at(i) = (false); //TO REMOVE
@@ -294,6 +306,9 @@ void *mainContaminationThread(void * argc){
     
     rc = pthread_mutex_unlock(&mutexRank);
     checkResults("pthread_mutex_unlock()\n", rc);
+
+    bool doubleDeam = ((struct argsptcont*)argc)->doubleDeam;
+
 
  checkqueue:    
     // stackIndex=-1;
@@ -382,7 +397,6 @@ void *mainContaminationThread(void * argc){
 	//for(int i=261;i<=262;i++){
 	//	cout<<"Thread #"<<rankThread <<" test2 "<<i<<endl;
 
-
 	if(    !definedSite->at(i) ){
 	    continue;
 	}
@@ -410,7 +424,7 @@ void *mainContaminationThread(void * argc){
 		// }
 #ifdef DEBUGPOS
 		if(i==DEBUGPOS){
-		    cout<<"MIN i"<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
+		    cout<<"MIN i="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tprior="<<priortemp<<"\tposal="<<infoPPos[i].posAlign<<"\tproblog="<<(1-pos2phredgeno[ infoPPos[i].posAlign ].perror[nuc1])<<"\tfreq="<< freqFromFile[ infoPPos[i].posAlign ].f[nuc2]<<endl;
 		}
 #endif
 
@@ -464,10 +478,22 @@ void *mainContaminationThread(void * argc){
 	    //consider deamination to be possible for the endogenous only
 	    if(dist5p <= (int(sub5p.size()) -1)){
 		probSubMatchToUseEndo = &sub5p[ dist5p ];			
+		if(doubleDeam){ //copy G->A from last 3' position
+		    probSubMatchToUseEndo->s[  8 ] = sub3p[ (int(sub3p.size()) -1) ].s[  8 ];
+		    probSubMatchToUseEndo->s[  9 ] = sub3p[ (int(sub3p.size()) -1) ].s[  9 ];
+		    probSubMatchToUseEndo->s[ 10 ] = sub3p[ (int(sub3p.size()) -1) ].s[ 10 ];
+		    probSubMatchToUseEndo->s[ 11 ] = sub3p[ (int(sub3p.size()) -1) ].s[ 11 ];
+		}
 	    }
 		    
 	    if(dist3p <= (int(sub3p.size()) -1)){
 		probSubMatchToUseEndo = &sub3p[ dist3p ];
+		if(doubleDeam){ //copy C->T from last 5' position
+		    probSubMatchToUseEndo->s[ 4 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 4 ];
+		    probSubMatchToUseEndo->s[ 5 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 5 ];
+		    probSubMatchToUseEndo->s[ 6 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 6 ];
+		    probSubMatchToUseEndo->s[ 7 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 7 ];
+		}
 	    }
 		    
 	    //we have substitution probabilities for both... take the closest
@@ -476,20 +502,32 @@ void *mainContaminationThread(void * argc){
 			
 		if(dist5p < dist3p){
 		    probSubMatchToUseEndo = &sub5p[ dist5p ];
+		    if(doubleDeam){ //copy G->A from last 3' position
+			probSubMatchToUseEndo->s[  8 ] = sub3p[ (int(sub3p.size()) -1) ].s[  8 ];
+			probSubMatchToUseEndo->s[  9 ] = sub3p[ (int(sub3p.size()) -1) ].s[  9 ];
+			probSubMatchToUseEndo->s[ 10 ] = sub3p[ (int(sub3p.size()) -1) ].s[ 10 ];
+			probSubMatchToUseEndo->s[ 11 ] = sub3p[ (int(sub3p.size()) -1) ].s[ 11 ];
+		    }
 		}else{
 		    probSubMatchToUseEndo = &sub3p[ dist3p ];
+		    if(doubleDeam){ //copy C->T from last 5' position
+			probSubMatchToUseEndo->s[ 4 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 4 ];
+			probSubMatchToUseEndo->s[ 5 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 5 ];
+			probSubMatchToUseEndo->s[ 6 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 6 ];
+			probSubMatchToUseEndo->s[ 7 ] = sub5p[ (int(sub5p.size()) -1) ].s[ 7 ];
+		    }
 		}
 			
 	    }
-#ifdef DEBUGPOS
-
+	    
+#ifdef DEBUGSUBPATTERN
 	    if(i==DEBUGPOS){
 
 		for(int sub=0;sub<16;sub++){ //     b = endogenous
-		    cout<<sub<<"\t"<<probSubMatchToUseEndo->s[sub]<<endl;
+		    cerr<<"read#"<<k<<"\t"<<dist5p<<"\t"<<dist3p<<"\tsub. damage P["<<sub<<"] = "<<probSubMatchToUseEndo->s[sub]<<endl;
 		}
 
-	    }
+	    }	    
 #endif
 
 	    //iterate over each possible endogenous and contaminant base
@@ -509,24 +547,22 @@ void *mainContaminationThread(void * argc){
 
 		    if(infoPPos[i].readsVec[k].isReversed)
 			dinucIndexEndo = (3-nuc1)*4+(3-baseIndex);
-#ifdef DEBUGPOS
+#ifdef DEBUGPOSEACHREAD
 
 		    if(i==DEBUGPOS){
 			if(infoPPos[i].readsVec[k].isReversed){
 			    dinucIndexEndo = (3-nuc1)*4+(3-baseIndex);
-			    cout<<dnaAlphabet[nuc1]<<"\t"<<dnaAlphabet[baseIndex]<<"\t"<<dinucIndexEndo<<"\t"<<probSubMatchToUseEndo->s[dinucIndexEndo]<<endl;
+			    cerr<<"read#"<<k<<"\t"<<dnaAlphabet[nuc1]<<"\t"<<dnaAlphabet[baseIndex]<<"\tidxDiNuc:"<<dinucIndexEndo<<"\t"<<probSubMatchToUseEndo->s[dinucIndexEndo]<<"\t"<<infoPPos[i].readsVec[k].isReversed<<endl;
 			}else{
-			    cout<<dnaAlphabet[nuc1]<<"\t"<<dnaAlphabet[baseIndex]<<"\t"<<dinucIndexEndo<<"\t"<<probSubMatchToUseEndo->s[dinucIndexEndo]<<endl;
+			    cerr<<"read#"<<k<<"\t"<<dnaAlphabet[nuc1]<<"\t"<<dnaAlphabet[baseIndex]<<"\tidxDiNuc:"<<dinucIndexEndo<<"\t"<<probSubMatchToUseEndo->s[dinucIndexEndo]<<"\t"<<infoPPos[i].readsVec[k].isReversed<<endl;
 			}
 
 		    }
-
 		    // if(i==DEBUGPOS){
-		    // 	cout<<dist5p<<"\t"<<dist3p<<endl;
-			
+		    // 	cout<<dist5p<<"\t"<<dist3p<<endl;			
 		    // }
-
 #endif
+		    
 		    //                        (1-e)           *  p(sub|1-e)                                  + (e) *  p(sub|1-e)
 		    long double probEndo=likeMatchProb[qual]  * (probSubMatchToUseEndo->s[dinucIndexEndo] )  + (1.0 - likeMatchProb[qual])*(illuminaErrorsProb.s[dinucIndexEndo]);
 			
@@ -569,13 +605,16 @@ void *mainContaminationThread(void * argc){
     } //end for each position in the genome
     cerr<<"Thread #"<<rankThread <<" is done with  pre-computations"<<endl;
 
-
+#ifdef DEBUGCONTRATE 
+    for(contaminationRate=DEBUGCONTRATE;contaminationRate<DEBUGCONTRATE+stepContEst;contaminationRate+=stepContEst){
+#else        
     for(contaminationRate=0.0;contaminationRate<topCont;contaminationRate+=stepContEst){
+#endif
 	long double logLike=0.0;
     
 
-#ifdef DEBUGPOS
-	for(int i=DEBUGPOS;i<=DEBUGPOS;i++){
+#ifdef DEBUGPOSPRINTSINGLEPOS
+ 	for(int i=DEBUGPOS;i<=DEBUGPOS;i++){
 #else
         for(int i=0;i<sizeGenome;i++){
 #endif
@@ -593,7 +632,7 @@ void *mainContaminationThread(void * argc){
 	    }
 
 #ifdef DEBUGPOSEACHREAD
-	    cout<<"after i"<<i<<"\t"<<infoPPos[i].posAlign<<endl;
+	    cerr<<"after i="<<i<<"\t"<<infoPPos[i].posAlign<<endl;
 #endif
 
 	    // continue;
@@ -634,9 +673,9 @@ void *mainContaminationThread(void * argc){
 				cout<<"probForDinuc    "<<probForDinuc<<endl;
 			    }else{
 				//if(priorDiNucVec[i].p[nuc1][nuc2]>0.9){
-				cout.precision(15);
-				cout<<"k="<< k <<"\ti="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tbase="<<infoPPos[i].readsVec[k].base<<"\tqual=" <<infoPPos[i].readsVec[k].qual<<"\tprior="<<priorDiNucVec[i]->p[nuc1][nuc2]<<"\tp(e)="<<probEndoVec[i]->at(k)->p[nuc1][nuc2]<<"\tp(c)="<<probContVec[i]->at(k)->p[nuc1][nuc2]<<"\tp="<<probForDinuc<<"\tp(ma)="<<mappedProb<<"\t"<<mapq<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\t"<<strandVec[i]->at(k)<<endl;
-				    //}
+				cerr.precision(15);
+				cerr<<"read#"<< k <<"\ti="<<i<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\tbase="<<infoPPos[i].readsVec[k].base<<"\tqual=" <<infoPPos[i].readsVec[k].qual<<"\tprior="<<priorDiNucVec[i]->p[nuc1][nuc2]<<"\tp(e)="<<probEndoVec[i]->at(k)->p[nuc1][nuc2]<<"\tp(c)="<<probContVec[i]->at(k)->p[nuc1][nuc2]<<"\tp="<<probForDinuc<<"\tp(ma)="<<mappedProb<<"\t"<<mapq<<"\te="<<dnaAlphabet[nuc1]<<"\tc="<<dnaAlphabet[nuc2]<<"\t"<<strandVec[i]->at(k)<<endl;
+				//}
 			    }
 			}
 #endif
@@ -657,13 +696,15 @@ void *mainContaminationThread(void * argc){
 		//exit(1);
 		
 		logLike += log  (   pread   );
-#ifdef DEBUGPOSEACHREAD
-		cout<<"pread\t"<<pread<<"\tloglike="<< logLike <<"\tcont="<<contaminationRate<<endl;		
+
+#ifdef DEBUGPOSLOGLIKE
 		if(i==DEBUGPOS){
+		    cout<<freqFileNameToUse<<"\tread#"<<k<<"\tpread\t"<<pread<<"\tloglike="<< logLike <<"\tcont="<<contaminationRate<<endl;		
 		    //cout<<"-------------"<<endl;
 		}
 #endif
-	    } //end for each read at that position
+	    }//end for each read at that position
+
 	    // cout<<"logLike "<<i<<"\t"<<logLike<<endl;
 #ifdef DEBUGPOS
 	    // if(i==DEBUGPOS){
@@ -674,7 +715,9 @@ void *mainContaminationThread(void * argc){
 	// exit(1);
 
 	//cout.precision(15);
-	//cout<<freqFileNameToUse<<"\t"<<contaminationRate<<"\t"<<logLike<<endl;
+#ifdef DEBUGPOS
+	cerr<<"freqFile "<<freqFileNameToUse<<"\t"<<contaminationRate<<"\t"<<logLike<<endl;
+#endif
 	contaminationEstimate cse;
 	cse.filename           = freqFileNameToUse ;
 	cse.contaminationRate  = contaminationRate ;
@@ -998,13 +1041,14 @@ int main (int argc, char *argv[]) {
     string deam5pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
     string deam3pfreq = getCWD(argv[0])+"../share/schmutzi/deaminationProfile/none.prof";
     bool verbose      = false;
-    bool printPosToskip      = false;
-
+    bool summary      = false;
+    bool printPosToskip = false;
+    bool doubleDeam         = false;
     const string usage=string("\t"+string(argv[0])+
 			      " [options]  [endogenous consensus file] [reference fasta file] [bam file] [cont file1] [cont file2] ..."+"\n\n"+
 			      
 			      "\n\tOutput options:\n"+	
-			      "\t\t"+"-v" +"\t\t\t\t"+"Verbose output, print the MAP value for each contaminant in increasing order of likelihood"+"\n"+
+			      "\t\t"+"-s" +"\t\t\t\t"+"Print summary, print the MAP value for each contaminant by decreasing order of likelihood"+"\n"			      "\t\t"+"-v" +"\t\t\t\t"+"Verbose output"+"\n"+
 			      "\t\t"+"-o  [output log]" +"\t\t"+"Output log (default: stdout)"+"\n"+
 
 
@@ -1016,6 +1060,7 @@ int main (int argc, char *argv[]) {
 
 			      "\t\t"+"-deam5p [.prof file]" +"\t\t"+"5p deamination frequency (default: "+deam5pfreq+")"+"\n"+
 			      "\t\t"+"-deam3p [.prof file]" +"\t\t"+"3p deamination frequency (default: "+deam3pfreq+")"+"\n"+
+			      "\t\t"+"-double" +"\t\t"+"Consider residual C->T even close to the 3' endand residual G->A close to 5' (default: "+booleanAsString(doubleDeam)+")"+"\n"+
 			      // // "\t\t"+"-deam5" +"\t\t"+"5p deamination frequency"+"\n"+
 			      // // "\t\t"+"-deam3" +"\t\t"+"3p deamination frequency"+"\n"+
 			      "\n\tComputation options:\n"+	
@@ -1028,7 +1073,7 @@ int main (int argc, char *argv[]) {
 
 			      "\n\tMisc. options:\n"+	
 			      "\t\t"+"-t" +"\t\t\t\t"+"Number of cores to use (default: "+stringify(numberOfThreads)+")"+"\n"+
-			      "\t\t"+"-p" +"\t\t\t\t"+"Print positions to skip (default: "+booleanAsString(printPosToskip)+")"+"\n"+
+			      "\t\t"+"-p" +"\t\t\t\t"+"Print considered positions  (default: "+booleanAsString(printPosToskip)+")"+"\n"+
 			      
 			      // "\t\t"+"-cont [file1,file2,...]" +"\t\t"+"Contamination allele frequency (default : "+fileFreq+")"+"\n"+ 
 			      // "\n\tReference options:\n"+	
@@ -1062,6 +1107,11 @@ int main (int argc, char *argv[]) {
 	    continue;
 	}
 
+	if(string(argv[i]) == "-s" ){
+	    summary=true;
+	    continue;
+	}
+	
 	if(string(argv[i]) == "-v" ){
 	    verbose=true;
 	    continue;
@@ -1101,6 +1151,11 @@ int main (int argc, char *argv[]) {
 	if(string(argv[i]) == "-deam3p"  ){
 	    deam3pfreq=string(argv[i+1]);
 	    i++;
+	    continue;
+	}
+
+	if(string(argv[i]) == "-double"  ){
+	    doubleDeam=true;
 	    continue;
 	}
 
@@ -1340,7 +1395,7 @@ int main (int argc, char *argv[]) {
 
 
 
-    findPosToSkip(printPosToskip);
+    findPosToSkip(printPosToskip,verbose);
 
 
 
@@ -1355,11 +1410,13 @@ int main (int argc, char *argv[]) {
     pthread_t             thread[numberOfThreads];
     int                   rc=0;
 
-
+    struct argsptcont * argptc = (struct argsptcont *)malloc(sizeof(struct argsptcont));
+    argptc->doubleDeam = doubleDeam;
+    
     // doneReading=true;    
 
     for(int i=0;i<numberOfThreads;i++){
-	rc = pthread_create(&thread[i], NULL, mainContaminationThread, NULL);
+	rc = pthread_create(&thread[i], NULL, mainContaminationThread, (void*)argptc);
 	checkResults("pthread_create()\n", rc);
     }
 
@@ -1398,18 +1455,24 @@ int main (int argc, char *argv[]) {
 	    //s+=pow(2.0,outputToPrint[i][j].logLike);
 	    if(toaddCt.logLike < outputToPrint[i][j].logLike){
 		toaddCt.logLike = outputToPrint[i][j].logLike;
-		toaddCt.contEst      = outputToPrint[i][j].contaminationRate;
+		toaddCt.contEst = outputToPrint[i][j].contaminationRate;
 	    }
 	}
 	
 	vecPairfilenameLike.push_back( toaddCt );
     }
 
-   
-    if(verbose){
+
+    
+    if(summary){
 	sort(vecPairfilenameLike.begin(),vecPairfilenameLike.end(),compContRecord);
 	// outLogFP<<"#"<<vecPairfilenameLike.size()<<endl;
-	outLogFP<<"################################################"<<endl<<"Sources of contamination (sorted by log likelihood)"<<endl<<"################################################"<<endl;
+	cerr<<"################################################"<<endl<<"Sources of contamination (sorted bottom to top by log likelihood)"<<endl<<"################################################"<<endl;
+
+	for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
+	    cerr<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;
+	}
+	outLogFP<<"################################################"<<endl<<"Sources of contamination (sorted bottom to top by log likelihood)"<<endl<<"################################################"<<endl;
 
 	for(unsigned int i=0;i<vecPairfilenameLike.size();i++){
 	    outLogFP<<vecPairfilenameLike[i].fname<<"\t"<<vecPairfilenameLike[i].contEst<<"\t"<<vecPairfilenameLike[i].logLike<<endl;

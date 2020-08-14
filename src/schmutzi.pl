@@ -821,6 +821,9 @@ while(1){
   # estimate cont
   my $cmdmtcont =   $mtCont. " -o ".$outputPrefix."_".$numberIteration."_mtcont.out ";
   #$cmdmtcont =   " -deam5p "
+  if($library eq "double"){
+    $cmdmtcont .=   " -double "
+  }
   $cmdmtcont .= " -deam5p ".$outputPrefix."_".$numberIteration."_endo.5p.prof ";
   $cmdmtcont .= " -deam3p ".$outputPrefix."_".$numberIteration."_endo.3p.prof ";
   $cmdmtcont .= " -t ".$numthreads." ";

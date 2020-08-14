@@ -619,7 +619,7 @@ int main (int argc, char *argv[]) {
 
     if(endo){
 	if(singAnddoubleStr){
-	    cerr<<"Error: cannot use -singAnddoubleStr with -endo"<<endl;
+	    cerr<<"Error: cannot use -both with -endo"<<endl;
 	    return 1;
 	}
 	

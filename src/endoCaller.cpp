@@ -2273,7 +2273,6 @@ public:
 
       if(dist5p <= (int(sub5p.size()) -1)){
 	probSubMatchToUseEndo = &sub5p[  dist5p ];			
-
       }
 
       if(dist5p <= (int(sub5pC.size()) -1)){
