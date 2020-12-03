@@ -10,7 +10,7 @@
 #include <gzstream.h>
 #include <algorithm> 
 
-#include "utils.h"
+#include "libgab.h"
 
 using namespace std;
 

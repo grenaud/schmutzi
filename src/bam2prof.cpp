@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "utils.h"
+#include "libgab.h"
 #include "ReconsReferenceBAM.h"
 
 using namespace std;

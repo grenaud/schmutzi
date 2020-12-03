@@ -11,7 +11,7 @@ all: poshap2splitbam
 poshap2splitbam.o:	poshap2splitbam.cpp
 	${CXX} ${CXXFLAGS} poshap2splitbam.cpp
 
-poshap2splitbam:	poshap2splitbam.o ${LIBGAB}utils.o  ${LIBGAB}/gzstream/libgzstream.a
+poshap2splitbam:	poshap2splitbam.o ${LIBGAB}libgab.a  ${LIBGAB}/gzstream/libgzstream.a
 	${CXX} $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 

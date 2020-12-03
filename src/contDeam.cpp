@@ -106,7 +106,7 @@
 #include <limits>
 #include <math.h>
 
-#include "utils.h"
+#include "libgab.h"
 #include "miscfunc.h"
 #include "ReconsReferenceBAM.h"
 

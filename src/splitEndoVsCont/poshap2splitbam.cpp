@@ -25,7 +25,7 @@
 #include <gzstream.h>
 // #include "GenomicRange.h"
 
-#include "utils.h"
+#include "libgab.h"
 
 using namespace BamTools;
 using namespace std;

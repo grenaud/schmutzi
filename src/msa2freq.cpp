@@ -13,7 +13,7 @@
 #include <gzstream.h>
 #include "FastQParser.h"
 #include <algorithm>   
-#include "utils.h"
+#include "libgab.h"
 
 typedef struct { 
     string id;
