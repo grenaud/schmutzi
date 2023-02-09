@@ -3,6 +3,7 @@ BAMTOOLS = ../lib/bamtools/
 LIBGAB   = ../lib/libgab/
 
 CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
+#CXXFLAGS  = -static -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
 LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/build/src/api/libbamtools.a -lpthread -lm -lz
 
 
@@ -32,13 +33,13 @@ insertSize.o:	${LIBGAB}/libgab.a insertSize.cpp
 	${CXX} ${CXXFLAGS} insertSize.cpp
 
 insertSize: insertSize.o  ${LIBGAB}/libgab.a
-	${CXX} -o $@ $^ $(LDLIBS) 
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) 
 
 countRecords.o:	${LIBGAB}/libgab.a countRecords.cpp 
 	${CXX} ${CXXFLAGS} countRecords.cpp
 
 countRecords: countRecords.o  ${LIBGAB}/libgab.a
-	${CXX} -o $@ $^ $(LDLIBS) 
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) 
 
 jointFreqDeaminated.o:	${LIBGAB}/libgab.a jointFreqDeaminated.cpp 
 	${CXX} ${CXXFLAGS} jointFreqDeaminated.cpp
@@ -47,10 +48,10 @@ jointFreqDeaminatedDouble.o:	${LIBGAB}/libgab.a jointFreqDeaminatedDouble.cpp
 	${CXX} ${CXXFLAGS} jointFreqDeaminatedDouble.cpp
 
 jointFreqDeaminated: jointFreqDeaminated.o  ${LIBGAB}/libgab.a ${LIBGAB}/ReconsReferenceBAM.o
-	${CXX} -o $@ $^ $(LDLIBS) 
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) 
 
 jointFreqDeaminatedDouble: jointFreqDeaminatedDouble.o  ${LIBGAB}/libgab.a ${LIBGAB}/ReconsReferenceBAM.o
-	${CXX} -o $@ $^ $(LDLIBS) 
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) 
 
 mtCont.o:	${LIBGAB}/libgab.a mtCont.cpp 
 	${CXX} ${CXXFLAGS} mtCont.cpp
@@ -93,71 +94,69 @@ log2freq.o:	${LIBGAB}/libgab.a log2freq.cpp
 	${CXX} ${CXXFLAGS} log2freq.cpp
 
 log2freq:	${LIBGAB}/libgab.a log2freq.o ${LIBGAB}/libgab.a  ${LIBGAB}gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 log2fasta.o:	${LIBGAB}/libgab.a log2fasta.cpp
 	${CXX} ${CXXFLAGS} log2fasta.cpp
 
 log2fasta:	${LIBGAB}/libgab.a log2fasta.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 filterlog.o:	${LIBGAB}/libgab.a filterlog.cpp
 	${CXX} ${CXXFLAGS} filterlog.cpp
 
 filterlog:	${LIBGAB}/libgab.a filterlog.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 logs2pos.o:	${LIBGAB}/libgab.a logs2pos.cpp
 	${CXX} ${CXXFLAGS} logs2pos.cpp
 
 logs2pos:	${LIBGAB}/libgab.a logs2pos.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 log2ConsensusLog.o:	${LIBGAB}/libgab.a log2ConsensusLog.cpp
 	${CXX} ${CXXFLAGS} log2ConsensusLog.cpp
 
 log2ConsensusLog:	${LIBGAB}/libgab.a log2ConsensusLog.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 logdiff.o:	${LIBGAB}/libgab.a logdiff.cpp
 	${CXX} ${CXXFLAGS} logdiff.cpp
 
 logdiff:	${LIBGAB}/libgab.a logdiff.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 logmask.o:	${LIBGAB}/libgab.a logmask.cpp
 	${CXX} ${CXXFLAGS} logmask.cpp
 
 logmask:	${LIBGAB}/libgab.a logmask.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 
 msa2freq.o:	${LIBGAB}/libgab.a msa2freq.cpp
 	${CXX} ${CXXFLAGS} msa2freq.cpp
 
 msa2freq:	${LIBGAB}/libgab.a msa2freq.o ${LIBGAB}/libgab.a  ${LIBGAB}/FastQParser.o ${LIBGAB}/FastQObj.o ${LIBGAB}/gzstream/libgzstream.a 
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 msa2singlefreq.o:	${LIBGAB}/libgab.a msa2singlefreq.cpp
 	${CXX} ${CXXFLAGS} msa2singlefreq.cpp
 
 msa2singlefreq:	${LIBGAB}/libgab.a msa2singlefreq.o ${LIBGAB}/libgab.a  ${LIBGAB}/FastQParser.o ${LIBGAB}/FastQObj.o ${LIBGAB}/gzstream/libgzstream.a 
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 
 msa2log.o:	${LIBGAB}/libgab.a msa2log.cpp
 	${CXX} ${CXXFLAGS} msa2log.cpp
 
 msa2log:	${LIBGAB}/libgab.a msa2log.o ${LIBGAB}/libgab.a  ${LIBGAB}/FastQParser.o ${LIBGAB}/FastQObj.o ${LIBGAB}/gzstream/libgzstream.a 
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
-
-
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 damage2profile.o:	${LIBGAB}/libgab.a damage2profile.cpp
 	${CXX} ${CXXFLAGS} damage2profile.cpp
 
 damage2profile:	${LIBGAB}/libgab.a damage2profile.o ${LIBGAB}/libgab.a  ${LIBGAB}/gzstream/libgzstream.a
-	${CXX} -o $@ $^ $(LDLIBS) $(LDFLAGS)
+	${CXX} ${CXXFLAGS} -o $@ $^ $(LDLIBS) $(LDFLAGS)
 
 
 
