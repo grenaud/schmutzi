@@ -1,5 +1,5 @@
 
-CXX      = /usr/bin/g++ # -g -pg
+CXX      = g++ # -g -pg
 BAMTOOLS = ../../lib/bamtools/
 LIBGAB   = ../../lib/libgab/
 
