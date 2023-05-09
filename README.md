@@ -95,11 +95,11 @@ There are 2 main Perl scripts that drive the underlying programs written in C++.
 |              |     deamination.                                                                            |
 |              |  2) --split                                                                                 |
 |              |     Take a series of mitonchondrial diagnostic positions (positions that indicate           |
-|              |     whether the read pertains to a particular type of homonin (ex: Neanderthal) or           |
-|              |     the putative contaminant homonin (ex: modern Humans) and separate the contaminant       |
+|              |     whether the read pertains to a particular type of hominin (ex: Neanderthal) or           |
+|              |     the putative contaminant hominin (ex: modern Humans) and separate the contaminant       |
 |              |     from the endogenous reads. This approach is useful when prior information on the        |
 |              |     sample is available and when enough diagnostic positions are available (case of         |
-|              |     archaic homonins).                                                                      |
+|              |     archaic hominins).                                                                      |
 |schmutzi.pl   | This script performs two tasks:                                                             |
 |	       |	   1) Call an endogenous consensus                                                   |
 |	       |   2) Using the consensus called in 1) and a set of known contaminants, compute              |
@@ -530,6 +530,6 @@ Frequently asked questions:
 
 - When I run bam2makeSchmutzi.pl, I get NA columns, why?
 
-  If you're getting NA, it is likely due to a failure in one of the programs. I recommend running the programs manually (contDeam+schmutzi.pl) using the commands in the Makefile and check what you're getting. Also, check that you have all the R packages installed.
+  If you're getting NA, it is likely due to a failure in one of the programs.Â I recommend running the programs manually (contDeam+schmutzi.pl) using the commands in the Makefile and check what you're getting. Also, check that you have all the R packages installed.
 
 
