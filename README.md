@@ -145,7 +145,7 @@ Before you start, make sure you have a BAM file that has been:
 - indexed
 - fillmd/calmd has been run to fix the MD field
 
-First determine if you the library used was double-stranded or single-stranded. Then call:
+First, determine if you the library used was double-stranded or single-stranded. Then call:
    
     contDeam.pl --lengthDeam [length] --library [library type] --out [output prefix] [mt reference] [input bam file]
 
@@ -366,27 +366,27 @@ You will get a _results.txt, with different columns. I suggest concatenating the
 Frequently asked questions:
 -------------------------------------------------------------------------------------
 
-- How should I prepare the BAM file as input for endoCaller ?
+- How should I prepare the BAM file as input for endoCaller?
    
-   As we mention above the, data must be aligned and ideally, wrapped around the ends.
+   As we mentioned above the, data must be aligned and ideally, wrapped around the ends.
    We provide a little wrapper script to call the shrimp mapper and wrap the reads around
    the edge : wrapper.pl
 
 
-- When should I trust the output of contDeam.pl ?
+- When should I trust the output of contDeam.pl?
 
   When the deamination rates for the contaminant material are negligible. To 
   verify this, one way is to use diagnostic positions on the mitochondria. If 
   you have nuclear data, please retain the reads mapping to the mitochondria. 
   If you know in advance that the sample is either Neanderthal or Denisova, you can
-  use  the precomputed diagnostic positions. If you have an modern human, you 
+  use  the precomputed diagnostic positions. If you have a modern human, you 
   will have to run schmutzi.pl and use the split BAM files produced by the script. 
   Inspect, the files called *cont.5p.prof and *cont.3p.prof. If the rates of deamination
   for them is higher than 1 or 2 \%, the results provided by contDeam.pl will not 
   reliable.
   
 - The contamination estimate given by contDeam.pl gives me a very different result
-  than schmutzi.pl does, why is that ?
+  than schmutzi.pl does, why is that?
 
   There could be a few reasons:
   1. Your contamination is deaminated. That can be the case for museum samples.
@@ -402,7 +402,7 @@ Frequently asked questions:
   2. The algorithm diverged. This could be due to a misleading prior or an almost absence
      of endogenous material.
 
-- How can I know if I have multiple contaminants ?
+- How can I know if I have multiple contaminants?
 
     If you have highly divergent quality values for bases in the contamination prediction,
     this could be an indication that you might have multiple contaminants. Further, if  
@@ -410,7 +410,7 @@ Frequently asked questions:
     diagnostic positions from different haplogroups, this could be an indication that 
     your contaminant is multiple. 
 
-- What to do if I suspect that I have multiple contaminants ?
+- What to do if I suspect that I have multiple contaminants?
 
     Do not use the --usepredC option and turn on the --multipleC option. If the contamination 
     rate is a lot lower than the one predicted by the deamination patterns, this could be an 
@@ -419,7 +419,7 @@ Frequently asked questions:
     mtCont manually. Datasets that are heavily contaminated with multiple contaminants are very difficult 
     targets.
 
-- How can I just use mtCont using a fasta file or a fasta file from a proxy mitochondria ?
+- How can I just use mtCont using a fasta file or a fasta file from a proxy mitochondria?
   
   Given you have a fasta file with the endogenous mitochondria called endo.fa and using the reference ref/human_MT.fa. You can run mafft and pipe into msa2log:
 
@@ -427,9 +427,9 @@ Frequently asked questions:
 
   Then you have a log file for mtCont.
 
-- Can I build my own set of putative contaminants ?
+- Can I build my own set of putative contaminants?
 
-  Yes. First build a multiple sequence alignment (msa) of the various mitochondria
+  Yes. First, build a multiple sequence alignment (msa) of the various mitochondria
   including the reference used for mapping. Go to the directory where you want 
   to store the frequencies then run:
   
@@ -437,9 +437,9 @@ Frequently asked questions:
   
   A freqs/ directory should appear with one file per record in the msa.
 
-- Can your software work for ancient DNA from other species ?
+- Can your software work for ancient DNA from other species?
   
-  Yes, given a reference, schmutzi can be used to call an mitochondria endogenous 
+  Yes, given a reference, schmutzi can be used to call a mitochondria endogenous 
   consensus taking into account deamination. But in the case of non-hominin 
   animals, you do no need to measure contamination from humans if the 
   mitochondrion is sufficiently divergent from the human one. High divergence 
@@ -453,13 +453,13 @@ Frequently asked questions:
 
             ./endoCaller -cont 0 -deam5p out5p.prof -deam3p out3p.prof -seq output.fa -log outlog.log -l [length reference] /path/to/reference.fasta input.bam
 
-- Can I use schmutzi on modern DNA for mitochondrial consensus ?
+- Can I use schmutzi on modern DNA for mitochondrial consensus?
 
-  Yes, it is the simple case where deamination does not exist. 
+  Yes, it is a simple case where deamination does not exist. 
   Simply use endoCaller without deamination parameters and length parameters.
 
 
-- The contamination estimate of contDeam.pl is very different from the one obtained from mtCont, why is that ?
+- The contamination estimate of contDeam.pl is very different from the one obtained from mtCont, why is that?
   There are two possibilities:
 
   1. schmutzi.pl did not converge 
@@ -469,30 +469,33 @@ Frequently asked questions:
 
 - The program stopped and said: "Unable to find more than X positions that are different ...". Why is that ?
 
-  This means that upon splitting into the endogenous and contaminant files, the program was not able
-  to find enough positions to split. This could be due to the following:
+  This means that the program could not find enough positions to split upon splitting into the endogenous and contaminant files. This could be due to the following:
   
   * There is either too much or too little contamination. This makes is impossible to predict the contaminant and/or the endogenous genomes. 
-    If the first contamination estimate was very high, probably it was due to high contamination. Try to run endoCaller manually using higher
+    If the first contamination estimate was very high, it was probably due to high contamination. Try to run endoCaller manually using higher
     contamination estimates. If there is too little contamination as indicated by an initial low contamination estimate, you could simply trust 
     the first iteration of endoCaller or rerun without the "--uselength", "--estdeam" and "--usepredC" options
 
   * There is very little difference between the endogenous and contaminant. You could trust the contamination rate given by the deamination 
     patterns and use the first endogenous call.
 
-- Should I filter my BAM file for reads with high mapping quality ?
+- I am getting a very high contamination rate (98%-99%), why?
   
-  * In theory, no. If the mapping quality is good proxy for the probability of mismapping, you should be fine as mapping quality is 
+  * This is likely a fluke, first make sure that you're not running with a prediction of the contaminant (using option --notusepredC). Not using this option only works if you have very high contamination rates. The second thing is to make sure that you have sufficient coverage (at least 10-15X on the mitochondrial genome). If not, that means that you cannot infer the endogenous consensus properly, however, we have a near-perfect resolution of the contaminant because we have the database. This means that the most likely explanation is that everything is contaminated. We highly suggest to disregard the contamination estimates for samples with less than 10x and doubt the estimate of those between 10-20X. 
+
+- Should I filter my BAM file for reads with high mapping quality?
+  
+  * In theory, no. If the mapping quality is a good proxy for the probability of mismapping, you should be fine as mapping quality is 
     incorporated. However, most aligners do not compute the mismapping probability properly. We have found that sometimes applying a cutoff
     of 30 or 35 bp reduces the chance of mismapping.
 
 
-- How much can I trust the endogenous consensus call ?
+- How much can I trust the endogenous consensus call?
  
   * That depends on two factors:
      1. Amount of contamination and coverage, you can check how good the quality of the log is. If you have low quality, not much can be done
      2. It the case of very distant mt genomes (ex: Denisova to human) the divergence might 
-        be very high in certain regions and leads to misalignments. To solve this, an approach is to call the endogenous iteratively as such:
+        be very high in certain regions and lead to misalignments. To solve this, an approach is to call the endogenous iteratively as such:
         
               ./wrapper.pl   testDenisova/endo.it1  refs/human_MT.fa testDenisova/input.bam
               ./endoCaller -seq testDenisova/endo.it1.fa -log testDenisova/endo.it1.log  refs/human_MT.fa testDenisova/endo.it1.bam
@@ -516,7 +519,7 @@ Frequently asked questions:
      1. The number of aDNA fragments is too low to get an estimate of misincorporation patterns due to deamination. Less than 1X for example.
      2. There is no deamination present hence no measurable misincorporation patterns.
 
-  Problem #1 cannot be solved per se. It is possible that the iterative procedure will not work either. Problem #2 requires a bit of thinking. I suggest running mapDamage and check if you have fragmentation and misincorporation patterns. If so, was USER/UDG treatment used hence explaining the lack of deamination patterns? If you are confident that you have no deamination pattern, please note that is it very difficult to infer the endogenous base and therefore to estimate present-day contamination in the absence of deamination patterns. I recommend using endoCaller and call mtCont manually just once instead of iteratively.   
+  Problem #1 cannot be solved per se. It is possible that the iterative procedure will not work either. Problem #2 requires a bit of thinking. I suggest running mapDamage and checking if you have fragmentation and misincorporation patterns. If so, was USER/UDG treatment used hence explaining the lack of deamination patterns? If you are confident that you have no deamination pattern, please note that is it very difficult to infer the endogenous base and therefore to estimate present-day contamination in the absence of deamination patterns. I recommend using endoCaller and calling mtCont manually just once instead of iteratively.   
      
 - When endoCaller is run, get: Query reference base is not the same for read XXXX pos 3107
  
