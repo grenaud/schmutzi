@@ -2,16 +2,16 @@
   schmutzi: Bayesian maximum a posteriori contamination estimate for ancient samples
 =====================================================================================
 
-Upon sequencing ancient DNA , the DNA of the individuals involved in excavation, extraction 
-of DNA and library preparation can become mixed with the actual  sample being sequenced. 
+Upon sequencing ancient DNA, the DNA of the individuals involved in excavation, extraction 
+of DNA and library preparation can become mixed with the actual sample being sequenced. 
 We define as endogenous the DNA pertaining to the original sample and contaminant the DNA of the experimenters. 
 
 
 schmutzi is a set of programs aimed at ancient DNA data that can :
 
 * estimate contamination based on deamination patterns alone
-* call a mitonchondrial consensus for the endogenous genome. This consensus calls takes into account contamination and deamination.
-* estimate mitonchondrial contamination and identify the most likely contaminant from a set.
+* call a mitochondrial consensus for the endogenous genome. This consensus calls takes into account contamination and deamination.
+* estimate mitochondrial contamination and identify the most likely contaminant from a set.
 
 Questions :
 -------------------------------------------------------------------------------------
@@ -259,16 +259,16 @@ Recommended workflow for ancient samples:
   
   However, use this at your own risk, we know three factors that lead to wrong estimates:
 
-  1. Insuffient # of molecules (we need at least 500M)
-  2. Insuffient rates of endogenous deamination (we need upwards of 5%)
+  1. Insufficient # of molecules (we need at least 500M)
+  2. Insufficient rates of endogenous deamination (we need upwards of 5%)
   3. No or very little deamination of the contaminant fragments
   4. Since we need to condition on one end to measure deamination on the other, we need independence between 5' and 3' deamination rates 
 
-  This method is implemented in "contDeam.pl". For mt, we can at least cross validate the contamination estimate using "mtCont" but not for nuclear data.
+  This method is implemented in "contDeam.pl". For mt, we can at least cross-validate the contamination estimate using "mtCont" but not for nuclear data.
   If you have a contaminant that is deaminated this will lead to an underestimate. 
   Lack of independence between the 5' and 3' deamination rates can lead to overestimated
   deamination rates for the endogenous portion and an overestimate. To test this, two programs were added as part of the package:
-  jointFreqDeaminated and jointFreqDeaminatedDouble (double stranded). For samples with low amounts of contamination, they compute the 
+  jointFreqDeaminated and jointFreqDeaminatedDouble (double-stranded). For samples with low amounts of contamination, they compute the 
   joint frequency of deamination:
 
         ./jointFreqDeaminated  in.bam > in.freq
@@ -285,7 +285,7 @@ Recommended workflow for ancient samples:
   2. run samtools sort on your aligned bam file
   3. run samtools calmd/fillmd on your aligned bam file
   4. run samtools index on your sorted and aligned bam file
-  5. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/udo-stenzel/biohazard  this step is not necessary but produces equal coverage and resolution at the boundaries
+  5. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/mpieva/biohazard-tools this step is not necessary but produces equal coverage and resolution at the boundaries
   6. Estimate your initial contamination and deamination rates using "contDeam.pl"
   7. Run schmutzi.pl once with default parameters
   8. Run schmutzi.pl again  with "--usepredC"
