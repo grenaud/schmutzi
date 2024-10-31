@@ -67,8 +67,8 @@ which should build pretty much everything.
 
 We tested our program on a Linux system and MacOS, please email us if you have trouble building under cygwin. 
 
-A comment about cygwin: the high precision version of the logarithm does not seem available by default. Therefore, 
-we are forced to use the low precision variant for cygwin. For higher accuracy, run our software under Linux. Also, 
+A comment about cygwin: the high-precision version of the logarithm does not seem available by default. Therefore, 
+we are forced to use the low-precision variant for cygwin. For higher accuracy, run our software under Linux. Also, 
 some users have reported bugs with the locale used by C++ 
 
 
@@ -149,7 +149,7 @@ First, determine if you the library used was double-stranded or single-stranded.
    
     contDeam.pl --lengthDeam [length] --library [library type] --out [output prefix] [mt reference] [input bam file]
 
-where [length] is the # of bp considered and [library type] is the library type (either double or single). If the deamination is seen for a many bases far from the 5'/3' ends, use maybe --lengthDeam 40. If you have USER treatment or single-stranded libraries and low amounts of deamination further away from the ends, you can use --lengthDeam 2 or 5.
+where [length] is the # of bp considered and [library type] is the library type (either double or single). If the deamination is seen for many bases far from the 5'/3' ends, use maybe --lengthDeam 40. If you have USER treatment or single-stranded libraries and low amounts of deamination further away from the ends, you can use --lengthDeam 2 or 5.
 
 Then run the iterative procedure without the prediction of the contaminant:
 
@@ -163,7 +163,7 @@ Those commands will create output files with the [out prefix]_npred and [out pre
 
 If the iterative procedure is successful, it will some files with the following suffixes:
 
-- _final.cont.est for the final estimate present-day human contamination (format: estimate estimate_low estimate_high)
+- _final.cont.est for the final estimate of present-day human contamination (format: estimate estimate_low estimate_high)
 - _final.cont.pdf plot for the posterior probability
 - _final_mtcont.out log for mtCont (contamination estimate) allows the most likely haplogroup for the contaminant
 - _final_endo.fa for the  unfiltered fasta prediction
@@ -178,7 +178,7 @@ We highly recommend users to use log2fasta on _final_endo.log to obtain a consen
 Test Data:
 -------------------------------------------------------------------------------------
 
-To test schmutzi, we have made available emprical data with single-strand (ex: testdata/mezB9687.bam) 
+To test schmutzi, we have made available empirical data with single-strand (ex: testdata/mezB9687.bam) 
 and simulated data with double-stranded damage patterns (ex: testdata/simulation.bam). 
 
 
@@ -193,11 +193,11 @@ Or, if you have "wget" installed, just type:
 
         make testdata
 
-First you need to estimate endogenous deamination rates. First create an output directory:
+First, you need to estimate endogenous deamination rates. First create an output directory:
 
         mkdir -p outputdir/
 
-Then run contDeam to estimation endogenous deamination rates:
+Then run contDeam to estimate endogenous deamination rates:
 
         ./contDeam.pl  --library single --out outputdir/mez testdata/mezB9687.bam
 
@@ -205,7 +205,7 @@ or for the simulated
 
         ./contDeam.pl  --library double --out outputdir/sim testdata/simulation.bam    
 
-This will produce the files:
+This will produce the following files:
 
         outputdir/[out].cont.pdf	Plot of the posterior probability for contamination based on deamination
         outputdir/[out].cont.est      Estimate for contamination based on deamination
@@ -281,14 +281,14 @@ Recommended workflow for ancient samples:
 
 - MT
 
-  1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using  a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
+  1. Have your data aligned to a mitochondrial reference (see "refs/human_MT_wrapped.fa" for a wrapped reference) using a sensitive mapper that produces BAM. A wrapper script is available with schmutzi (see Frequently Asked Questions)
   2. run samtools sort on your aligned bam file
   3. run samtools calmd/fillmd on your aligned bam file
   4. run samtools index on your sorted and aligned bam file
   5. If you used the wrapped reference, re-wrap your alignments exceeding the junction using for example https://github.com/mpieva/biohazard-tools this step is not necessary but produces equal coverage and resolution at the boundaries
   6. Estimate your initial contamination and deamination rates using "contDeam.pl"
-  7. Run schmutzi.pl once with default parameters
-  8. Run schmutzi.pl again  with "--usepredC"
+  7. Run schmutzi.pl once with "--notusepredC"
+  8. Run schmutzi.pl again with default parameters
   9. If contamination is more than a few percent re-run using the "--uselength" option
      
 If you have a large number of samples, I recommend using bam2makeSchmutzi.pl which creates a makefile and automates the of using contDeam.pl followed by schmutzi.pl
@@ -330,7 +330,7 @@ From schmutzi.pl for the endogenous/contaminant:
 
 From bam2makeSchmutzi.pl:
 
-You will get a _results.txt, with different columns. I suggest concatenating the _results.txt files and sorting with respect to coverage and flag problematic samples. Here is the meaning of the different columns (DB=database of putative contaminants): 
+You will get a _results.txt, with different columns. I suggest concatenating the _results.txt files and sorting with respect to coverage and flagging problematic samples. Here is the meaning of the different columns (DB=database of putative contaminants): 
 
 
 | column  | shorthand ID    | meaning                                                                                                |
@@ -481,7 +481,7 @@ Frequently asked questions:
 
 - I am getting a very high contamination rate (98%-99%), why?
   
-  * This is likely a fluke, first make sure that you're not running with a prediction of the contaminant (using option --notusepredC). Not using this option only works if you have very high contamination rates. The second thing is to make sure that you have sufficient coverage (at least 10-15X on the mitochondrial genome). If not, that means that you cannot infer the endogenous consensus properly, however, we have a near-perfect resolution of the contaminant because we have the database. This means that the most likely explanation is that everything is contaminated. We highly suggest to disregard the contamination estimates for samples with less than 10x and doubt the estimate of those between 10-20X. 
+  * This is likely a fluke, first, make sure that you're not running with a prediction of the contaminant (using option --notusepredC). Not using this option only works if you have very high contamination rates. The second thing is to make sure that you have sufficient coverage (at least 10-15X on the mitochondrial genome). If not, that means that you cannot infer the endogenous consensus properly, however, we have a near-perfect resolution of the contaminant because we have the database. This means that the most likely explanation is that everything is contaminated. We highly suggest disregarding the contamination estimates for samples with less than 10x and doubt the estimate of those between 10-20X. 
 
 - Should I filter my BAM file for reads with high mapping quality?
   
