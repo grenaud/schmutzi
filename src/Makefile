@@ -2,12 +2,12 @@ CXX      = g++ #-g -pg
 BAMTOOLS = ../lib/bamtools/
 LIBGAB   = ../lib/libgab/
 
-CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/
+CXXFLAGS  = -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/build/src/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/
 #CXXFLAGS  = -static -lm -O3 -Wall -I${LIBGAB} -I${LIBGAB}/gzstream/ -I${BAMTOOLS}/include/  -I${BAMTOOLS}/src/ -c
-LDLIBS   +=    ${BAMTOOLS}/build/src/utils/CMakeFiles/BamTools-utils.dir/*cpp.o  ${BAMTOOLS}/build/src/api/libbamtools.a -lpthread -lm -lz
+LDLIBS   +=    ${BAMTOOLS}/build/src/CMakeFiles/BamTools-utils.dir/utils/*cpp.o  ${BAMTOOLS}/build/src/libbamtools.a -lpthread -lm -lz
 
 
-all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords ${LIBGAB}/libgab.a ${BAMTOOLS}/build/src/api/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
+all: endoCaller  mtCont damage2profile log2freq log2fasta contDeam msa2freq bam2prof insertSize splitEndoVsCont/poshap2splitbam logs2pos countRecords ${LIBGAB}/libgab.a ${BAMTOOLS}/build/src/libbamtools.a jointFreqDeaminated jointFreqDeaminatedDouble msa2log log2ConsensusLog logdiff logmask filterlog msa2singlefreq subSampleBAM addXACircular
 
 splitEndoVsCont/poshap2splitbam:
 	make -C splitEndoVsCont/
@@ -16,14 +16,14 @@ ${LIBGAB}/libgab.h:
 	rm -rf ${LIBGAB}
 	git clone --recursive https://github.com/grenaud/libgab.git ${LIBGAB}
 
-${LIBGAB}/libgab.a: ${BAMTOOLS}/build/src/api/libbamtools.a   ${LIBGAB}/libgab.h
+${LIBGAB}/libgab.a: ${BAMTOOLS}/build/src/libbamtools.a   ${LIBGAB}/libgab.h
 	make -C ${LIBGAB}
 
 ${BAMTOOLS}/src/api/BamAlignment.h:
 	rm -rf ${BAMTOOLS}
-	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/ && cd ${BAMTOOLS}/ &&  git reset --hard d24d850de17134fe4e7984b26493c5c0a1844b35
+	git clone --recursive https://github.com/pezmaster31/bamtools.git ${BAMTOOLS}/ && cd ${BAMTOOLS}/ #&&  git reset --hard d24d850de17134fe4e7984b26493c5c0a1844b35
 
-${BAMTOOLS}/build/src/api/libbamtools.a: ${BAMTOOLS}/src/api/BamAlignment.h
+${BAMTOOLS}/build/src/libbamtools.a: ${BAMTOOLS}/src/api/BamAlignment.h
 	cd ${BAMTOOLS}/ && mkdir -p build/  && cd build/ && if cmake ..; then echo ""; else if cmake3 ..; then echo ""; else echo "cmake failed, please install cmake v3"; fi  fi && make && cd ../../../src/
 
 miscfunc.o:	${LIBGAB}/libgab.a miscfunc.cpp
