@@ -51,6 +51,29 @@ On Ubuntu, these dependencies can be resolved using :
 
 
 
+Docker:
+-------------------------------------------------------------------------------------
+
+schmutzi can be built and run using Docker. This also provides a way to run
+schmutzi on Apple Silicon (M1/M2/M3/M4) systems using Docker's linux/amd64
+emulation.
+
+Build the image from the root of the schmutzi repository:
+
+	docker build --platform linux/amd64 -t schmutzi .
+
+To run schmutzi, mount the directory containing the input data as /data:
+
+	docker run --rm --platform linux/amd64 \
+	    -v "$PWD:/data" \
+	    schmutzi contDeam --help
+
+For example, a BAM file in the current directory is available inside the
+container as /data/sample.bam.
+
+The linux/amd64 platform is specified explicitly for compatibility with Apple
+Silicon. This uses Docker emulation and is not a native ARM64 build.
+
 Installation:
 -------------------------------------------------------------------------------------
 
