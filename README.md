@@ -36,8 +36,20 @@ Requirements:
    - Perl interpreter
    - R (recent version)
       -  Rscript 
-      -  The fitdistrplus R package ( install.packages("fitdistrplus") or install.packages("fitdistrplus", repos="http://R-Forge.R-project.org") on more recent versions of R)
-      -  The MASS package, normally installed automatically with fitdistrplus ( install.packages("MASS") )
+      -  The fitdistrplus R package, needed by approxDist.R hence by --uselength
+         ( install.packages("fitdistrplus") )
+      -  The MASS package, pulled in by fitdistrplus. It is one of the recommended
+         packages so it usually comes with R itself, on Ubuntu it is in r-base-core
+      -  ggplot2, gplots and reshape, only needed by deamProf2pdf.R
+         ( install.packages(c("ggplot2","gplots","reshape")) )
+
+     If install.packages() fails without asking anything, it is most likely because a
+     non interactive R cannot prompt you for a mirror or for a personal library. Give
+     it both explicitly:
+
+        Rscript -e 'install.packages("fitdistrplus", lib="~/R/x86_64-pc-linux-gnu-library/4.3", repos="https://cloud.r-project.org")'
+
+     "make test" checks each of these scripts and tells you which package is missing.
 
 On Ubuntu, these dependencies can be resolved using :
 
@@ -216,6 +228,39 @@ Or, if you have "wget" installed, just type:
 
         make testdata
 
+
+Running the test suite
+--------------------------------------------------------------------------------------
+
+Once the test data has been downloaded, the whole installation can be checked with:
+
+        make test
+
+This verifies that every program was built, that the reference and the putative
+contaminant database are in place, and it runs contDeam.pl plus endoCaller on both
+test BAM files while checking that the resulting contamination estimates and the
+consensus are what they should be. The R scripts (posteriorDeam.R, approxDist.R,
+deamProf2pdf.R, mitoConsPDF.R and jointFreqDeaminated.R) are run on that same output,
+so a missing R package is reported as a skip naming the package rather than as a
+failure in the middle of a run. It takes about a minute and writes its intermediate
+files to testoutput/.
+
+To also run the full iterative pipeline (schmutzi.pl) on the simulated dataset, use:
+
+        make test-full
+
+This one takes considerably longer (tens of minutes). The number of threads can be set
+with THREADS, the output directory with OUTDIR:
+
+        THREADS=4 OUTDIR=/tmp/schmutzitest make test-full
+
+Note that the plots (*.pdf) require R, if Rscript is not installed the tests that
+depend on it are reported as skipped.
+
+
+Running the test data manually
+--------------------------------------------------------------------------------------
+
 First, you need to estimate endogenous deamination rates. First create an output directory:
 
         mkdir -p outputdir/
@@ -237,8 +282,8 @@ This will produce the following files:
 
 Then run the following to produce the endogenous consensus and the contamination estimate:
 
-        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/mez   share/schmutzi/alleleFreqMT/alleleFreqMT/197/freqs/  testdata/mezB9687.bam
-        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/sim   share/schmutzi/alleleFreqMT/alleleFreqMT/197/freqs/  testdata/simulation.bam
+        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/mez   share/schmutzi/alleleFreqMT/197/freqs/  testdata/mezB9687.bam
+        ./schmutzi.pl       --uselength   --ref share/schmutzi/refs/human_MT_wrapped.fa         outputdir/sim   share/schmutzi/alleleFreqMT/197/freqs/  testdata/simulation.bam
 
 
         --uselength tells the program to use the length of the molecules

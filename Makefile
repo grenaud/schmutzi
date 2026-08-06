@@ -1,6 +1,8 @@
 
 
-all: src/endoCaller src/splitEndoVsCont/poshap2splitbam 
+.PHONY: all install testdata test test-full clean
+
+all: src/endoCaller src/splitEndoVsCont/poshap2splitbam
 
 install: all
 	cp -fv src/posteriorDeam.R src/approxDist.R src/schmutzi.pl src/endoCaller src/mtCont src/damage2profile src/log2freq src/log2fasta src/contDeam src/contDeam.pl src/msa2freq src/bam2prof src/insertSize src/logs2pos src/countRecords  src/jointFreqDeaminated src/jointFreqDeaminatedDouble src/msa2log src/log2ConsensusLog src/logdiff src/logmask src/filterlog src/msa2singlefreq src/subSampleBAM src/addXACircular src/bam2makeSchmutzi.pl /usr/bin/
@@ -27,7 +29,15 @@ testdata/simulation.bam:
 	wget -O testdata/simulation.bam.bai https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
 
 
+test: all testdata
+	bash tests/run_tests.sh
+
+test-full: all testdata
+	bash tests/run_tests.sh --full
+
+
 clean :
+	rm -rfv testoutput/
 	make -C src/ clean
 	make -C src/splitEndoVsCont/ clean
 	make -C lib/libgab/ clean
