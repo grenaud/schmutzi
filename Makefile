@@ -21,12 +21,12 @@ testdata: testdata/mezB9687.bam testdata/simulation.bam
 
 
 testdata/mezB9687.bam:
-	wget -O testdata/mezB9687.bam       https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
-	wget -O testdata/mezB9687.bam.bai   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
+	wget --no-check-certificate -O testdata/mezB9687.bam       https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam
+	wget --no-check-certificate -O testdata/mezB9687.bam.bai   https://bioinf.eva.mpg.de/schmutzi/testData/mezB9687.bam.bai
 
 testdata/simulation.bam:
-	wget -O testdata/simulation.bam     https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
-	wget -O testdata/simulation.bam.bai https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
+	wget --no-check-certificate -O testdata/simulation.bam     https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam
+	wget --no-check-certificate -O testdata/simulation.bam.bai https://bioinf.eva.mpg.de/schmutzi/testData/simulation.bam.bai
 
 
 test: all testdata
