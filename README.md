@@ -13,6 +13,26 @@ schmutzi is a set of programs aimed at ancient DNA data that can :
 * call a mitochondrial consensus for the endogenous genome. This consensus calls takes into account contamination and deamination.
 * estimate mitochondrial contamination and identify the most likely contaminant from a set.
 
+Citation:
+-------------------------------------------------------------------------------------
+If you use schmutzi, please cite:
+
+Renaud, G., Slon, V., Duggan, A. T., & Kelso, J. (2015). Schmutzi: Estimation of contamination and endogenous mitochondrial consensus calling for ancient DNA. *Genome Biology*, 16, Article 224. https://doi.org/10.1186/s13059-015-0776-0
+
+Google Scholar: https://scholar.google.com/scholar?q=Schmutzi:+estimation+of+contamination+and+endogenous+mitochondrial+consensus+calling+for+ancient+DNA
+
+BibTeX:
+
+	@article{Renaud2015schmutzi,
+	  author  = {Renaud, Gabriel and Slon, Viviane and Duggan, Ana T. and Kelso, Janet},
+	  title   = {Schmutzi: estimation of contamination and endogenous mitochondrial consensus calling for ancient DNA},
+	  journal = {Genome Biology},
+	  year    = {2015},
+	  volume  = {16},
+	  pages   = {224},
+	  doi     = {10.1186/s13059-015-0776-0}
+	}
+
 Questions :
 -------------------------------------------------------------------------------------
 	contact: Gabriel Renaud   
